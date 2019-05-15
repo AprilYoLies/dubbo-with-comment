@@ -140,11 +140,14 @@ public class DubboBeanDefinitionParser implements BeanDefinitionParser {
                 classDefinition.setLazyInit(false);
                 // 解析当前标签元素的子元素信息，用 classDefinition 承载解析出来的信息
                 parseProperties(element.getChildNodes(), classDefinition);
+                // 为 beanDefinition 添加一个 ref 属性,值为 service 标签 class 属性所对应的 classDefinition
                 beanDefinition.getPropertyValues().addPropertyValue("ref", new BeanDefinitionHolder(classDefinition, id + "Impl"));
             }
         } else if (ProviderConfig.class.equals(beanClass)) {
+            // 此处解析 provider 标签
             parseNested(element, parserContext, ServiceBean.class, true, "service", "provider", id, beanDefinition);
         } else if (ConsumerConfig.class.equals(beanClass)) {
+            // 此处解析 consumer 标签
             parseNested(element, parserContext, ReferenceBean.class, false, "reference", "consumer", id, beanDefinition);
         }
         Set<String> props = new HashSet<>();
@@ -271,24 +274,50 @@ public class DubboBeanDefinitionParser implements BeanDefinitionParser {
                 || cls == String.class || cls == Date.class || cls == Class.class;
     }
 
+    /**
+     * 此方法在解析 provider 标签或者 consumer 标签时会使用到
+     *
+     * @param element        根标签
+     * @param parserContext  解析上下文环境
+     * @param beanClass      分别对应 ServiceBean 和 ReferenceBean
+     * @param required       由上层函数传入
+     * @param tag            分别对应 service 和 reference
+     * @param property       分别对应 provider 和 consumer
+     * @param ref            即当前待解析标签的 id
+     * @param beanDefinition 当前待解析标签对应的 beanDefinition
+     */
     private static void parseNested(Element element, ParserContext parserContext, Class<?> beanClass, boolean required, String tag, String property, String ref, BeanDefinition beanDefinition) {
+        // 获取子标签
         NodeList nodeList = element.getChildNodes();
         if (nodeList != null && nodeList.getLength() > 0) {
             boolean first = true;
             for (int i = 0; i < nodeList.getLength(); i++) {
                 Node node = nodeList.item(i);
                 if (node instanceof Element) {
+                    // 这里就是分别解析如下两种标签的情况，子标签为 service 或者 reference
+                    // <provider>
+                    //         <service><service/>
+                    // <provider/>
+                    //
+                    // <consumer>
+                    //         <reference><reference/>
+                    // <consumer/>
                     if (tag.equals(node.getNodeName())
                             || tag.equals(node.getLocalName())) {
+                        // 第一次解析的时候，考虑下根标签的 default 属性
                         if (first) {
                             first = false;
+                            // 根标签没有 default 属性，或者为空串
                             String isDefault = element.getAttribute("default");
                             if (StringUtils.isEmpty(isDefault)) {
+                                // 将 default 置为 false
                                 beanDefinition.getPropertyValues().addPropertyValue("default", "false");
                             }
                         }
+                        // 真正解析这个子标签
                         BeanDefinition subDefinition = parse((Element) node, parserContext, beanClass, required);
                         if (subDefinition != null && ref != null && ref.length() > 0) {
+                            // 为子标签添加一个对父节点标签所对应 bean 的引用，属性名为 provider 或者 consumer（由当前解析的父标签所决定）
                             subDefinition.getPropertyValues().addPropertyValue(property, new RuntimeBeanReference(ref));
                         }
                     }
@@ -307,6 +336,7 @@ public class DubboBeanDefinitionParser implements BeanDefinitionParser {
                     if ("property".equals(node.getNodeName())
                             || "property".equals(node.getLocalName())) {
                         String name = ((Element) node).getAttribute("name");
+                        // 标签的 name 属性不为空或者空串
                         if (name != null && name.length() > 0) {
                             String value = ((Element) node).getAttribute("value");
                             String ref = ((Element) node).getAttribute("ref");
