@@ -215,7 +215,7 @@ public class DubboBeanDefinitionParser implements BeanDefinitionParser {
                                 // 直接构建 RegistryConfig 对象，设置 address 为 N/A
                                 RegistryConfig registryConfig = new RegistryConfig();
                                 registryConfig.setAddress(RegistryConfig.NO_AVAILABLE);
-                                // 为 beanDefinition 添加这个 RegistryConfig 属性值，键为 beanProperty（即 getter 方法去掉 get 子串，并首字母变小写的结果）
+                                // 为 beanDefinition 添加这个 RegistryConfig 属性值，键为 beanProperty（即 getter 方法去掉 get 子串，并且首字母变小写的结果）
                                 beanDefinition.getPropertyValues().addPropertyValue(beanProperty, registryConfig);
                             } else if ("provider".equals(property) || "registry".equals(property) || ("protocol".equals(property) && ServiceBean.class.equals(beanClass))) {
                                 // 如果 setter 方法所代表的属性为 provider、registry（相应的值不为 N/A）或者 protocol 并且当前解析的是 service 标签
@@ -225,10 +225,21 @@ public class DubboBeanDefinitionParser implements BeanDefinitionParser {
                                  * 1. Spring, check existing bean by id, see{@link ServiceBean#afterPropertiesSet()}; then try to use id to find configs defined in remote Config Center
                                  * 2. API, directly use id to find configs defined in remote Config Center; if all config instances are defined locally, please use {@link org.apache.dubbo.config.ServiceConfig#setRegistries(List)}
                                  */
+                                // 把这个属性的值填充到 beanDefinition 中，键名后边补一个 Ids
                                 beanDefinition.getPropertyValues().addPropertyValue(beanProperty + "Ids", value);
                             } else {
+                                // 非以上两种情况
                                 Object reference;
+                                // 若 setter 方法的参数 type 是基本类型，或者是基本类型所对应的包装类型
                                 if (isPrimitive(type)) {
+                                    /**
+                                     * async -> false
+                                     * timeout -> 0
+                                     * delay -> 0
+                                     * version -> 0.0.0
+                                     * stat -> -1
+                                     * reliable -> false
+                                     */
                                     if ("async".equals(property) && "false".equals(value)
                                             || "timeout".equals(property) && "0".equals(value)
                                             || "delay".equals(property) && "0".equals(value)
@@ -240,32 +251,42 @@ public class DubboBeanDefinitionParser implements BeanDefinitionParser {
                                     }
                                     reference = value;
                                 } else if ("onreturn".equals(property)) {
+                                    // 这里 value 已经通过 String value = element.getAttribute(property); 进行获取了，就是 onreturn 的属性值
                                     int index = value.lastIndexOf(".");
+                                    // onreturn 方法的引用
                                     String returnRef = value.substring(0, index);
+                                    // onreturn 方法的名字
                                     String returnMethod = value.substring(index + 1);
                                     reference = new RuntimeBeanReference(returnRef);
+                                    // 将这个 onreturn 方法的名字保存到 beanDefinition 中去
                                     beanDefinition.getPropertyValues().addPropertyValue("onreturnMethod", returnMethod);
                                 } else if ("onthrow".equals(property)) {
+                                    // 处理方式同 onreturn 类似
                                     int index = value.lastIndexOf(".");
                                     String throwRef = value.substring(0, index);
                                     String throwMethod = value.substring(index + 1);
                                     reference = new RuntimeBeanReference(throwRef);
                                     beanDefinition.getPropertyValues().addPropertyValue("onthrowMethod", throwMethod);
                                 } else if ("oninvoke".equals(property)) {
+                                    // 处理方式同 onreturn 类似
                                     int index = value.lastIndexOf(".");
                                     String invokeRef = value.substring(0, index);
                                     String invokeRefMethod = value.substring(index + 1);
                                     reference = new RuntimeBeanReference(invokeRef);
                                     beanDefinition.getPropertyValues().addPropertyValue("oninvokeMethod", invokeRefMethod);
                                 } else {
+                                    // 如果 setter 方法对应的属性为 ref，并且 spring 容器中已经注册过这个 ref 所引用的 bean 的 beanDefinition
                                     if ("ref".equals(property) && parserContext.getRegistry().containsBeanDefinition(value)) {
+                                        // 那就拿到这个 beanDefinition
                                         BeanDefinition refBean = parserContext.getRegistry().getBeanDefinition(value);
+                                        // 这个 beanDefinition 必须是单例的
                                         if (!refBean.isSingleton()) {
                                             throw new IllegalStateException("The exported service ref " + value + " must be singleton! Please set the " + value + " bean scope to singleton, eg: <bean id=\"" + value + "\" scope=\"singleton\" ...>");
                                         }
                                     }
                                     reference = new RuntimeBeanReference(value);
                                 }
+                                // 将 beanProperty 和 reference 这个 kv 对添加到 beanDefinition 中去
                                 beanDefinition.getPropertyValues().addPropertyValue(beanProperty, reference);
                             }
                         }
@@ -273,25 +294,36 @@ public class DubboBeanDefinitionParser implements BeanDefinitionParser {
                 }
             }
         }
+        // 获取 element 标签的全部属性
         NamedNodeMap attributes = element.getAttributes();
         int len = attributes.getLength();
         for (int i = 0; i < len; i++) {
             Node node = attributes.item(i);
             String name = node.getLocalName();
+            // 如果这个属性还没有被处理过的话
             if (!props.contains(name)) {
                 if (parameters == null) {
                     parameters = new ManagedMap();
                 }
                 String value = node.getNodeValue();
+                // 统一将属性值放入 parameters 中
                 parameters.put(name, new TypedStringValue(value, String.class));
             }
         }
         if (parameters != null) {
+            // 将上边代码解析出来的 parameters 全部添加到 beanDefinition 中去
             beanDefinition.getPropertyValues().addPropertyValue("parameters", parameters);
         }
+        // 返回标签被解析出来的 beanDefinition
         return beanDefinition;
     }
 
+    /**
+     * 判断 cls 是否是基本类型，或者基本类型对应的包装类型
+     *
+     * @param cls 待判断的对象
+     * @return 判断的结果
+     */
     private static boolean isPrimitive(Class<?> cls) {
         return cls.isPrimitive() || cls == Boolean.class || cls == Byte.class
                 || cls == Character.class || cls == Short.class || cls == Integer.class
@@ -470,6 +502,7 @@ public class DubboBeanDefinitionParser implements BeanDefinitionParser {
 
     /**
      * 跟 parseMethods 方法作用基本一致
+     *
      * @param id
      * @param nodeList
      * @param beanDefinition
