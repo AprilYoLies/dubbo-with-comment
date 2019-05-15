@@ -65,6 +65,7 @@ public class DubboBeanDefinitionParser implements BeanDefinitionParser {
     private final Class<?> beanClass;
     private final boolean required;
 
+    // beanClass 为各种 Config 的 class 对象，比如 ApplicationConfig.class
     public DubboBeanDefinitionParser(Class<?> beanClass, boolean required) {
         this.beanClass = beanClass;
         this.required = required;
@@ -72,52 +73,72 @@ public class DubboBeanDefinitionParser implements BeanDefinitionParser {
 
     @SuppressWarnings("unchecked")
     private static BeanDefinition parse(Element element, ParserContext parserContext, Class<?> beanClass, boolean required) {
+        // 用于承载被解析出来的标签所对应的 bean 的信息
         RootBeanDefinition beanDefinition = new RootBeanDefinition();
         beanDefinition.setBeanClass(beanClass);
         beanDefinition.setLazyInit(false);
+        // 获取 id 属性
         String id = element.getAttribute("id");
+        // id 属性为空后者空串
         if (StringUtils.isEmpty(id) && required) {
             String generatedBeanName = element.getAttribute("name");
             if (StringUtils.isEmpty(generatedBeanName)) {
+                // 如果是调用的引用了 ProtocolConfig.class 的 DubboBeanDefinitionParser，并且没有 id 和 name 属性，就将解析出来的 beanDefinition 的名字叫做 dubbo
                 if (ProtocolConfig.class.equals(beanClass)) {
                     generatedBeanName = "dubbo";
                 } else {
+                    // 不是 引用了 ProtocolConfig.class 的 DubboBeanDefinitionParser，就将 beanDefinition 命名为 interface 属性的值
                     generatedBeanName = element.getAttribute("interface");
                 }
             }
+            // 将 beanClass 的全限定名作为 beanDefinition 的名字
             if (StringUtils.isEmpty(generatedBeanName)) {
                 generatedBeanName = beanClass.getName();
             }
+            // id 也用这个 beanDefinition 的名字
             id = generatedBeanName;
             int counter = 2;
+            // 如果已经注册过这个 id 的 beanDefinition，就将 id 后边加上一个数字
             while (parserContext.getRegistry().containsBeanDefinition(id)) {
                 id = generatedBeanName + (counter++);
             }
         }
+        // 如果 id 不为空，也不为空串
         if (id != null && id.length() > 0) {
+            // 已注册过此 id 则报错
             if (parserContext.getRegistry().containsBeanDefinition(id)) {
                 throw new IllegalStateException("Duplicate spring bean id " + id);
             }
+            // 将 id 和 beanDefinition 注册，此 beanDefinition 用于承载被解析的标签所对应的 bean 的信息
             parserContext.getRegistry().registerBeanDefinition(id, beanDefinition);
+            // 为这个 beanDefinition 添加个 id 属性值
             beanDefinition.getPropertyValues().addPropertyValue("id", id);
         }
+        // 如果是调用的引用了 ProtocolConfig.class 的 DubboBeanDefinitionParser
         if (ProtocolConfig.class.equals(beanClass)) {
+            // 通过 beanDefinition 的 name 获取 beanDefinition
             for (String name : parserContext.getRegistry().getBeanDefinitionNames()) {
                 BeanDefinition definition = parserContext.getRegistry().getBeanDefinition(name);
                 PropertyValue property = definition.getPropertyValues().getPropertyValue("protocol");
                 if (property != null) {
                     Object value = property.getValue();
+                    // 如果在已经注册的 beanDefinition 中，具有属性 protocol，属性值为 ProtocolConfig 对象，且这个 Protocol 对象的 name 属性和现在注册的
+                    // 这个 beanDefinition 的 id 相等，那么就就将这个 protocol 属性的值修改为当前 beanDefinition 的运行时引用（估计是为了避免循环引用的问题）
                     if (value instanceof ProtocolConfig && id.equals(((ProtocolConfig) value).getName())) {
                         definition.getPropertyValues().addPropertyValue("protocol", new RuntimeBeanReference(id));
                     }
                 }
             }
         } else if (ServiceBean.class.equals(beanClass)) {
+            // 此处解析 service 标签
             String className = element.getAttribute("class");
+            // 如果 service 标签有 class 属性
             if (className != null && className.length() > 0) {
+                // 此 classDefinition 用于承载 service 标签所对应的 class 属性值所代表的 class 对象
                 RootBeanDefinition classDefinition = new RootBeanDefinition();
                 classDefinition.setBeanClass(ReflectUtils.forName(className));
                 classDefinition.setLazyInit(false);
+                // 解析当前标签元素的子元素信息，用 classDefinition 承载解析出来的信息
                 parseProperties(element.getChildNodes(), classDefinition);
                 beanDefinition.getPropertyValues().addPropertyValue("ref", new BeanDefinitionHolder(classDefinition, id + "Impl"));
             }
@@ -279,17 +300,22 @@ public class DubboBeanDefinitionParser implements BeanDefinitionParser {
     private static void parseProperties(NodeList nodeList, RootBeanDefinition beanDefinition) {
         if (nodeList != null && nodeList.getLength() > 0) {
             for (int i = 0; i < nodeList.getLength(); i++) {
+                // node 代表子标签
                 Node node = nodeList.item(i);
                 if (node instanceof Element) {
+                    // 为 property 标签
                     if ("property".equals(node.getNodeName())
                             || "property".equals(node.getLocalName())) {
                         String name = ((Element) node).getAttribute("name");
                         if (name != null && name.length() > 0) {
                             String value = ((Element) node).getAttribute("value");
                             String ref = ((Element) node).getAttribute("ref");
+                            // property 标签的属性值可能为 value 数值型和 ref 引用型
                             if (value != null && value.length() > 0) {
+                                // 将 解析出来的 property 属性存入 beanDefinition 中
                                 beanDefinition.getPropertyValues().addPropertyValue(name, value);
                             } else if (ref != null && ref.length() > 0) {
+                                // 将 解析出来的 property 属性存入 beanDefinition 中
                                 beanDefinition.getPropertyValues().addPropertyValue(name, new RuntimeBeanReference(ref));
                             } else {
                                 throw new UnsupportedOperationException("Unsupported <property name=\"" + name + "\"> sub tag, Only supported <property name=\"" + name + "\" ref=\"...\" /> or <property name=\"" + name + "\" value=\"...\" />");
@@ -391,6 +417,7 @@ public class DubboBeanDefinitionParser implements BeanDefinitionParser {
 
     @Override
     public BeanDefinition parse(Element element, ParserContext parserContext) {
+        // element 即标签元素如 <dubbo:application />,parserContext 为 spring 提供的标签解析上下文环境
         return parse(element, parserContext, beanClass, required);
     }
 
