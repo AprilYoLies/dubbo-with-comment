@@ -383,6 +383,11 @@ public class DubboBeanDefinitionParser implements BeanDefinitionParser {
         }
     }
 
+    /**
+     * 解析子 property 标签
+     * @param nodeList 子标签
+     * @param beanDefinition 带解析的标签所对应的 beanDefinition
+     */
     private static void parseProperties(NodeList nodeList, RootBeanDefinition beanDefinition) {
         if (nodeList != null && nodeList.getLength() > 0) {
             for (int i = 0; i < nodeList.getLength(); i++) {
