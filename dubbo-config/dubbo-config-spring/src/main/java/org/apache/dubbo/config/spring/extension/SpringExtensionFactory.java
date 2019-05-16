@@ -43,12 +43,22 @@ public class SpringExtensionFactory implements ExtensionFactory {
     private static final Set<ApplicationContext> CONTEXTS = new ConcurrentHashSet<ApplicationContext>();
     private static final ApplicationListener SHUTDOWN_HOOK_LISTENER = new ShutdownHookListener();
 
+    /**
+     * 保存 ApplicationContext，注册关闭钩子函数，取消在 dubbo 上的关闭钩子函数，同时向 spring 容器添加一个监听器
+     *
+     * @param context
+     */
     public static void addApplicationContext(ApplicationContext context) {
+        // 保存 applicationContext
         CONTEXTS.add(context);
+        // 如果 context 是 ConfigurableApplicationContext 接口的实例
         if (context instanceof ConfigurableApplicationContext) {
+            // spring 框架的方法，向 jvm 注册一个关闭钩子函数，在 jvm 关闭时会调用这个钩子函数来关闭 applicationContext
             ((ConfigurableApplicationContext) context).registerShutdownHook();
+            // 因为关闭任务已经由 spring 向 jvm 进行注册了，所以取消 dubbo 自身的关闭钩子函数的注册
             DubboShutdownHook.getDubboShutdownHook().unregister();
         }
+        // 通过反射的方式为 context 添加监听器
         BeanFactoryUtils.addApplicationListener(context, SHUTDOWN_HOOK_LISTENER);
     }
 
@@ -109,8 +119,11 @@ public class SpringExtensionFactory implements ExtensionFactory {
     private static class ShutdownHookListener implements ApplicationListener {
         @Override
         public void onApplicationEvent(ApplicationEvent event) {
+            // 此监听器只会监听 context 关闭事件
             if (event instanceof ContextClosedEvent) {
+                // 单例模式获取 DubboShutdownHook 实例
                 DubboShutdownHook shutdownHook = DubboShutdownHook.getDubboShutdownHook();
+                // z执行销毁方法
                 shutdownHook.doDestroy();
             }
         }

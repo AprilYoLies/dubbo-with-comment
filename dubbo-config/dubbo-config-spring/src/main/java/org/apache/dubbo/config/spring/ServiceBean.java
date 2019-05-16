@@ -84,13 +84,18 @@ public class ServiceBean<T> extends ServiceConfig<T> implements InitializingBean
         this.service = service;
     }
 
+    // 实现 ApplicationContextAware 接口的方法，用于获取 spring application 上下文环境，同时注册了一个用于取消钩子函数的监听器和当前类所代表的监听器
     @Override
     public void setApplicationContext(ApplicationContext applicationContext) {
+        // 将 applicationContext 保存到字段中
         this.applicationContext = applicationContext;
+        // 保存 ApplicationContext，注册关闭钩子函数，取消在 dubbo 上的关闭钩子函数，同时向 spring 容器添加一个监听器(用于取消一些钩子函数)
         SpringExtensionFactory.addApplicationContext(applicationContext);
+        // 通过反射的方式向 applicationContext 注册监听器
         supportedApplicationListener = addApplicationListener(applicationContext, this);
     }
 
+    // 实现 BeanNameAware 接口的方法，用于获取当前 bean 的名字
     @Override
     public void setBeanName(String name) {
         this.beanName = name;

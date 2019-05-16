@@ -43,17 +43,21 @@ import static org.springframework.util.ObjectUtils.containsElement;
  */
 public class BeanFactoryUtils {
 
+    // 通过反射的方式向 applicationContext 注册监听器
     public static boolean addApplicationListener(ApplicationContext applicationContext, ApplicationListener listener) {
         try {
             // backward compatibility to spring 2.0.1
+            // 通过反射的方式向 applicationContext 注册监听器
             Method method = applicationContext.getClass().getMethod("addApplicationListener", ApplicationListener.class);
             method.invoke(applicationContext, listener);
             return true;
         } catch (Throwable t) {
             if (applicationContext instanceof AbstractApplicationContext) {
                 try {
+                    // 兼容低版本的 spring
                     // backward compatibility to spring 2.0.1
                     Method method = AbstractApplicationContext.class.getDeclaredMethod("addListener", ApplicationListener.class);
+                    // 暴力对方法进行调用
                     if (!method.isAccessible()) {
                         method.setAccessible(true);
                     }

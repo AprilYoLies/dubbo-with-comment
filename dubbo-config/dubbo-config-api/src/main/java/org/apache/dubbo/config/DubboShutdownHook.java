@@ -73,7 +73,9 @@ public class DubboShutdownHook extends Thread {
      * Unregister the ShutdownHook
      */
     public void unregister() {
+        // 借用原子类，通过 cas 操作，防止重复操作，即能够保证始终只有一个线程能够执行如下的移除钩子函数的过程
         if (registered.get() && registered.compareAndSet(true, false)) {
+            // JDK 的 Runtime 类，深入的研究参看 Runtime 类解析
             Runtime.getRuntime().removeShutdownHook(getDubboShutdownHook());
         }
     }
@@ -82,6 +84,7 @@ public class DubboShutdownHook extends Thread {
      * Destroy all the resources, including registries and protocols.
      */
     public void doDestroy() {
+        // 通过原子类的 cas 操作，保证后续方法只会被执行一次
         if (!destroyed.compareAndSet(false, true)) {
             return;
         }
@@ -95,9 +98,12 @@ public class DubboShutdownHook extends Thread {
      * Destroy all the protocols.
      */
     private void destroyProtocols() {
+        // 从缓存中获取 ExtensionLoader，如果没有获取到，则新建一个，将 Protocol 传入其中，并将新建的 ExtensionLoader 加入缓存中
         ExtensionLoader<Protocol> loader = ExtensionLoader.getExtensionLoader(Protocol.class);
+        // 遍历缓存中的 loadedExtension 的名字
         for (String protocolName : loader.getLoadedExtensions()) {
             try {
+                // 根据 loadedExtension 的名字来获取相应的 loadedExtension
                 Protocol protocol = loader.getLoadedExtension(protocolName);
                 if (protocol != null) {
                     protocol.destroy();
