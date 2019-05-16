@@ -110,6 +110,11 @@ public class ServiceBean<T> extends ServiceConfig<T> implements InitializingBean
         return service;
     }
 
+    /**
+     * 实现 ApplicationListener 接口的方法
+     *
+     * @param event spring 上下文环境刷新事件
+     */
     @Override
     public void onApplicationEvent(ContextRefreshedEvent event) {
         if (!isExported() && !isUnexported()) {
@@ -120,10 +125,18 @@ public class ServiceBean<T> extends ServiceConfig<T> implements InitializingBean
         }
     }
 
+    /**
+     * 实现 InitializingBean 接口的方法,在 spring 管理的 bean 被初始化后，会调用此方法
+     *
+     * @throws Exception
+     */
     @Override
     @SuppressWarnings({"unchecked", "deprecation"})
     public void afterPropertiesSet() throws Exception {
+        // 获取 provider 属性，根据标签解析的规则，即便 service 标签有 provider 属性，也不会获取到 provider 的属性，因为向 beanDefinition 注册的是 providerIds 键
         if (getProvider() == null) {
+            // applicationContext 不为空，通过实现 ApplicationContextAware 接口进行获取并保存
+            // 通过 spring 提供的 BeanFactoryUtils 工具类，来获取已经解析过的 ProviderConfig 类实例
             Map<String, ProviderConfig> providerConfigMap = applicationContext == null ? null : BeanFactoryUtils.beansOfTypeIncludingAncestors(applicationContext, ProviderConfig.class, false, false);
             if (providerConfigMap != null && providerConfigMap.size() > 0) {
                 Map<String, ProtocolConfig> protocolConfigMap = applicationContext == null ? null : BeanFactoryUtils.beansOfTypeIncludingAncestors(applicationContext, ProtocolConfig.class, false, false);
@@ -367,6 +380,8 @@ public class ServiceBean<T> extends ServiceConfig<T> implements InitializingBean
     }
 
     /**
+     * 实现 ApplicationEventPublisherAware 接口的方法，用于获取 application 事件发布器
+     *
      * @param applicationEventPublisher
      * @since 2.6.5
      */
