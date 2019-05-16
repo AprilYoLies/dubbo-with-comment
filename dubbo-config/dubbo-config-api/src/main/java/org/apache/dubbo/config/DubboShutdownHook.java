@@ -106,6 +106,7 @@ public class DubboShutdownHook extends Thread {
                 // 根据 loadedExtension 的名字来获取相应的 loadedExtension
                 Protocol protocol = loader.getLoadedExtension(protocolName);
                 if (protocol != null) {
+                    // 不同的 Protocol 有着不同的方法实现
                     protocol.destroy();
                 }
             } catch (Throwable t) {
