@@ -191,7 +191,7 @@ public abstract class AbstractInterfaceConfig extends AbstractMethodConfig {
 
     /**
      * 检查 ServiceBean 中的 registries 属性，并根据实际情况将其应用到 ConfigCenterConfig
-     *
+     * <p>
      * Check whether the registry config is exists, and then conversion it to {@link RegistryConfig}
      */
     protected void checkRegistry() {
@@ -449,6 +449,7 @@ public abstract class AbstractInterfaceConfig extends AbstractMethodConfig {
     }
 
     /**
+     * 通过 interfaceClass 对 methods 的相关属性进行设置，同时检查 methods 是否在 interfaceClass 存在相应的方法
      * Check whether the remote service interface and the methods meet with Dubbo's requirements.it mainly check, if the
      * methods configured in the configuration file are included in the interface of remote service
      *
@@ -466,16 +467,19 @@ public abstract class AbstractInterfaceConfig extends AbstractMethodConfig {
         // check if methods exist in the remote service interface
         if (CollectionUtils.isNotEmpty(methods)) {
             for (MethodConfig methodBean : methods) {
+                // 依据 interfaceClass 对 methods 相关的属性进行设置
                 methodBean.setService(interfaceClass.getName());
                 methodBean.setServiceId(this.getId());
                 methodBean.refresh();
                 String methodName = methodBean.getName();
+                // MethodConfig 必须要有名字
                 if (StringUtils.isEmpty(methodName)) {
                     throw new IllegalStateException("<dubbo:method> name attribute is required! Please check: " +
                             "<dubbo:service interface=\"" + interfaceClass.getName() + "\" ... >" +
                             "<dubbo:method name=\"\" ... /></<dubbo:reference>");
                 }
 
+                // 定义的 method 标签生成的 MethodConfig 类的方法必须在 interfaceClass 中存在
                 boolean hasMethod = Arrays.stream(interfaceClass.getMethods()).anyMatch(method -> method.getName().equals(methodName));
                 if (!hasMethod) {
                     throw new IllegalStateException("The interface " + interfaceClass.getName()
@@ -497,8 +501,10 @@ public abstract class AbstractInterfaceConfig extends AbstractMethodConfig {
             return;
         }
 
+        // 规范化 mock
         String normalizedMock = MockInvoker.normalizeMock(mock);
         if (normalizedMock.startsWith(RETURN_PREFIX)) {
+            // returnxxxx -> xxxx
             normalizedMock = normalizedMock.substring(RETURN_PREFIX.length()).trim();
             try {
                 //Check whether the mock value is legal, if it is illegal, throw exception
@@ -508,6 +514,7 @@ public abstract class AbstractInterfaceConfig extends AbstractMethodConfig {
                         "mock=\"" + mock + "\" />");
             }
         } else if (normalizedMock.startsWith(THROW_PREFIX)) {
+            // throwxxxx -> xxxx
             normalizedMock = normalizedMock.substring(THROW_PREFIX.length()).trim();
             if (ConfigUtils.isNotEmpty(normalizedMock)) {
                 try {
@@ -532,10 +539,12 @@ public abstract class AbstractInterfaceConfig extends AbstractMethodConfig {
      */
     void checkStubAndLocal(Class<?> interfaceClass) {
         if (ConfigUtils.isNotEmpty(local)) {
+            // 如果 ServiceBean 的 local 属性为 local 或者为 true，不论那种情况，都是获取的 xxxLocal 实例
             Class<?> localClass = ConfigUtils.isDefault(local) ?
                     ReflectUtils.forName(interfaceClass.getName() + "Local") : ReflectUtils.forName(local);
             verify(interfaceClass, localClass);
         }
+        // 同上
         if (ConfigUtils.isNotEmpty(stub)) {
             Class<?> localClass = ConfigUtils.isDefault(stub) ?
                     ReflectUtils.forName(interfaceClass.getName() + "Stub") : ReflectUtils.forName(stub);
@@ -551,6 +560,7 @@ public abstract class AbstractInterfaceConfig extends AbstractMethodConfig {
 
         try {
             //Check if the localClass a constructor with parameter who's type is interfaceClass
+            // localClass 必须要有 interfaceClass 类型的构造函数
             ReflectUtils.findConstructor(localClass, interfaceClass);
         } catch (NoSuchMethodException e) {
             throw new IllegalStateException("No such constructor \"public " + localClass.getSimpleName() +

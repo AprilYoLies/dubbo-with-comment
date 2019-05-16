@@ -894,9 +894,11 @@ public final class ReflectUtils {
         return findMethodByMethodSignature(clazz, methodName, null);
     }
 
+    // 也就是说 Local 结尾的类采用了装饰器模式，用来对相应的 interfaceClass 类进行了包装
     public static Constructor<?> findConstructor(Class<?> clazz, Class<?> paramType) throws NoSuchMethodException {
         Constructor<?> targetConstructor;
         try {
+            // 必须存在以 interfaceClass 为参数的方法
             targetConstructor = clazz.getConstructor(new Class<?>[]{paramType});
         } catch (NoSuchMethodException e) {
             targetConstructor = null;
@@ -905,6 +907,7 @@ public final class ReflectUtils {
                 if (Modifier.isPublic(constructor.getModifiers())
                         && constructor.getParameterTypes().length == 1
                         && constructor.getParameterTypes()[0].isAssignableFrom(paramType)) {
+                    // 如果存在参数是 interfaceClass 的父类型的构造函数也是可以的
                     targetConstructor = constructor;
                     break;
                 }

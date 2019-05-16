@@ -321,51 +321,68 @@ public class ServiceConfig<T> extends AbstractServiceConfig {
             throw new IllegalStateException("<dubbo:service interface=\"\" /> interface not allow null!");
         }
 
+        // 这个 if else 代码块，主要是用来对 interfaceClass 进行相关的设置，同时检查 interfaceClass 和 methods 属性的关系
+        // 如果 ref 是 GenericService 的实例
         if (ref instanceof GenericService) {
+            // 修改 interfaceClass 属性的值
             interfaceClass = GenericService.class;
+            // 如果 generic 为空，就将其置为 true
             if (StringUtils.isEmpty(generic)) {
                 generic = Boolean.TRUE.toString();
             }
         } else {
             try {
+                // 否则初始化 interfaceClass 为 interfaceName 所指的 class 对象
                 interfaceClass = Class.forName(interfaceName, true, Thread.currentThread()
                         .getContextClassLoader());
             } catch (ClassNotFoundException e) {
                 throw new IllegalStateException(e.getMessage(), e);
             }
+            // 通过 interfaceClass 对 methods 的相关属性进行设置，同时检查 methods 是否在 interfaceClass 存在相应的方法
             checkInterfaceAndMethods(interfaceClass, methods);
+            // 检查 ref 是否是引用的 interfaceClass 类型
             checkRef();
+            // 修改 generic 属性为 false
             generic = Boolean.FALSE.toString();
         }
+        // 存在 local 相关的属性
         if (local != null) {
             if ("true".equals(local)) {
+                // 指定 local 的属性值
                 local = interfaceName + "Local";
             }
             Class<?> localClass;
             try {
+                // 是不是要使用本地发布服务，就必须要自己新建 Local 结尾的服务类呢？
                 localClass = ClassUtils.forNameWithThreadContextClassLoader(local);
             } catch (ClassNotFoundException e) {
                 throw new IllegalStateException(e.getMessage(), e);
             }
+            // 这个以 Local 结尾的类也必须是 interfaceClass 所代表的类，即是它的子类或者一致
             if (!interfaceClass.isAssignableFrom(localClass)) {
                 throw new IllegalStateException("The local implementation class " + localClass.getName() + " not implement interface " + interfaceName);
             }
         }
+        // 存在 stub 相关的属性
         if (stub != null) {
             if ("true".equals(stub)) {
                 stub = interfaceName + "Stub";
             }
             Class<?> stubClass;
             try {
+                // 是不是要自己新建 Stub 结尾的相关类呢？
                 stubClass = ClassUtils.forNameWithThreadContextClassLoader(stub);
             } catch (ClassNotFoundException e) {
                 throw new IllegalStateException(e.getMessage(), e);
             }
+            // 这个以 Stub 结尾的类也必须是 interfaceClass 所代表的类，即是它的子类或者一致
             if (!interfaceClass.isAssignableFrom(stubClass)) {
                 throw new IllegalStateException("The stub implementation class " + stubClass.getName() + " not implement interface " + interfaceName);
             }
         }
+        // 主要是检查 Local 结尾的类是否有 interfaceClass 类型的参数
         checkStubAndLocal(interfaceClass);
+        //TODO 对 mock 相关的一些属性进行解析,暂时不是很清楚 mock 是干嘛用的
         checkMock(interfaceClass);
     }
 
@@ -428,6 +445,7 @@ public class ServiceConfig<T> extends AbstractServiceConfig {
         doExportUrls();
     }
 
+    // ref 必须是引用的 interfaceClass 类型
     private void checkRef() {
         // reference should not be null, and is the implementation of the given interface
         if (ref == null) {
