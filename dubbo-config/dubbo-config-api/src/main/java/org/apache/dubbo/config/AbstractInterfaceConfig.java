@@ -294,7 +294,7 @@ public abstract class AbstractInterfaceConfig extends AbstractMethodConfig {
             if (StringUtils.isNotEmpty(appGroup)) {
                 appConfigContent = dynamicConfiguration.getConfig
                         (StringUtils.isNotEmpty(configCenter.getAppConfigFile()) ? configCenter.getAppConfigFile() : configCenter.getConfigFile(),
-                         appGroup
+                                appGroup
                         );
             }
             try {
@@ -317,7 +317,6 @@ public abstract class AbstractInterfaceConfig extends AbstractMethodConfig {
     }
 
     /**
-     *
      * Load the registry and conversion it to {@link URL}, the priority order is: system property > dubbo registry config
      *
      * @param provider whether it is the provider side
@@ -360,7 +359,6 @@ public abstract class AbstractInterfaceConfig extends AbstractMethodConfig {
     }
 
     /**
-     *
      * Load the monitor config from the system properties and conversation it to {@link URL}
      *
      * @param registryURL
@@ -438,7 +436,7 @@ public abstract class AbstractInterfaceConfig extends AbstractMethodConfig {
      * methods configured in the configuration file are included in the interface of remote service
      *
      * @param interfaceClass the interface of remote service
-     * @param methods the methods configured
+     * @param methods        the methods configured
      */
     protected void checkInterfaceAndMethods(Class<?> interfaceClass, List<MethodConfig> methods) {
         // interface cannot be null
@@ -558,12 +556,12 @@ public abstract class AbstractInterfaceConfig extends AbstractMethodConfig {
             if (CollectionUtils.isEmpty(registries)) {
                 setRegistries(
                         ConfigManager.getInstance().getDefaultRegistries()
-                        .filter(CollectionUtils::isNotEmpty)
-                        .orElseGet(() -> {
-                            RegistryConfig registryConfig = new RegistryConfig();
-                            registryConfig.refresh();
-                            return Arrays.asList(registryConfig);
-                        })
+                                .filter(CollectionUtils::isNotEmpty)
+                                .orElseGet(() -> {
+                                    RegistryConfig registryConfig = new RegistryConfig();
+                                    registryConfig.refresh();
+                                    return Arrays.asList(registryConfig);
+                                })
                 );
             }
         } else {
@@ -781,9 +779,16 @@ public abstract class AbstractInterfaceConfig extends AbstractMethodConfig {
         return registries;
     }
 
+    /**
+     * 在 ConfigManager 和 ServiceBean 中各保留一份 registries
+     *
+     * @param registries
+     */
     @SuppressWarnings({"unchecked"})
     public void setRegistries(List<? extends RegistryConfig> registries) {
+        // 单例模式获取 ConfigManager 实例，将 registries 添加到其中
         ConfigManager.getInstance().addRegistries((List<RegistryConfig>) registries);
+        // 在 ServiceBean 中也保留一份
         this.registries = (List<RegistryConfig>) registries;
     }
 
@@ -804,8 +809,15 @@ public abstract class AbstractInterfaceConfig extends AbstractMethodConfig {
         setMonitor(new MonitorConfig(monitor));
     }
 
+    /**
+     * 在 ConfigManager 和 ServiceBean 中各保留一份 monitorConfig
+     *
+     * @param monitor
+     */
     public void setMonitor(MonitorConfig monitor) {
+        // ConfigManager 中保存一份 monitor
         ConfigManager.getInstance().setMonitor(monitor);
+        // ServiceBean 中也保留一份 monitor
         this.monitor = monitor;
     }
 

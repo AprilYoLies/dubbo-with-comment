@@ -108,6 +108,7 @@ public class ConfigManager {
         return Optional.ofNullable(monitor);
     }
 
+    // 将 monitor 保存到 ConfigManager 中去
     public void setMonitor(MonitorConfig monitor) {
         if (monitor != null) {
             checkDuplicate(this.monitor, monitor);
@@ -145,23 +146,33 @@ public class ConfigManager {
         return Optional.ofNullable(providers.get(DEFAULT_KEY));
     }
 
+    /**
+     * 向 ConfigManager 添加被管理的 config
+     *
+     * @param providerConfig
+     */
     public void addProvider(ProviderConfig providerConfig) {
         if (providerConfig == null) {
             return;
         }
 
+        // 确定被管理的 config 实例的 key，如果 providerConfig 的 id 不为空，就直接使用，
+        // 否则就根据其是否是 default config 来决定是使用 default 还是 null
         String key = StringUtils.isNotEmpty(providerConfig.getId())
                 ? providerConfig.getId()
                 : (providerConfig.isDefault() == null || providerConfig.isDefault()) ? DEFAULT_KEY : null;
 
+        // 没有 key 或者是空串，那就抛异常
         if (StringUtils.isEmpty(key)) {
             throw new IllegalStateException("A ProviderConfig should either has an id or it's the default one, " + providerConfig);
         }
 
+        // 如果 key 相等，但是 config 不相等，就是日志警告
         if (providers.containsKey(key) && !providerConfig.equals(providers.get(key))) {
             logger.warn("Duplicate ProviderConfig found, there already has one default ProviderConfig or more than two ProviderConfigs have the same id, " +
-                                                    "you can try to give each ProviderConfig a different id. " + providerConfig);
+                    "you can try to give each ProviderConfig a different id. " + providerConfig);
         } else {
+            // 向 ConfigManager 添加 key 和 config 对
             providers.put(key, providerConfig);
         }
     }
@@ -189,7 +200,7 @@ public class ConfigManager {
 
         if (consumers.containsKey(key) && !consumerConfig.equals(consumers.get(key))) {
             logger.warn("Duplicate ConsumerConfig found, there already has one default ConsumerConfig or more than two ConsumerConfigs have the same id, " +
-                                                    "you can try to give each ConsumerConfig a different id. " + consumerConfig);
+                    "you can try to give each ConsumerConfig a different id. " + consumerConfig);
         } else {
             consumers.put(key, consumerConfig);
         }
@@ -213,6 +224,7 @@ public class ConfigManager {
 
     public void addProtocols(List<ProtocolConfig> protocolConfigs) {
         if (protocolConfigs != null) {
+            // 逐个添加，这里的 this::addProtocol 是方法引用，java 的新特性
             protocolConfigs.forEach(this::addProtocol);
         }
     }
@@ -222,18 +234,23 @@ public class ConfigManager {
             return;
         }
 
+        // 确定被管理的 config 实例的 key，如果 protocolConfig 的 id 不为空，就直接使用，
+        // 否则就根据其是否是 default config 来决定是使用 default 还是 null
         String key = StringUtils.isNotEmpty(protocolConfig.getId())
                 ? protocolConfig.getId()
                 : (protocolConfig.isDefault() == null || protocolConfig.isDefault()) ? DEFAULT_KEY : null;
 
+        // 没有 key 或者是空串，那就抛异常
         if (StringUtils.isEmpty(key)) {
             throw new IllegalStateException("A ProtocolConfig should either has an id or it's the default one, " + protocolConfig);
         }
 
+        // 如果 key 相等，但是 config 不相等，就是日志警告
         if (protocols.containsKey(key) && !protocolConfig.equals(protocols.get(key))) {
             logger.warn("Duplicate ProtocolConfig found, there already has one default ProtocolConfig or more than two ProtocolConfigs have the same id, " +
-                                                    "you can try to give each ProtocolConfig a different id. " + protocolConfig);
+                    "you can try to give each ProtocolConfig a different id. " + protocolConfig);
         } else {
+            // 添加 key 和 protocolConfig 对
             protocols.put(key, protocolConfig);
         }
     }
@@ -256,6 +273,7 @@ public class ConfigManager {
 
     public void addRegistries(List<RegistryConfig> registryConfigs) {
         if (registryConfigs != null) {
+            // 逐个添加，这里的 this::addRegistry 是方法引用，java 的新特性
             registryConfigs.forEach(this::addRegistry);
         }
     }
@@ -265,18 +283,23 @@ public class ConfigManager {
             return;
         }
 
+        // 确定被管理的 config 实例的 key，如果 providerConfig 的 id 不为空，就直接使用，
+        // 否则就根据其是否是 default config 来决定是使用 default 还是 null
         String key = StringUtils.isNotEmpty(registryConfig.getId())
                 ? registryConfig.getId()
                 : (registryConfig.isDefault() == null || registryConfig.isDefault()) ? DEFAULT_KEY : null;
 
+        // 没有 key 或者是空串，那就抛异常
         if (StringUtils.isEmpty(key)) {
             throw new IllegalStateException("A RegistryConfig should either has an id or it's the default one, " + registryConfig);
         }
 
+        // 如果 key 相等，但是 config 不相等，就是日志警告
         if (registries.containsKey(key) && !registryConfig.equals(registries.get(key))) {
             logger.warn("Duplicate RegistryConfig found, there already has one default RegistryConfig or more than two RegistryConfigs have the same id, " +
-                                                    "you can try to give each RegistryConfig a different id. " + registryConfig);
+                    "you can try to give each RegistryConfig a different id. " + registryConfig);
         } else {
+            // 添加 key 和 registryConfig 对
             registries.put(key, registryConfig);
         }
     }

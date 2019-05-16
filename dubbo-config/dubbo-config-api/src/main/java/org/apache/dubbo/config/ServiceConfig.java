@@ -202,6 +202,7 @@ public class ServiceConfig<T> extends AbstractServiceConfig {
         setMethods(MethodConfig.constructMethodConfig(service.methods()));
     }
 
+    // 根据 ProviderConfig 集合获取 ProtocolConfig 集合
     @Deprecated
     private static List<ProtocolConfig> convertProviderToProtocol(List<ProviderConfig> providers) {
         if (CollectionUtils.isEmpty(providers)) {
@@ -209,6 +210,7 @@ public class ServiceConfig<T> extends AbstractServiceConfig {
         }
         List<ProtocolConfig> protocols = new ArrayList<ProtocolConfig>(providers.size());
         for (ProviderConfig provider : providers) {
+            // 进行转换并添加
             protocols.add(convertProviderToProtocol(provider));
         }
         return protocols;
@@ -226,6 +228,7 @@ public class ServiceConfig<T> extends AbstractServiceConfig {
         return providers;
     }
 
+    // 将 ProviderConfig 转换为 ProtocolConfig，过程就是单纯的属性传递
     @Deprecated
     private static ProtocolConfig convertProviderToProtocol(ProviderConfig provider) {
         ProtocolConfig protocol = new ProtocolConfig();
@@ -987,8 +990,11 @@ public class ServiceConfig<T> extends AbstractServiceConfig {
         return provider;
     }
 
+    // 分别保存 ProviderConfig 到 ConfigManager 和 ServiceConfig 中去
     public void setProvider(ProviderConfig provider) {
+        // 单例模式获取 ConfigManager 实例，并且保存 ProviderConfig
         ConfigManager.getInstance().addProvider(provider);
+        // ServiceConfig 中也保存一份
         this.provider = provider;
     }
 

@@ -204,9 +204,15 @@ public abstract class AbstractServiceConfig extends AbstractInterfaceConfig {
         return protocols;
     }
 
+    /**
+     * 将 ProtocolConfig 在 ConfigManager 和 ServiceBean 中各保存一份
+     * @param protocols
+     */
     @SuppressWarnings({"unchecked"})
     public void setProtocols(List<? extends ProtocolConfig> protocols) {
+        // 将 protocols 保存在 ConfigManager
         ConfigManager.getInstance().addProtocols((List<ProtocolConfig>) protocols);
+        // 将 protocols 保存在 ServiceBean
         this.protocols = (List<ProtocolConfig>) protocols;
     }
 
