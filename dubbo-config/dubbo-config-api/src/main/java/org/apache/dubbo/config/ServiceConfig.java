@@ -294,19 +294,29 @@ public class ServiceConfig<T> extends AbstractServiceConfig {
 
     public void checkAndUpdateSubConfigs() {
         // Use default configs defined explicitly on global configs
+        // 完成复合属性的填充，即根据 provider、module 和 application 填充 ServiceBean 跟 ConfigManager 的属性
         completeCompoundConfigs();
         // Config Center should always being started first.
+        // 这个方法初次启动时，只是对各种 config 的属性进行了更新
         startConfigCenter();
+        // 检查取默认的 provider，没有的话，则新建一个
         checkDefault();
+        // 检查 ServiceBean 是否存在 protocols 属性，没有的话要尝试进行填充
         checkProtocol();
+        // 检查 application 属性是否存在，并对 shutdown.wait 相关的属性进行处理
         checkApplication();
         // if protocol is not injvm checkRegistry
+        // 如果仅仅包含一种 protocol，并且其名字为 injvm
         if (!isOnlyInJvm()) {
+            // 检查 ServiceBean 中的 registries 属性，并根据实际情况将其应用到 ConfigCenterConfig
             checkRegistry();
         }
+        // 刷新 ServiceBean 自身的属性
         this.refresh();
+        // 对 metadataReportConfig 相关内容进行检查
         checkMetadataReport();
 
+        // ServiceBean 一定要有 interface 属性
         if (StringUtils.isEmpty(interfaceName)) {
             throw new IllegalStateException("<dubbo:service interface=\"\" /> interface not allow null!");
         }
@@ -802,9 +812,12 @@ public class ServiceConfig<T> extends AbstractServiceConfig {
         return port;
     }
 
+    // 完成复合属性的填充，即根据 provider、module 和 application 填充 ServiceBean 跟 ConfigManager 的属性
     private void completeCompoundConfigs() {
+        // 根据 provider 的属性填充 ServiceBean 跟 ConfigManager 的属性
         if (provider != null) {
             if (application == null) {
+                // 将 application 填充到 ConfigManager 和 ServiceBean 中各一份
                 setApplication(provider.getApplication());
             }
             if (module == null) {
@@ -823,6 +836,7 @@ public class ServiceConfig<T> extends AbstractServiceConfig {
                 setConfigCenter(provider.getConfigCenter());
             }
         }
+        // 根据 module 的属性填充 ServiceBean 跟 ConfigManager 的属性
         if (module != null) {
             if (registries == null) {
                 setRegistries(module.getRegistries());
@@ -831,6 +845,7 @@ public class ServiceConfig<T> extends AbstractServiceConfig {
                 setMonitor(module.getMonitor());
             }
         }
+        // 根据 application 的属性填充 ServiceBean 跟 ConfigManager 的属性
         if (application != null) {
             if (registries == null) {
                 setRegistries(application.getRegistries());
@@ -841,18 +856,23 @@ public class ServiceConfig<T> extends AbstractServiceConfig {
         }
     }
 
+    // 检查取默认的 provider，没有的话，则新建一个
     private void checkDefault() {
         createProviderIfAbsent();
     }
 
     private void createProviderIfAbsent() {
+        // 如果 ServiceBean 没有 provider 属性，也就是说没有配置 provider 标签
         if (provider != null) {
             return;
         }
+        // 分别保存 ProviderConfig 到 ConfigManager 和 ServiceConfig 中去
+        // 先从 ServiceBean 的 providers 属性中获取 default Provider，如果没有则新建一个，同时刷新属性值
         setProvider(
                 ConfigManager.getInstance()
                         .getDefaultProvider()
                         .orElseGet(() -> {
+                            // 没能获取到默认的 Provider，就直接新建一个，同时刷新
                             ProviderConfig providerConfig = new ProviderConfig();
                             providerConfig.refresh();
                             return providerConfig;
@@ -860,30 +880,43 @@ public class ServiceConfig<T> extends AbstractServiceConfig {
         );
     }
 
+    // 检查 ServiceBean 是否存在 protocols 属性，没有的话要尝试进行填充
     private void checkProtocol() {
+        // 如果 protocols 属性为空，但是 provider 属性不为空
         if (CollectionUtils.isEmpty(protocols) && provider != null) {
+            // 则从 provider 中获取 protocols 填充到 ServiceBean 当中
             setProtocols(provider.getProtocols());
         }
         convertProtocolIdsToProtocols();
     }
 
+    /**
+     * 将 protocolIds 转换为 protocols 并添加到 ServiceBean 中去
+     * 这里的 protocolIds 可能是通过标签进行了设置，也可能是通过环境配置进行设置
+     */
     private void convertProtocolIdsToProtocols() {
         if (StringUtils.isEmpty(protocolIds) && CollectionUtils.isEmpty(protocols)) {
+            // protocolIds 和 protocols 都为空，那么就分别从 ExternalConfiguration 和 AppExternalConfiguration 配置中获取 dubbo.protocols. 属性
+            // 然后添加到 configedProtocols 中去
             List<String> configedProtocols = new ArrayList<>();
             configedProtocols.addAll(getSubProperties(Environment.getInstance()
                     .getExternalConfigurationMap(), PROTOCOLS_SUFFIX));
             configedProtocols.addAll(getSubProperties(Environment.getInstance()
                     .getAppExternalConfigurationMap(), PROTOCOLS_SUFFIX));
 
+            // 构建 protocolIds 属性
             protocolIds = String.join(",", configedProtocols);
         }
 
         if (StringUtils.isEmpty(protocolIds)) {
+            // 执行到这里，说明 protocols 不为空，或者没有从环境配置中获取到 dubbo.protocols. 属性，但是通常都是由于没能从环境配置中获取到 dubbo.protocols 属性
             if (CollectionUtils.isEmpty(protocols)) {
+                // 这里设置属性，先是从 ConfigManager 中进行获取，如果没有获取到，就新建一个，同时进行属性的刷新
                 setProtocols(
                         ConfigManager.getInstance().getDefaultProtocols()
                                 .filter(CollectionUtils::isNotEmpty)
                                 .orElseGet(() -> {
+                                    // 执行到这里，就说明没有能够从 ConfigManager 获取到，直接新建一个
                                     ProtocolConfig protocolConfig = new ProtocolConfig();
                                     protocolConfig.refresh();
                                     return new ArrayList<>(Arrays.asList(protocolConfig));
@@ -891,11 +924,17 @@ public class ServiceConfig<T> extends AbstractServiceConfig {
                 );
             }
         } else {
+            // 执行到这里说明 protocolIds 不为空，可能是本来就不为空，也可能是从环境配置中获取到 dubbo.protocols 属性，然后生成 protocolsIds 属性
             String[] arr = COMMA_SPLIT_PATTERN.split(protocolIds);
             List<ProtocolConfig> tmpProtocols = CollectionUtils.isNotEmpty(protocols) ? protocols : new ArrayList<>();
+            // 留意这个流式处理
             Arrays.stream(arr).forEach(id -> {
+                // 对每一个切割出来的 protocolId 进行处理
+                // 找出 tmpProtocols 中不存在的 protocol
                 if (tmpProtocols.stream().noneMatch(prot -> prot.getId().equals(id))) {
+                    // 如果不存在当前，就添加进去
                     tmpProtocols.add(ConfigManager.getInstance().getProtocol(id).orElseGet(() -> {
+                        // 尝试的是从 ConfigManager 进行获取，如果没有获取到，那么就直接新建，同时进行刷新属性
                         ProtocolConfig protocolConfig = new ProtocolConfig();
                         protocolConfig.setId(id);
                         protocolConfig.refresh();
@@ -907,6 +946,7 @@ public class ServiceConfig<T> extends AbstractServiceConfig {
                 throw new IllegalStateException("Too much protocols found, the protocols comply to this service are :" + protocolIds + " but got " + protocols
                         .size() + " registries!");
             }
+            // 将得到的 protocols 添加到 ServiceBean 中去
             setProtocols(tmpProtocols);
         }
     }

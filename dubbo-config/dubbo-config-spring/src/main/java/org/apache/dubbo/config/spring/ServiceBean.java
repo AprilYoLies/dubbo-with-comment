@@ -117,10 +117,12 @@ public class ServiceBean<T> extends ServiceConfig<T> implements InitializingBean
      */
     @Override
     public void onApplicationEvent(ContextRefreshedEvent event) {
+        // 确定两个标志位都是 false 状态，exported 用于控制是否暴露服务，unexported 用于控制是否取消暴露服务
         if (!isExported() && !isUnexported()) {
             if (logger.isInfoEnabled()) {
                 logger.info("The service ready on spring started. service: " + getInterface());
             }
+            // 到这里，所有的准备工作已经准备就绪，现在开始进行服务的暴露
             export();
         }
     }
@@ -404,6 +406,7 @@ public class ServiceBean<T> extends ServiceConfig<T> implements InitializingBean
     public void export() {
         super.export();
         // Publish ServiceBeanExportedEvent
+        // 发布暴露服务事件
         publishExportEvent();
     }
 

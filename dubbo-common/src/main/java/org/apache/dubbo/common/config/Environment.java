@@ -54,6 +54,7 @@ public class Environment {
         return propertiesConfigs.computeIfAbsent(toKey(prefix, id), k -> new PropertiesConfiguration(prefix, id));
     }
 
+    // 根据 prefix 和 id 构建 SystemConfiguration，通过 prefix 和 id 构建 key，将 key 和 SystemConfiguration 存放到 Environment 的 system.Configs 中，返回 SystemConfiguration
     public SystemConfiguration getSystemConfig(String prefix, String id) {
         return systemConfigs.computeIfAbsent(toKey(prefix, id), k -> new SystemConfiguration(prefix, id));
     }
@@ -66,6 +67,7 @@ public class Environment {
         });
     }
 
+    // 根据 prefix 和 id 构建 InmemoryConfiguration，通过 prefix 和 id 构建 key，将 key 和 InmemoryConfiguration 存放到 Environment 的 appExternalConfigs 中，返回 InmemoryConfiguration
     public InmemoryConfiguration getAppExternalConfig(String prefix, String id) {
         return appExternalConfigs.computeIfAbsent(toKey(prefix, id), k -> {
             InmemoryConfiguration configuration = new InmemoryConfiguration(prefix, id);
@@ -107,6 +109,12 @@ public class Environment {
      * Otherwise, if use cache, we should make sure each Config has a unique id which is difficult to guarantee because is on the user's side,
      * especially when it comes to ServiceConfig and ReferenceConfig.
      *
+     * 通过 prefix 和 id 获取几种配置
+     * getSystemConfig
+     * getAppExternalConfig
+     * getExternalConfig
+     * getPropertiesConfig
+     *
      * @param prefix
      * @param id
      * @return
@@ -114,6 +122,7 @@ public class Environment {
     public CompositeConfiguration getConfiguration(String prefix, String id) {
         CompositeConfiguration compositeConfiguration = new CompositeConfiguration();
         // Config center has the highest priority
+        // 将返回的 SystemConfiguration 添加到 compositeConfiguration
         compositeConfiguration.addConfiguration(this.getSystemConfig(prefix, id));
         compositeConfiguration.addConfiguration(this.getAppExternalConfig(prefix, id));
         compositeConfiguration.addConfiguration(this.getExternalConfig(prefix, id));
@@ -125,6 +134,7 @@ public class Environment {
         return getConfiguration(null, null);
     }
 
+    // 将 prefix 和 id 组合成 prefix + id + . 的形式
     private static String toKey(String prefix, String id) {
         StringBuilder sb = new StringBuilder();
         if (StringUtils.isNotEmpty(prefix)) {

@@ -322,6 +322,7 @@ public class ConfigManager {
 
     public void refreshAll() {
         // refresh all configs here,
+        // 即从 ConfigManager 中获取保存的配置信息，然后调用相应的刷新方法
         getApplication().ifPresent(ApplicationConfig::refresh);
         getMonitor().ifPresent(MonitorConfig::refresh);
         getModule().ifPresent(ModuleConfig::refresh);

@@ -190,13 +190,18 @@ public abstract class AbstractInterfaceConfig extends AbstractMethodConfig {
     protected String tag;
 
     /**
+     * 检查 ServiceBean 中的 registries 属性，并根据实际情况将其应用到 ConfigCenterConfig
+     *
      * Check whether the registry config is exists, and then conversion it to {@link RegistryConfig}
      */
     protected void checkRegistry() {
+        // 优先从环境中获取 registries 相关的配置
         loadRegistriesFromBackwardConfig();
 
+        // 没有获取到的前提下，就根据 registryIds 进行 registries 的注册
         convertRegistryIdsToRegistries();
 
+        // 对 ServiceBean 中的 registries 进行验证
         for (RegistryConfig registryConfig : registries) {
             if (!registryConfig.isValid()) {
                 throw new IllegalStateException("No registry config found or it's not a valid config! " +
@@ -204,12 +209,17 @@ public abstract class AbstractInterfaceConfig extends AbstractMethodConfig {
             }
         }
 
+        // 查看是否有使用了 zookeeper 协议的 registry，如果有，就将 registry 中的相关属性添加到 ConfigCenterConfig 中
         useRegistryForConfigIfNecessary();
     }
 
+    /**
+     * 检查 application 属性是否存在，并对 shutdown.wait 相关的属性进行处理
+     */
     @SuppressWarnings("deprecation")
     protected void checkApplication() {
         // for backward compatibility
+        // 没有 application 属性，就尝试从 ConfigManager 中获取，再没有，就新建并刷新属性
         createApplicationIfAbsent();
 
         if (!application.isValid()) {
@@ -217,9 +227,11 @@ public abstract class AbstractInterfaceConfig extends AbstractMethodConfig {
                     "Please add <dubbo:application name=\"...\" /> to your spring config.");
         }
 
+        // 将 application 的名字保存到 ApplicationModel 中去
         ApplicationModel.setApplication(application.getName());
 
         // backward compatibility
+        // 处理 shutdown.wati 相关的一些属性
         String wait = ConfigUtils.getProperty(SHUTDOWN_WAIT_KEY);
         if (wait != null && wait.trim().length() > 0) {
             System.setProperty(SHUTDOWN_WAIT_KEY, wait.trim());
@@ -255,6 +267,7 @@ public abstract class AbstractInterfaceConfig extends AbstractMethodConfig {
         );
     }
 
+    // 对 metadataReportConfig 相关内容进行检查
     protected void checkMetadataReport() {
         // TODO get from ConfigManager first, only create if absent.
         if (metadataReportConfig == null) {
@@ -269,15 +282,19 @@ public abstract class AbstractInterfaceConfig extends AbstractMethodConfig {
 
 
     void startConfigCenter() {
+        // 这里对应 config-center 标签，存储在 ServiceBean 中
         if (configCenter == null) {
+            // java.util.Optional.ifPresent 如果值存在，就调用函数，否则什么都不干
             ConfigManager.getInstance().getConfigCenter().ifPresent(cc -> this.configCenter = cc);
         }
 
+        // 初次调用时，如果没有配置 config-center 标签，则这里是为 null 的
         if (this.configCenter != null) {
             // TODO there may have duplicate refresh
             this.configCenter.refresh();
             prepareEnvironment();
         }
+        // 单例获取 ConfigManager，依据具体的配置信息对相应的 config 进行属性的更新
         ConfigManager.getInstance().refreshAll();
     }
 
@@ -542,18 +559,20 @@ public abstract class AbstractInterfaceConfig extends AbstractMethodConfig {
     }
 
     private void convertRegistryIdsToRegistries() {
+        // 从环境中获取 registryIds 相关的属性值
         if (StringUtils.isEmpty(registryIds) && CollectionUtils.isEmpty(registries)) {
             Set<String> configedRegistries = new HashSet<>();
             configedRegistries.addAll(getSubProperties(Environment.getInstance().getExternalConfigurationMap(),
                     REGISTRIES_SUFFIX));
             configedRegistries.addAll(getSubProperties(Environment.getInstance().getAppExternalConfigurationMap(),
                     REGISTRIES_SUFFIX));
-
+            // 将获取的属性值拼接成 registryIds
             registryIds = String.join(COMMA_SEPARATOR, configedRegistries);
         }
 
         if (StringUtils.isEmpty(registryIds)) {
             if (CollectionUtils.isEmpty(registries)) {
+                // 尝试从 ConfigManager 获取 registries 或者是直接新建 registries
                 setRegistries(
                         ConfigManager.getInstance().getDefaultRegistries()
                                 .filter(CollectionUtils::isNotEmpty)
@@ -565,6 +584,7 @@ public abstract class AbstractInterfaceConfig extends AbstractMethodConfig {
                 );
             }
         } else {
+            // 根据 registryIds 获取相应的 registries 并进行注册
             String[] ids = COMMA_SPLIT_PATTERN.split(registryIds);
             List<RegistryConfig> tmpRegistries = CollectionUtils.isNotEmpty(registries) ? registries : new ArrayList<>();
             Arrays.stream(ids).forEach(id -> {
@@ -588,6 +608,7 @@ public abstract class AbstractInterfaceConfig extends AbstractMethodConfig {
 
     }
 
+    // 用于将环境属性 dubbo.registry.address 转换为 registries 并添加到 ServiceBean 的属性中
     private void loadRegistriesFromBackwardConfig() {
         // for backward compatibility
         // -Ddubbo.registry.address is now deprecated.
@@ -595,13 +616,16 @@ public abstract class AbstractInterfaceConfig extends AbstractMethodConfig {
             String address = ConfigUtils.getProperty("dubbo.registry.address");
             if (address != null && address.length() > 0) {
                 List<RegistryConfig> tmpRegistries = new ArrayList<RegistryConfig>();
+                // 对 dubbo.registry.address 进行切割
                 String[] as = address.split("\\s*[|]+\\s*");
                 for (String a : as) {
+                    // 每个地址对应一个 RegistryConfig
                     RegistryConfig registryConfig = new RegistryConfig();
                     registryConfig.setAddress(a);
                     registryConfig.refresh();
                     tmpRegistries.add(registryConfig);
                 }
+                // 添加到 ServiceBean 的属性中
                 setRegistries(tmpRegistries);
             }
         }
@@ -612,11 +636,13 @@ public abstract class AbstractInterfaceConfig extends AbstractMethodConfig {
      * there's no config center specified explicitly.
      */
     private void useRegistryForConfigIfNecessary() {
+        // 从所有的 registries 中查找第一个使用 zookeeper 协议的，如果找到了，就获取 ConfigCenterConfig，并将该 registry 的相关信息添加到 ConfigCenterConfig 中
         registries.stream().filter(RegistryConfig::isZookeeperProtocol).findFirst().ifPresent(rc -> {
             // we use the loading status of DynamicConfiguration to decide whether ConfigCenter has been initiated.
             Environment.getInstance().getDynamicConfiguration().orElseGet(() -> {
                 ConfigManager configManager = ConfigManager.getInstance();
                 ConfigCenterConfig cc = configManager.getConfigCenter().orElse(new ConfigCenterConfig());
+                // 将该 registry 的相关信息添加到 ConfigCenterConfig 中
                 cc.setProtocol(rc.getProtocol());
                 cc.setAddress(rc.getAddress());
                 cc.setHighestPriority(false);
@@ -735,6 +761,7 @@ public abstract class AbstractInterfaceConfig extends AbstractMethodConfig {
         return application;
     }
 
+    // 将 application 填充到 ConfigManager 和 ServiceBean 中各一份
     public void setApplication(ApplicationConfig application) {
         ConfigManager.getInstance().setApplication(application);
         this.application = application;
@@ -744,6 +771,7 @@ public abstract class AbstractInterfaceConfig extends AbstractMethodConfig {
         if (this.application != null) {
             return;
         }
+        // 没有 application 属性，就尝试从 ConfigManager 中获取，再没有，就新建并刷新属性
         ConfigManager configManager = ConfigManager.getInstance();
         setApplication(
                 configManager
