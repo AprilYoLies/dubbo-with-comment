@@ -104,15 +104,18 @@ public abstract class Wrapper {
      * @return Wrapper instance(not null).
      */
     public static Wrapper getWrapper(Class<?> c) {
+        // 向上寻找父类型，直到父类型不再实现 ClassGenerator.DC 接口
         while (ClassGenerator.isDynamicClass(c)) // can not wrapper on dynamic class.
         {
             c = c.getSuperclass();
         }
 
         if (c == Object.class) {
+            // 直接返回 new Wrapper(){};
             return OBJECT_WRAPPER;
         }
 
+        // 尝试从 wrapper 缓存中进行获取
         Wrapper ret = WRAPPER_MAP.get(c);
         if (ret == null) {
             ret = makeWrapper(c);
@@ -121,6 +124,7 @@ public abstract class Wrapper {
         return ret;
     }
 
+    // 根据 interfaceClass 信息构建 wrapper
     private static Wrapper makeWrapper(Class<?> c) {
         if (c.isPrimitive()) {
             throw new IllegalArgumentException("Can not create wrapper for primitive type: " + c);

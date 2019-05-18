@@ -41,6 +41,7 @@ public class ProviderModel {
         this.serviceInstance = serviceInstance;
         this.serviceInterfaceClass = serviceInterfaceClass;
 
+        // 通过 serviceInterfaceClass 完成对 methods 属性的填充
         initMethod();
     }
 
@@ -77,16 +78,20 @@ public class ProviderModel {
         return null;
     }
 
+    // 通过 serviceInterfaceClass 完成对 ProviderModel 的 methods 属性的初始化
     private void initMethod() {
         Method[] methodsToExport = null;
         methodsToExport = this.serviceInterfaceClass.getMethods();
 
+        // 遍历 serviceInterfaceClass 中的全部方法
         for (Method method : methodsToExport) {
             method.setAccessible(true);
 
             List<ProviderMethodModel> methodModels = methods.get(method.getName());
             if (methodModels == null) {
                 methodModels = new ArrayList<ProviderMethodModel>(1);
+                // 完成对 methods 的填充
+                // 填充模型为 （方法名，（方法实例，服务名））
                 methods.put(method.getName(), methodModels);
             }
             methodModels.add(new ProviderMethodModel(method, serviceName));

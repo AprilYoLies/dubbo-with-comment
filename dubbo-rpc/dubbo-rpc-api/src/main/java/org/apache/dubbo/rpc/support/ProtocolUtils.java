@@ -52,6 +52,7 @@ public class ProtocolUtils {
         return buf.toString();
     }
 
+    // true 或 nativejava 或 bean 或 probobuf-json
     public static boolean isGeneric(String generic) {
         return generic != null
                 && !"".equals(generic)

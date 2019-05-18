@@ -344,28 +344,48 @@ public abstract class AbstractInterfaceConfig extends AbstractMethodConfig {
         List<URL> registryList = new ArrayList<URL>();
         if (CollectionUtils.isNotEmpty(registries)) {
             for (RegistryConfig config : registries) {
+                // 遍历 registries，获取 address 信息
                 String address = config.getAddress();
                 if (StringUtils.isEmpty(address)) {
+                    // 如果地址信息为空，那么就使用统配地址
                     address = ANYHOST_VALUE;
                 }
+                // registry 标签不能将地址配置为 N/A
                 if (!RegistryConfig.NO_AVAILABLE.equalsIgnoreCase(address)) {
                     Map<String, String> map = new HashMap<String, String>();
+                    // 将 application 中的一些属性追加到 map 中
                     appendParameters(map, application);
+                    // 将 RegistryConfig 中的一些属性追加到 map 中
                     appendParameters(map, config);
+                    // path -> org.apache.dubbo.registry.RegistryService
+                    // URL 的地址就是这里指定的
                     map.put(PATH_KEY, RegistryService.class.getName());
+                    // 添加一些运行时的参数信息，比如：
+                    // dubbo -> dubbo 协议版本
+                    // release -> dubbo 版本
+                    // timestamp -> 运行的时间戳
+                    // 进程 id 号
                     appendRuntimeParameters(map);
                     if (!map.containsKey(PROTOCOL_KEY)) {
+                        // 如果没有指定 protocol 属性，默认使用 dubbo 协议
                         map.put(PROTOCOL_KEY, DUBBO_PROTOCOL);
                     }
+                    // 根据 address 信息和 map 集合，拼接出对应的 url 地址
+                    // zookeeper://127.0.0.1:2181/org.apache.dubbo.registry.RegistryService?application=demo-provider&dubbo=2.0.2&pid=56159&timestamp=1558062932218
                     List<URL> urls = UrlUtils.parseURLs(address, map);
-
                     for (URL url : urls) {
+                        // 修改 url 的 protocol，并添加一个 registry 参数
                         url = URLBuilder.from(url)
                                 .addParameter(REGISTRY_KEY, url.getProtocol())
                                 .setProtocol(REGISTRY_PROTOCOL)
                                 .build();
+                        registry:
+                        // registry://127.0.0.1:2181/org.apache.dubbo.registry.RegistryService?application=demo-provider&dubbo=2.0.2&pid=56922&registry=zookeeper&timestamp=1558065143107
                         if ((provider && url.getParameter(REGISTER_KEY, true))
                                 || (!provider && url.getParameter(SUBSCRIBE_KEY, true))) {
+                            // provider 为 true，URL 的 register 参数为 true 或者为空
+                            // provider 为 false，URL 的 subscribe 参数为 true 或者为空
+                            // 这两种情况的 url 都是满足条件的
                             registryList.add(url);
                         }
                     }
@@ -421,6 +441,11 @@ public abstract class AbstractInterfaceConfig extends AbstractMethodConfig {
         return null;
     }
 
+    // 添加一些运行时的参数信息，比如：
+    // dubbo -> dubbo 协议版本
+    // release -> dubbo 版本
+    // timestamp -> 运行的时间戳
+    // 进程 id 号
     static void appendRuntimeParameters(Map<String, String> map) {
         map.put(DUBBO_VERSION_KEY, Version.getProtocolVersion());
         map.put(RELEASE_KEY, Version.getVersion());

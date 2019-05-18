@@ -151,6 +151,7 @@ public abstract class AbstractConfig implements Serializable {
         appendParameters(parameters, config, null);
     }
 
+    // 从 config 中获取相关参数，添加到 parameters 中
     @SuppressWarnings("unchecked")
     protected static void appendParameters(Map<String, String> parameters, Object config, String prefix) {
         if (config == null) {
@@ -161,46 +162,60 @@ public abstract class AbstractConfig implements Serializable {
             try {
                 String name = method.getName();
                 if (MethodUtils.isGetter(method)) {
+                    // 属性的获取是通过 getter 方法
+                    // 检查 getter 方法上的注解信息
                     Parameter parameter = method.getAnnotation(Parameter.class);
+                    // getter 方法的返回值不能为 Object，必须带 Parameter 注解，注解的 excluded 信息应该为 false
                     if (method.getReturnType() == Object.class || parameter != null && parameter.excluded()) {
                         continue;
                     }
                     String key;
+                    // 获取 key，要不就是通过 Parameter 注解获取，要不就是通过方法名得到
                     if (parameter != null && parameter.key().length() > 0) {
                         key = parameter.key();
                     } else {
+                        // 通过方法名得到 key
                         key = calculatePropertyFromGetter(name);
                     }
+                    // 通过反射拿到 getter 方法对应的属性
                     Object value = method.invoke(config);
                     String str = String.valueOf(value).trim();
                     if (value != null && str.length() > 0) {
                         if (parameter != null && parameter.escaped()) {
+                            // 对获取到的属性值进行编码
                             str = URL.encode(str);
                         }
                         if (parameter != null && parameter.append()) {
+                            // parameter 注解的 append 属性为 true
                             String pre = parameters.get(DEFAULT_KEY + "." + key);
+                            // default.key 追加属性
                             if (pre != null && pre.length() > 0) {
                                 str = pre + "," + str;
                             }
+                            // key 追加属性
                             pre = parameters.get(key);
                             if (pre != null && pre.length() > 0) {
                                 str = pre + "," + str;
                             }
                         }
+                        // 补上参数指定的 prefix
                         if (prefix != null && prefix.length() > 0) {
                             key = prefix + "." + key;
                         }
                         parameters.put(key, str);
                     } else if (parameter != null && parameter.required()) {
+                        // 在 parameter 注解的 required 属性为 true 时，相应的 ServiceBean 的属性值不能为空
                         throw new IllegalStateException(config.getClass().getSimpleName() + "." + key + " == null");
                     }
                 } else if ("getParameters".equals(name)
                         && Modifier.isPublic(method.getModifiers())
                         && method.getParameterTypes().length == 0
                         && method.getReturnType() == Map.class) {
+                    // 批量处理参数
                     Map<String, String> map = (Map<String, String>) method.invoke(config, new Object[0]);
                     if (map != null && map.size() > 0) {
                         String pre = (prefix != null && prefix.length() > 0 ? prefix + "." : "");
+                        // 将获取的参数添加到 parameters 中
                         for (Map.Entry<String, String> entry : map.entrySet()) {
                             parameters.put(pre + entry.getKey().replace('-', '.'), entry.getValue());
                         }
@@ -411,6 +426,7 @@ public abstract class AbstractConfig implements Serializable {
         return propertyName;
     }
 
+    // 根据 getter 方法还是 is 方法来获取对应的 key 信息
     private static String calculatePropertyFromGetter(String name) {
         int i = name.startsWith("get") ? 3 : 2;
         return StringUtils.camelToSplitName(name.substring(i, i + 1).toLowerCase() + name.substring(i + 1), ".");
@@ -477,7 +493,7 @@ public abstract class AbstractConfig implements Serializable {
     /**
      * Should be called after Config was fully initialized.
      * // FIXME: this method should be completely replaced by appendParameters
-     *
+     * <p>
      * 获取当前类的属性值
      *
      * @return

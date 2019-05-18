@@ -396,15 +396,19 @@ public class ServiceConfig<T> extends AbstractServiceConfig {
     }
 
     public synchronized void export() {
+        // 对一系列的配置进行检查或者更新
         checkAndUpdateSubConfigs();
 
+        // 需要相关的配置允许暴露服务才行
         if (!shouldExport()) {
             return;
         }
 
+        // 延迟暴露服务
         if (shouldDelay()) {
             delayExportExecutor.schedule(this::doExport, getDelay(), TimeUnit.MILLISECONDS);
         } else {
+            // 直接暴露服务
             doExport();
         }
     }
@@ -417,6 +421,7 @@ public class ServiceConfig<T> extends AbstractServiceConfig {
 
     @Override
     public Boolean getExport() {
+        // export 不为空就由 export 决定，否则 provider 不为空，就由 provider 决定，provider 为空，那还是 export 决定
         return (export == null && provider != null) ? provider.getExport() : export;
     }
 
@@ -431,17 +436,20 @@ public class ServiceConfig<T> extends AbstractServiceConfig {
     }
 
     protected synchronized void doExport() {
+        // 检查 unexported 和 exported 的状态
         if (unexported) {
             throw new IllegalStateException("The service " + interfaceClass.getName() + " has already unexported!");
         }
         if (exported) {
             return;
         }
+        // 修改 exported 的状态，检查 path 属性
         exported = true;
 
         if (StringUtils.isEmpty(path)) {
             path = interfaceName;
         }
+        // 发布服务 url 地址
         doExportUrls();
     }
 
@@ -480,25 +488,42 @@ public class ServiceConfig<T> extends AbstractServiceConfig {
 
     @SuppressWarnings({"unchecked", "rawtypes"})
     private void doExportUrls() {
+        // 获取满足条件的 url 地址，根据 registries 属性得到
         List<URL> registryURLs = loadRegistries(true);
         for (ProtocolConfig protocolConfig : protocols) {
+            // 构建的模式 group/path:version
+            // getContextPath(protocolConfig) 只是为了在 path 前加一个上下文路径，没获取到的话就直接使用 path
+            // org.apache.dubbo.demo.DemoService
             String pathKey = URL.buildKey(getContextPath(protocolConfig).map(p -> p + "/" + path).orElse(path), group, version);
+            // 新建一个 ProviderModel 对象，完成对它的 methods 属性的初始化
             ProviderModel providerModel = new ProviderModel(pathKey, ref, interfaceClass);
+            // 将 providerModel 添加到 PROVIDED_SERVICES 中去
             ApplicationModel.initProviderModel(pathKey, providerModel);
+            // 根据不同的 protocol 发布 URL
             doExportUrlsFor1Protocol(protocolConfig, registryURLs);
         }
     }
 
+    // 根据不同的 protocol 发布 URL
     private void doExportUrlsFor1Protocol(ProtocolConfig protocolConfig, List<URL> registryURLs) {
         String name = protocolConfig.getName();
+        // 缺省 protocol 为 dubbo
         if (StringUtils.isEmpty(name)) {
             name = DUBBO;
         }
 
+
         Map<String, String> map = new HashMap<String, String>();
+        // side -> provider 区分身份
         map.put(SIDE_KEY, PROVIDER_SIDE);
 
+        // 添加一些运行时的参数信息，比如：
+        // dubbo -> dubbo 协议版本
+        // release -> dubbo 版本
+        // timestamp -> 运行的时间戳
+        // 进程 id 号
         appendRuntimeParameters(map);
+        // 将属性值添加到 map 中
         appendParameters(map, metrics);
         appendParameters(map, application);
         appendParameters(map, module);
@@ -509,18 +534,22 @@ public class ServiceConfig<T> extends AbstractServiceConfig {
         appendParameters(map, this);
         if (CollectionUtils.isNotEmpty(methods)) {
             for (MethodConfig method : methods) {
+                // 以 method.getName() 为前缀进行 parameter 的追加
                 appendParameters(map, method, method.getName());
                 String retryKey = method.getName() + ".retry";
                 if (map.containsKey(retryKey)) {
+                    // 如果 map 中有 method.getName() + ".retry" 的属性且值为 false，将其替换为 0
                     String retryValue = map.remove(retryKey);
                     if ("false".equals(retryValue)) {
                         map.put(method.getName() + ".retries", "0");
                     }
                 }
+                // MethodConfig 的 ArgumentConfig
                 List<ArgumentConfig> arguments = method.getArguments();
                 if (CollectionUtils.isNotEmpty(arguments)) {
                     for (ArgumentConfig argument : arguments) {
                         // convert argument type
+                        // 如果 MethodConfig 的 ArgumentConfig 的 type 属性不为空或者空串
                         if (argument.getType() != null && argument.getType().length() > 0) {
                             Method[] methods = interfaceClass.getMethods();
                             // visit all methods
@@ -528,21 +557,28 @@ public class ServiceConfig<T> extends AbstractServiceConfig {
                                 for (int i = 0; i < methods.length; i++) {
                                     String methodName = methods[i].getName();
                                     // target the method, and get its signature
+                                    // 从 interfaceClass 接口中找到和当前 MethodConfig 的名字相同的方法
                                     if (methodName.equals(method.getName())) {
+                                        // 这是接口的参数类型
                                         Class<?>[] argtypes = methods[i].getParameterTypes();
                                         // one callback in the method
                                         if (argument.getIndex() != -1) {
+                                            // 如果 interfaceClass 对应方法的参数类型和 MethodConfig 的 ArgumentConfig 的参数类型一致
                                             if (argtypes[argument.getIndex()].getName().equals(argument.getType())) {
+                                                // 在 map 中添加一堆属性，前缀为 method.getName() + "." + argument.getIndex()，也就是说记录了 argument 在方法的参数的位置
                                                 appendParameters(map, argument, method.getName() + "." + argument.getIndex());
                                             } else {
                                                 throw new IllegalArgumentException("Argument config error : the index attribute and type attribute not match :index :" + argument.getIndex() + ", type:" + argument.getType());
                                             }
                                         } else {
+                                            // 这里说明 argument 并没有指定在方法参数中的位置
                                             // multiple callbacks in the method
                                             for (int j = 0; j < argtypes.length; j++) {
                                                 Class<?> argclazz = argtypes[j];
                                                 if (argclazz.getName().equals(argument.getType())) {
+                                                    // 那就自行从 interfaceClass 对应方法的参数中找到 argument应该在的位置，添加到 map 中
                                                     appendParameters(map, argument, method.getName() + "." + j);
+                                                    // 没有找到那就报错
                                                     if (argument.getIndex() != -1 && argument.getIndex() != j) {
                                                         throw new IllegalArgumentException("Argument config error : the index attribute and type attribute not match :index :" + argument.getIndex() + ", type:" + argument.getType());
                                                     }
@@ -553,8 +589,10 @@ public class ServiceConfig<T> extends AbstractServiceConfig {
                                 }
                             }
                         } else if (argument.getIndex() != -1) {
+                            // 如果 argument 没有记录类型，但是记录了在方法参数中的位置，也能添加
                             appendParameters(map, argument, method.getName() + "." + argument.getIndex());
                         } else {
+                            // 这里说明 argument 在的位置和类型两种信息必须存在一个
                             throw new IllegalArgumentException("Argument config must set index or type attribute.eg: <dubbo:argument index='0' .../> or <dubbo:argument type=xxx .../>");
                         }
 
@@ -563,12 +601,15 @@ public class ServiceConfig<T> extends AbstractServiceConfig {
             } // end of methods for
         }
 
+        // true 或 nativejava 或 bean 或 probobuf-json
         if (ProtocolUtils.isGeneric(generic)) {
             map.put(GENERIC_KEY, generic);
             map.put(METHODS_KEY, ANY_VALUE);
         } else {
+            // 从 MANIFEST.MF 文件获取版本信息，没有的话就根据 jar 推测版本信息，否则使用 version 参数值
             String revision = Version.getVersion(interfaceClass, version);
             if (revision != null && revision.length() > 0) {
+                // 追加 version 信息
                 map.put(REVISION_KEY, revision);
             }
 

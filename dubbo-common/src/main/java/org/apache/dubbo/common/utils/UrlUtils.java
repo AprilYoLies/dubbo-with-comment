@@ -59,36 +59,45 @@ public class UrlUtils {
      */
     private final static String URL_PARAM_STARTING_SYMBOL = "?";
 
+    // 为 address 拼接相关属性
     public static URL parseURL(String address, Map<String, String> defaults) {
         if (address == null || address.length() == 0) {
             return null;
         }
         String url;
+        // zookeeper://xxx.xxx.xxx.xxx:port?key=value 的形式直接使用
         if (address.contains("://") || address.contains(URL_PARAM_STARTING_SYMBOL)) {
             url = address;
         } else {
+            // address1, address2, address3
             String[] addresses = COMMA_SPLIT_PATTERN.split(address);
             url = addresses[0];
             if (addresses.length > 1) {
                 StringBuilder backup = new StringBuilder();
+                // 拼接备用地址
                 for (int i = 1; i < addresses.length; i++) {
                     if (i > 1) {
                         backup.append(",");
                     }
                     backup.append(addresses[i]);
                 }
+                // address1?backup=address2,address3 相当于作为备用地址
                 url += URL_PARAM_STARTING_SYMBOL + RemotingConstants.BACKUP_KEY + "=" + backup.toString();
             }
         }
+        // 获取协议类型
         String defaultProtocol = defaults == null ? null : defaults.get(PROTOCOL_KEY);
         if (defaultProtocol == null || defaultProtocol.length() == 0) {
+            // 使用默认协议 dubbo
             defaultProtocol = DUBBO_PROTOCOL;
         }
+        // 获取 username、password、port、path 相关属性
         String defaultUsername = defaults == null ? null : defaults.get(USERNAME_KEY);
         String defaultPassword = defaults == null ? null : defaults.get(PASSWORD_KEY);
         int defaultPort = StringUtils.parseInteger(defaults == null ? null : defaults.get(PORT_KEY));
         String defaultPath = defaults == null ? null : defaults.get(PATH_KEY);
         Map<String, String> defaultParameters = defaults == null ? null : new HashMap<String, String>(defaults);
+        // 剔除部分信息
         if (defaultParameters != null) {
             defaultParameters.remove(PROTOCOL_KEY);
             defaultParameters.remove(USERNAME_KEY);
@@ -97,23 +106,29 @@ public class UrlUtils {
             defaultParameters.remove(PORT_KEY);
             defaultParameters.remove(PATH_KEY);
         }
+        // 将 String 类型的 url 转换为 URL 对象
         URL u = URL.valueOf(url);
         boolean changed = false;
+        // URL 中的 username、password、port、path、host、path 等属性
         String protocol = u.getProtocol();
         String username = u.getUsername();
         String password = u.getPassword();
         String host = u.getHost();
         int port = u.getPort();
         String path = u.getPath();
+        // URL 中的全部参数
         Map<String, String> parameters = new HashMap<String, String>(u.getParameters());
+        // URL 未制定 protocol，就指定 protocol
         if ((protocol == null || protocol.length() == 0) && defaultProtocol != null && defaultProtocol.length() > 0) {
             changed = true;
             protocol = defaultProtocol;
         }
+        // URL 未制定 username，就指定 username
         if ((username == null || username.length() == 0) && defaultUsername != null && defaultUsername.length() > 0) {
             changed = true;
             username = defaultUsername;
         }
+        // URL 未制定 password，就指定 password
         if ((password == null || password.length() == 0) && defaultPassword != null && defaultPassword.length() > 0) {
             changed = true;
             password = defaultPassword;
@@ -122,15 +137,19 @@ public class UrlUtils {
             changed = true;
             host = NetUtils.getLocalHost();
         }*/
+        // URL port 参数小于 0
         if (port <= 0) {
+            // 要么使用默认端口（从 config 类中获取的端口号）
             if (defaultPort > 0) {
                 changed = true;
                 port = defaultPort;
             } else {
+                // 要么使用 9090
                 changed = true;
                 port = 9090;
             }
         }
+        // 修改 path 参数
         if (path == null || path.length() == 0) {
             if (defaultPath != null && defaultPath.length() > 0) {
                 changed = true;
@@ -142,6 +161,7 @@ public class UrlUtils {
                 String key = entry.getKey();
                 String defaultValue = entry.getValue();
                 if (defaultValue != null && defaultValue.length() > 0) {
+                    // 将 defaultParameters 中的参数添加到 URL 中，采用的是非覆盖的方式
                     String value = parameters.get(key);
                     if (StringUtils.isEmpty(value)) {
                         changed = true;
@@ -151,11 +171,13 @@ public class UrlUtils {
             }
         }
         if (changed) {
+            // 根据各项参数重构 URL
             u = new URL(protocol, username, password, host, port, path, parameters);
         }
         return u;
     }
 
+    // 根据 address 信息和 map 集合，拼接出对应的 url 地址
     public static List<URL> parseURLs(String address, Map<String, String> defaults) {
         if (address == null || address.length() == 0) {
             return null;
@@ -166,6 +188,7 @@ public class UrlUtils {
         }
         List<URL> registries = new ArrayList<URL>();
         for (String addr : addresses) {
+            // 为每一个 address 拼接相关属性，然后放入 registries
             registries.add(parseURL(addr, defaults));
         }
         return registries;

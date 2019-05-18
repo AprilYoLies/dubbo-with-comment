@@ -1347,6 +1347,7 @@ class URL implements Serializable {
         return buildKey(inf, getParameter(GROUP_KEY), getParameter(VERSION_KEY));
     }
 
+    // 构建的模式 group/path:version
     public static String buildKey(String path, String group, String version) {
         StringBuilder buf = new StringBuilder();
         if (group != null && group.length() > 0) {

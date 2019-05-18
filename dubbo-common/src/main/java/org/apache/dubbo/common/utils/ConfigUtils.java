@@ -312,6 +312,7 @@ public class ConfigUtils {
     public static int getPid() {
         if (PID < 0) {
             try {
+                // 获取运行时的状态信息 format: "pid@hostname"
                 RuntimeMXBean runtime = ManagementFactory.getRuntimeMXBean();
                 String name = runtime.getName(); // format: "pid@hostname"
                 PID = Integer.parseInt(name.substring(0, name.indexOf('@')));

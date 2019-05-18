@@ -84,7 +84,7 @@ public final class Version {
 
     /**
      * Check the framework release version number to decide if it's 2.6.3 or higher
-     *
+     * <p>
      * Because response attachments feature is firstly introduced in 2.6.3
      * and moreover we have no other approach to know the framework's version, so we use
      * isSupportResponseAttachment to decide if it's v2.6.3.
@@ -149,6 +149,7 @@ public final class Version {
     public static String getVersion(Class<?> cls, String defaultVersion) {
         try {
             // find version info from MANIFEST.MF first
+            // 根据 cls 查找 version 信息，存储在 MANIFEST.MF 文件中
             Package pkg = cls.getPackage();
             String version = null;
             if (pkg != null) {
@@ -164,12 +165,14 @@ public final class Version {
             }
 
             // guess version fro jar file name if nothing's found from MANIFEST.MF
+            // 没能从 MANIFEST.MF 文件中获取到 version 信息
             CodeSource codeSource = cls.getProtectionDomain().getCodeSource();
+            // 估计是由于某种原因，没能获取到 codeSource，那就使用参数传递的 defaultVersion 信息
             if (codeSource == null) {
                 logger.info("No codeSource for class " + cls.getName() + " when getVersion, use default version " + defaultVersion);
                 return defaultVersion;
             }
-
+            // 那就根据 jar 包推测版本信息
             String file = codeSource.getLocation().getFile();
             if (!StringUtils.isEmpty(file) && file.endsWith(".jar")) {
                 version = getFromFile(file);
