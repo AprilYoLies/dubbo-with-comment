@@ -193,8 +193,10 @@ public class ConfigUtils {
      * @return value
      */
     public static String getSystemProperty(String key) {
+        // 先获取 env 中的参数值（环境变量）
         String value = System.getenv(key);
         if (StringUtils.isEmpty(value)) {
+            // 获取系统属性
             value = System.getProperty(key);
         }
         return value;

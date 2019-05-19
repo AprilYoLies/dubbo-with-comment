@@ -116,6 +116,7 @@ public class ServiceConfig<T> extends AbstractServiceConfig {
      * Actually，when the {@link ExtensionLoader} init the {@link Protocol} instants,it will automatically wraps two
      * layers, and eventually will get a <b>ProtocolFilterWrapper</b> or <b>ProtocolListenerWrapper</b>
      */
+    // 这是静态字段，在加载 ServiceBean 的 class 对象时，就会对静态字段进行初始化工作
     private static final Protocol protocol = ExtensionLoader.getExtensionLoader(Protocol.class).getAdaptiveExtension();
 
     /**
@@ -613,22 +614,30 @@ public class ServiceConfig<T> extends AbstractServiceConfig {
                 map.put(REVISION_KEY, revision);
             }
 
+            // 通过 interfaceClass 构建 Wrapper 实例，然后获取其中的方法名
             String[] methods = Wrapper.getWrapper(interfaceClass).getMethodNames();
             if (methods.length == 0) {
                 logger.warn("No method found in service interface " + interfaceClass.getName());
+                // 没有方法的情况下，就向 map 中存入 methods -> *
                 map.put(METHODS_KEY, ANY_VALUE);
             } else {
+                // 否则就是存入 methods -> method1,method2,method3...
                 map.put(METHODS_KEY, StringUtils.join(new HashSet<String>(Arrays.asList(methods)), ","));
             }
         }
+        // 对应 service 标签的 token 属性
         if (!ConfigUtils.isEmpty(token)) {
+            // 为 true 或者 default 为真
             if (ConfigUtils.isDefault(token)) {
+                // token -> uuid
                 map.put(TOKEN_KEY, UUID.randomUUID().toString());
             } else {
+                // 使用设置的值
                 map.put(TOKEN_KEY, token);
             }
         }
         // export service
+        // 根据 protocolConfig, registryURLs 向 map 中添加 bind.ip 和 anyhost 属性，同时返回 hostToRegistry（bind.ip 属性的值）
         String host = this.findConfigedHosts(protocolConfig, registryURLs, map);
         Integer port = this.findConfigedPorts(protocolConfig, name, map);
         URL url = new URL(name, host, port, getContextPath(protocolConfig).map(p -> p + "/" + path).orElse(path), map);
@@ -740,7 +749,9 @@ public class ServiceConfig<T> extends AbstractServiceConfig {
     private String findConfigedHosts(ProtocolConfig protocolConfig, List<URL> registryURLs, Map<String, String> map) {
         boolean anyhost = false;
 
+        // 尝试从环境变量和系统属性中获取 DUBBO_IP_TO_BIND 信息
         String hostToBind = getValueFromConfig(protocolConfig, DUBBO_IP_TO_BIND);
+        // 验证获取的 port 信息
         if (hostToBind != null && hostToBind.length() > 0 && isInvalidLocalHost(hostToBind)) {
             throw new IllegalArgumentException("Specified invalid bind ip from property:" + DUBBO_IP_TO_BIND + ", value:" + hostToBind);
         }
@@ -748,24 +759,30 @@ public class ServiceConfig<T> extends AbstractServiceConfig {
         // if bind ip is not found in environment, keep looking up
         if (StringUtils.isEmpty(hostToBind)) {
             hostToBind = protocolConfig.getHost();
+            // protocol 中没有找到，试着从 provider 中获取
             if (provider != null && StringUtils.isEmpty(hostToBind)) {
                 hostToBind = provider.getHost();
             }
             if (isInvalidLocalHost(hostToBind)) {
                 anyhost = true;
                 try {
+                    // 获取到本机 IP 地址
                     hostToBind = InetAddress.getLocalHost().getHostAddress();
                 } catch (UnknownHostException e) {
                     logger.warn(e.getMessage(), e);
                 }
                 if (isInvalidLocalHost(hostToBind)) {
                     if (CollectionUtils.isNotEmpty(registryURLs)) {
+                        // 还是没有获取到有效的 hostToBind，那就从 registryURLs 中尝试获取
                         for (URL registryURL : registryURLs) {
+                            // url 中，参数 registry 为 multicast 的，应该被忽略
                             if (MULTICAST.equalsIgnoreCase(registryURL.getParameter("registry"))) {
                                 // skip multicast registry since we cannot connect to it via Socket
                                 continue;
                             }
+                            // 带资源的 try 代码块
                             try (Socket socket = new Socket()) {
+                                // 通过连接 url 指定的 ip + port，从 socket 中得到本地 ip
                                 SocketAddress addr = new InetSocketAddress(registryURL.getHost(), registryURL.getPort());
                                 socket.connect(addr, 1000);
                                 hostToBind = socket.getLocalAddress().getHostAddress();
@@ -776,23 +793,30 @@ public class ServiceConfig<T> extends AbstractServiceConfig {
                         }
                     }
                     if (isInvalidLocalHost(hostToBind)) {
+                        // 通过 url 获取 hostToBind 也失败的话，那就直接使用 127.0.0.1 或者 当前 ip
                         hostToBind = getLocalHost();
                     }
                 }
             }
         }
 
+        // bind.ip -> hostToBind
         map.put(RemotingConstants.BIND_IP_KEY, hostToBind);
 
         // registry ip is not used for bind ip by default
+        // 尝试从环境变量和系统属性中获取 DUBBO_IP_TO_REGISTRY 信息
         String hostToRegistry = getValueFromConfig(protocolConfig, DUBBO_IP_TO_REGISTRY);
         if (hostToRegistry != null && hostToRegistry.length() > 0 && isInvalidLocalHost(hostToRegistry)) {
+            // 验证 DUBBO_IP_TO_REGISTRY 的有效性高
             throw new IllegalArgumentException("Specified invalid registry ip from property:" + DUBBO_IP_TO_REGISTRY + ", value:" + hostToRegistry);
         } else if (StringUtils.isEmpty(hostToRegistry)) {
             // bind ip is used as registry ip by default
+            // 默认使用 hostToBind 作为 hostToRegistry
             hostToRegistry = hostToBind;
         }
 
+        // anyhost -> true/false
+        // 只有在没能从环境变量和系统属性中获取 DUBBO_IP_TO_BIND 信息，才会使得 anyhost 变为 true
         map.put(ANYHOST_KEY, String.valueOf(anyhost));
 
         return hostToRegistry;
@@ -811,13 +835,16 @@ public class ServiceConfig<T> extends AbstractServiceConfig {
         Integer portToBind = null;
 
         // parse bind port from environment
+        // 尝试从环境变量和系统属性中获取 DUBBO_PORT_TO_BIND 信息
         String port = getValueFromConfig(protocolConfig, DUBBO_PORT_TO_BIND);
+        // String port to Integer port
         portToBind = parsePort(port);
 
         // if there's no bind port found from environment, keep looking up.
         if (portToBind == null) {
             portToBind = protocolConfig.getPort();
             if (provider != null && (portToBind == null || portToBind == 0)) {
+                // protocolConfig 中没有获取到 port，尝试从 provider 中获取
                 portToBind = provider.getPort();
             }
             final int defaultPort = ExtensionLoader.getExtensionLoader(Protocol.class).getExtension(name).getDefaultPort();
@@ -863,9 +890,12 @@ public class ServiceConfig<T> extends AbstractServiceConfig {
     }
 
     private String getValueFromConfig(ProtocolConfig protocolConfig, String key) {
+        // protocolPrefix : DUBBO_
         String protocolPrefix = protocolConfig.getName().toUpperCase() + "_";
+        // DUBBO_DUBBO_IP_TO_BIND
         String port = ConfigUtils.getSystemProperty(protocolPrefix + key);
         if (StringUtils.isEmpty(port)) {
+            // DUBBO_IP_TO_BIND
             port = ConfigUtils.getSystemProperty(key);
         }
         return port;

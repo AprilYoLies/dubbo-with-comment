@@ -180,6 +180,7 @@ public class NetUtils {
         return address;
     }
 
+    // 获取 127.0.0.1 或者本机 ip
     public static String getLocalHost() {
         InetAddress address = getLocalAddress();
         return address == null ? LOCALHOST_VALUE : address.getHostAddress();
