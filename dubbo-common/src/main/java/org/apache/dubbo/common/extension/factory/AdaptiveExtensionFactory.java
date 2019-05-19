@@ -29,20 +29,34 @@ import java.util.List;
  */
 @Adaptive
 public class AdaptiveExtensionFactory implements ExtensionFactory {
-
+    // SpiExtensionFactory 和 SpringExtensionFactory
     private final List<ExtensionFactory> factories;
 
     public AdaptiveExtensionFactory() {
+        // loader 为 AdaptiveExtensionFactory 实例
         ExtensionLoader<ExtensionFactory> loader = ExtensionLoader.getExtensionLoader(ExtensionFactory.class);
         List<ExtensionFactory> list = new ArrayList<ExtensionFactory>();
+        // 遍历 org.apache.dubbo.common.extension.ExtensionFactory 对应配置文件下的所指定的类的名字
         for (String name : loader.getSupportedExtensions()) {
+            // 通过 loader 获取 Extension 实例添加到 list 集合中
             list.add(loader.getExtension(name));
         }
         factories = Collections.unmodifiableList(list);
     }
 
+    /**
+     * 获取 Extension
+     *
+     * @param type object type. 为 method 参数的类型
+     * @param name object name. 为 setter 方法所对应的属性的名字
+     * @param <T>
+     * @return
+     */
     @Override
     public <T> T getExtension(Class<T> type, String name) {
+        // 这里的 factories 对应不同的 Extension 加载策略
+        // SpiExtensionFactory 和 SpringExtensionFactory
+        // 这里可以看出来 AdaptiveExtensionFactory 就类似于一个适配器
         for (ExtensionFactory factory : factories) {
             T extension = factory.getExtension(type, name);
             if (extension != null) {

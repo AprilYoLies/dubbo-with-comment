@@ -165,6 +165,7 @@ public class ExtensionLoader<T> {
         }
     }
 
+    // 获取类加载器
     private static ClassLoader findClassLoader() {
         return ClassUtils.getClassLoader(ExtensionLoader.class);
     }
@@ -357,18 +358,22 @@ public class ExtensionLoader<T> {
      */
     @SuppressWarnings("unchecked")
     public T getExtension(String name) {
+        // 别名不能为空
         if (StringUtils.isEmpty(name)) {
             throw new IllegalArgumentException("Extension name == null");
         }
         if ("true".equals(name)) {
             return getDefaultExtension();
         }
+
+        // 从 cachedInstances 获取 holder，从 holder -> 获取 Extension 实例
         Holder<Object> holder = getOrCreateHolder(name);
         Object instance = holder.get();
         if (instance == null) {
             synchronized (holder) {
                 instance = holder.get();
                 if (instance == null) {
+                    // 没有缓存的情况下就直接创建 Extension
                     instance = createExtension(name);
                     holder.set(instance);
                 }
@@ -381,10 +386,13 @@ public class ExtensionLoader<T> {
      * Return default extension, return <code>null</code> if it's not configured.
      */
     public T getDefaultExtension() {
+        // 加载所有的 ExtensionClasses
         getExtensionClasses();
+        // 这里如果不剔除 true 的情况，就会死循环
         if (StringUtils.isBlank(cachedDefaultName) || "true".equals(cachedDefaultName)) {
             return null;
         }
+        // 根据默认名获取 Extension
         return getExtension(cachedDefaultName);
     }
 
@@ -397,6 +405,7 @@ public class ExtensionLoader<T> {
     }
 
     public Set<String> getSupportedExtensions() {
+        // 获取 org.apache.dubbo.common.extension.ExtensionFactory 对应配置文件下的所指定的类
         Map<String, Class<?>> clazzes = getExtensionClasses();
         return Collections.unmodifiableSet(new TreeSet<>(clazzes.keySet()));
     }
@@ -546,22 +555,28 @@ public class ExtensionLoader<T> {
         return new IllegalStateException(buf.toString());
     }
 
+    // 根据别名创建 Extension
     @SuppressWarnings("unchecked")
     private T createExtension(String name) {
+        // 先尝试从 cachedClasses 获取别名为 name 的 class
         Class<?> clazz = getExtensionClasses().get(name);
         if (clazz == null) {
             throw findException(name);
         }
         try {
+            // 尝试从 EXTENSION_INSTANCES 获取 Extension 实例
             T instance = (T) EXTENSION_INSTANCES.get(clazz);
             if (instance == null) {
+                // 没有获取到，那就直接通过 class 创建即可
                 EXTENSION_INSTANCES.putIfAbsent(clazz, clazz.newInstance());
                 instance = (T) EXTENSION_INSTANCES.get(clazz);
             }
+            // 根据 setter 方法，为 instance 实例填充 extension 属性
             injectExtension(instance);
             Set<Class<?>> wrapperClasses = cachedWrapperClasses;
             if (CollectionUtils.isNotEmpty(wrapperClasses)) {
                 for (Class<?> wrapperClass : wrapperClasses) {
+                    // 根据 setter 方法，为 wrapper 实例填充 extension 属性
                     instance = injectExtension((T) wrapperClass.getConstructor(type).newInstance(instance));
                 }
             }
@@ -574,23 +589,37 @@ public class ExtensionLoader<T> {
 
     private T injectExtension(T instance) {
         try {
+            // SPI 接口的 type 和 ExtensionLoader 都缓存在 EXTENSION_LOADERS 中， SPI 接口 type -> ExtensionLoader
+            // 对于 SPI 接口，除了 ExtensionFactory 的 ExtensionLoader 的 objectFactory 为空以外，其它的 SPI 接口所对应
+            // ExtensionLoader 的 objectFactory 属性均一致为 AdaptiveExtensionFactory
+            // 这里 objectFactory 不为空，说明 instance 不为 ExtensionFactory 的 Adaptive 实例
             if (objectFactory != null) {
+                // 遍历 Adaptive 实例的全部方法
                 for (Method method : instance.getClass().getMethods()) {
+                    // 这里只关注 Adaptive 实例的 setter 方法
                     if (isSetter(method)) {
                         /**
                          * Check {@link DisableInject} to see if we need auto injection for this property
+                         * setter 方法不能有 DisableInject 注解
                          */
                         if (method.getAnnotation(DisableInject.class) != null) {
                             continue;
                         }
+                        // 获取 setter 方法的第一个参数类型
                         Class<?> pt = method.getParameterTypes()[0];
+                        // pt 不能是九种基本类型和 Array、String、Boolean、Charater、Number、Date，特别的 Array 元素也不能是
+                        // Array、String、Boolean、Charater、Number、Date
                         if (ReflectUtils.isPrimitives(pt)) {
                             continue;
                         }
                         try {
+                            // 通过 setter 方法得到其所对应的属性名
                             String property = getSetterProperty(method);
+                            // objectFactory 实际为 AdaptiveExtensionFactory，根据 setter 方法参数类型和相对应的属性名获取 Extension
+                            // 这里的返回值 object 应该为 pt 类型
                             Object object = objectFactory.getExtension(pt, property);
                             if (object != null) {
+                                // 为 instance 填充这个 extension 实例
                                 method.invoke(instance, object);
                             }
                         } catch (Exception e) {
@@ -972,9 +1001,10 @@ public class ExtensionLoader<T> {
         //         return extension.refer(arg0, arg1);
         //     }
         // }
-
         String code = new AdaptiveClassCodeGenerator(type, cachedDefaultName).generate();
+        // 获取类加载器
         ClassLoader classLoader = findClassLoader();
+        // 获取 Compiler 的 ExtensionLoader
         org.apache.dubbo.common.compiler.Compiler compiler = ExtensionLoader.getExtensionLoader(org.apache.dubbo.common.compiler.Compiler.class).getAdaptiveExtension();
         return compiler.compile(code, classLoader);
     }

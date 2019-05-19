@@ -292,6 +292,7 @@ public abstract class AbstractInterfaceConfig extends AbstractMethodConfig {
         if (this.configCenter != null) {
             // TODO there may have duplicate refresh
             this.configCenter.refresh();
+            // 准备运行环境
             prepareEnvironment();
         }
         // 单例获取 ConfigManager，依据具体的配置信息对相应的 config 进行属性的更新
@@ -300,9 +301,11 @@ public abstract class AbstractInterfaceConfig extends AbstractMethodConfig {
 
     private void prepareEnvironment() {
         if (configCenter.isValid()) {
+            // 通过 cas 操作，将 init 状态从 false 修改为 true
             if (!configCenter.checkOrUpdateInited()) {
                 return;
             }
+            // configCenter.toUrl() 是根据 configCenter 生成完整的 url 地址
             DynamicConfiguration dynamicConfiguration = getDynamicConfiguration(configCenter.toUrl());
             String configContent = dynamicConfiguration.getConfig(configCenter.getConfigFile(), configCenter.getGroup());
 
@@ -325,6 +328,15 @@ public abstract class AbstractInterfaceConfig extends AbstractMethodConfig {
     }
 
     private DynamicConfiguration getDynamicConfiguration(URL url) {
+        // url -> zookeeper://127.0.0.1:2181/ConfigCenterConfig?
+        //          address=zookeeper://127.0.0.1:2181&
+        //          check=true&configFile=dubbo.properties&
+        //          group=dubbo&
+        //          highestPriority=false&
+        //          namespace=dubbo&
+        //          prefix=dubbo.config-center&
+        //          timeout=3000&
+        //          valid=true
         DynamicConfigurationFactory factories = ExtensionLoader
                 .getExtensionLoader(DynamicConfigurationFactory.class)
                 .getExtension(url.getProtocol());
@@ -674,6 +686,7 @@ public abstract class AbstractInterfaceConfig extends AbstractMethodConfig {
         // 从所有的 registries 中查找第一个使用 zookeeper 协议的，如果找到了，就获取 ConfigCenterConfig，并将该 registry 的相关信息添加到 ConfigCenterConfig 中
         registries.stream().filter(RegistryConfig::isZookeeperProtocol).findFirst().ifPresent(rc -> {
             // we use the loading status of DynamicConfiguration to decide whether ConfigCenter has been initiated.
+            // 这里应该是说，如果从 Environment 中获取到了 DynamicConfiguration，便不会再执行 orElseGet 方法中的函数了
             Environment.getInstance().getDynamicConfiguration().orElseGet(() -> {
                 ConfigManager configManager = ConfigManager.getInstance();
                 ConfigCenterConfig cc = configManager.getConfigCenter().orElse(new ConfigCenterConfig());
@@ -681,6 +694,7 @@ public abstract class AbstractInterfaceConfig extends AbstractMethodConfig {
                 cc.setProtocol(rc.getProtocol());
                 cc.setAddress(rc.getAddress());
                 cc.setHighestPriority(false);
+                // 将配置中心分别保存到 ConfigManager 和 ServiceBean 中各一份
                 setConfigCenter(cc);
                 startConfigCenter();
                 return null;
@@ -897,6 +911,7 @@ public abstract class AbstractInterfaceConfig extends AbstractMethodConfig {
         return configCenter;
     }
 
+    // 将配置中心分别保存到 ConfigManager 和 ServiceBean 中各一份
     public void setConfigCenter(ConfigCenterConfig configCenter) {
         ConfigManager.getInstance().setConfigCenter(configCenter);
         this.configCenter = configCenter;

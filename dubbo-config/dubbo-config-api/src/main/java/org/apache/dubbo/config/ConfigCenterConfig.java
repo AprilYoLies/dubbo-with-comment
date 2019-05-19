@@ -66,19 +66,25 @@ public class ConfigCenterConfig extends AbstractConfig {
     }
 
     public URL toUrl() {
+        // 获取当前类的属性值
         Map<String, String> map = this.getMetaData();
         if (StringUtils.isEmpty(address)) {
+            // 如果 address 属性为空或者空串，修改为 0.0.0.0
             address = ANYHOST_VALUE;
         }
+        // 添加 path -> ConfigCenterConfig 到 map 中
         map.put(PATH_KEY, ConfigCenterConfig.class.getSimpleName());
         // use 'zookeeper' as the default configcenter.
         if (StringUtils.isEmpty(map.get(PROTOCOL_KEY))) {
+            // 如果 protocol 属性为空，就将其填充为 zookeeper
             map.put(PROTOCOL_KEY, ZOOKEEPER_PROTOCOL);
         }
+        // 为 address 拼接相关属性
         return UrlUtils.parseURL(address, map);
     }
 
     public boolean checkOrUpdateInited() {
+        // 通过 cas 操作，将 init 状态从 false 修改为 true
         return inited.compareAndSet(false, true);
     }
 

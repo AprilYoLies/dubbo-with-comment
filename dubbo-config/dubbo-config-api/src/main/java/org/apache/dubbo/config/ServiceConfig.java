@@ -842,6 +842,7 @@ public class ServiceConfig<T> extends AbstractServiceConfig {
 
         // if there's no bind port found from environment, keep looking up.
         if (portToBind == null) {
+            // 直接从 protocolConfig 获取端口信息
             portToBind = protocolConfig.getPort();
             if (provider != null && (portToBind == null || portToBind == 0)) {
                 // protocolConfig 中没有获取到 port，尝试从 provider 中获取

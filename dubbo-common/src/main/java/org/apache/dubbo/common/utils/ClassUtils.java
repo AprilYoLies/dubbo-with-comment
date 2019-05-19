@@ -89,12 +89,15 @@ public class ClassUtils {
     public static ClassLoader getClassLoader(Class<?> clazz) {
         ClassLoader cl = null;
         try {
+            // 返回 Thread 的 contextClassLoader
             cl = Thread.currentThread().getContextClassLoader();
         } catch (Throwable ex) {
             // Cannot access thread context ClassLoader - falling back to system class loader...
         }
         if (cl == null) {
             // No thread context class loader -> use class loader of this class.
+            // 返回 class 的类加载器，如果是 bootstrap 类加载器，将会返回 null
+            // class 实例中会有一个 classLoader 属性
             cl = clazz.getClassLoader();
             if (cl == null) {
                 // getClassLoader() returning null indicates the bootstrap ClassLoader
