@@ -116,13 +116,80 @@ public class ServiceConfig<T> extends AbstractServiceConfig {
      * Actually，when the {@link ExtensionLoader} init the {@link Protocol} instants,it will automatically wraps two
      * layers, and eventually will get a <b>ProtocolFilterWrapper</b> or <b>ProtocolListenerWrapper</b>
      */
+
     // 这是静态字段，在加载 ServiceBean 的 class 对象时，就会对静态字段进行初始化工作
+    // package org.apache.dubbo.rpc;
+    // import org.apache.dubbo.common.extension.ExtensionLoader;
+    // public class Protocol$Adaptive implements org.apache.dubbo.rpc.Protocol {
+    //     public void destroy() {
+    //         throw new UnsupportedOperationException("The method public abstract void org.apache.dubbo.rpc.Protocol.destroy() of interface org.apache.dubbo.rpc.Protocol is not adaptive method!");
+    //
+    //     public int getDefaultPort() {
+    //         throw new UnsupportedOperationException("The method public abstract int org.apache.dubbo.rpc.Protocol.getDefaultPort() of interface org.apache.dubbo.rpc.Protocol is not adaptive method!");
+    //
+    //     public org.apache.dubbo.rpc.Exporter export(org.apache.dubbo.rpc.Invoker arg0) throws org.apache.dubbo.rpc.RpcException {
+    //         if (arg0 == null) throw new IllegalArgumentException("org.apache.dubbo.rpc.Invoker argument == null");
+    //         if (arg0.getUrl() == null)
+    //             throw new IllegalArgumentException("org.apache.dubbo.rpc.Invoker argument getUrl() == null");
+    //         org.apache.dubbo.common.URL url = arg0.getUrl();
+    //         String extName = (url.getProtocol() == null ? "dubbo" : url.getProtocol());
+    //         if (extName == null)
+    //             throw new IllegalStateException("Failed to get extension (org.apache.dubbo.rpc.Protocol) name from url (" + url.toString() + ") use keys([protocol])");
+    //         org.apache.dubbo.rpc.Protocol extension = (org.apache.dubbo.rpc.Protocol) ExtensionLoader.getExtensionLoader(org.apache.dubbo.rpc.Protocol.class).getExtension(extName);
+    //         return extension.export(arg0);
+    //
+    //     public org.apache.dubbo.rpc.Invoker refer(java.lang.Class arg0, org.apache.dubbo.common.URL arg1) throws org.apache.dubbo.rpc.RpcException {
+    //         if (arg1 == null) throw new IllegalArgumentException("url == null");
+    //         org.apache.dubbo.common.URL url = arg1;
+    //         String extName = (url.getProtocol() == null ? "dubbo" : url.getProtocol());
+    //         if (extName == null)
+    //             throw new IllegalStateException("Failed to get extension (org.apache.dubbo.rpc.Protocol) name from url (" + url.toString() + ") use keys([protocol])");
+    //         org.apache.dubbo.rpc.Protocol extension = (org.apache.dubbo.rpc.Protocol) ExtensionLoader.getExtensionLoader(org.apache.dubbo.rpc.Protocol.class).getExtension(extName);
+    //         return extension.refer(arg0, arg1);
+    //     }
+    // }
     private static final Protocol protocol = ExtensionLoader.getExtensionLoader(Protocol.class).getAdaptiveExtension();
 
     /**
      * A {@link ProxyFactory} implementation that will generate a exported service proxy,the JavassistProxyFactory is its
      * default implementation
      */
+
+    // package org.apache.dubbo.rpc;
+    // import org.apache.dubbo.common.extension.ExtensionLoader;
+    // public class ProxyFactory$Adaptive implements org.apache.dubbo.rpc.ProxyFactory {
+    //     public org.apache.dubbo.rpc.Invoker getInvoker(java.lang.Object arg0, java.lang.Class arg1, org.apache.dubbo.common.URL arg2) throws org.apache.dubbo.rpc.RpcException {
+    //         if (arg2 == null) throw new IllegalArgumentException("url == null");
+    //         org.apache.dubbo.common.URL url = arg2;
+    //         String extName = url.getParameter("proxy", "javassist");
+    //         if (extName == null)
+    //             throw new IllegalStateException("Failed to get extension (org.apache.dubbo.rpc.ProxyFactory) name from url (" + url.toString() + ") use keys([proxy])");
+    //         org.apache.dubbo.rpc.ProxyFactory extension = (org.apache.dubbo.rpc.ProxyFactory) ExtensionLoader.getExtensionLoader(org.apache.dubbo.rpc.ProxyFactory.class).getExtension(extName);
+    //         return extension.getInvoker(arg0, arg1, arg2);
+    //     }
+    //     public java.lang.Object getProxy(org.apache.dubbo.rpc.Invoker arg0, boolean arg1) throws org.apache.dubbo.rpc.RpcException {
+    //         if (arg0 == null) throw new IllegalArgumentException("org.apache.dubbo.rpc.Invoker argument == null");
+    //         if (arg0.getUrl() == null)
+    //             throw new IllegalArgumentException("org.apache.dubbo.rpc.Invoker argument getUrl() == null");
+    //         org.apache.dubbo.common.URL url = arg0.getUrl();
+    //         String extName = url.getParameter("proxy", "javassist");
+    //         if (extName == null)
+    //             throw new IllegalStateException("Failed to get extension (org.apache.dubbo.rpc.ProxyFactory) name from url (" + url.toString() + ") use keys([proxy])");
+    //         org.apache.dubbo.rpc.ProxyFactory extension = (org.apache.dubbo.rpc.ProxyFactory) ExtensionLoader.getExtensionLoader(org.apache.dubbo.rpc.ProxyFactory.class).getExtension(extName);
+    //         return extension.getProxy(arg0, arg1);
+    //     }
+    //     public java.lang.Object getProxy(org.apache.dubbo.rpc.Invoker arg0) throws org.apache.dubbo.rpc.RpcException {
+    //         if (arg0 == null) throw new IllegalArgumentException("org.apache.dubbo.rpc.Invoker argument == null");
+    //         if (arg0.getUrl() == null)
+    //             throw new IllegalArgumentException("org.apache.dubbo.rpc.Invoker argument getUrl() == null");
+    //         org.apache.dubbo.common.URL url = arg0.getUrl();
+    //         String extName = url.getParameter("proxy", "javassist");
+    //         if (extName == null)
+    //             throw new IllegalStateException("Failed to get extension (org.apache.dubbo.rpc.ProxyFactory) name from url (" + url.toString() + ") use keys([proxy])");
+    //         org.apache.dubbo.rpc.ProxyFactory extension = (org.apache.dubbo.rpc.ProxyFactory) ExtensionLoader.getExtensionLoader(org.apache.dubbo.rpc.ProxyFactory.class).getExtension(extName);
+    //         return extension.getProxy(arg0);
+    //     }
+    // }
     private static final ProxyFactory proxyFactory = ExtensionLoader.getExtensionLoader(ProxyFactory.class).getAdaptiveExtension();
 
     /**
@@ -639,11 +706,15 @@ public class ServiceConfig<T> extends AbstractServiceConfig {
         // export service
         // 根据 protocolConfig, registryURLs 向 map 中添加 bind.ip 和 anyhost 属性，同时返回 hostToRegistry（bind.ip 属性的值）
         String host = this.findConfigedHosts(protocolConfig, registryURLs, map);
+        // 针对 default、bind、registry 三种类型的端口进行处理，返回 registryPort
         Integer port = this.findConfigedPorts(protocolConfig, name, map);
+        // 重构 url
         URL url = new URL(name, host, port, getContextPath(protocolConfig).map(p -> p + "/" + path).orElse(path), map);
 
         if (ExtensionLoader.getExtensionLoader(ConfiguratorFactory.class)
                 .hasExtension(url.getProtocol())) {
+            // 如果有 url 协议名称的 ConfiguratorFactory SPI 接口的 Extension 拓展类
+            // 那么就拿到对应的 ConfiguratorFactory Extension 拓展类，对 url 进行配置
             url = ExtensionLoader.getExtensionLoader(ConfiguratorFactory.class)
                     .getExtension(url.getProtocol()).getConfigurator(url).configure(url);
         }
@@ -651,8 +722,9 @@ public class ServiceConfig<T> extends AbstractServiceConfig {
         String scope = url.getParameter(SCOPE_KEY);
         // don't export when none is configured
         if (!SCOPE_NONE.equalsIgnoreCase(scope)) {
-
+            // 如果 url 有 scope 参数，且不为 none
             // export to local if the config is not remote (export to remote only when config is remote)
+            // 如果 url 的 scope 参数为 remote，那么就只会进行进行远程的 url 暴露，而不会进行本地模式的 url 暴露
             if (!SCOPE_REMOTE.equalsIgnoreCase(scope)) {
                 exportLocal(url);
             }
@@ -714,11 +786,87 @@ public class ServiceConfig<T> extends AbstractServiceConfig {
      */
     private void exportLocal(URL url) {
         URL local = URLBuilder.from(url)
+                // injvm
                 .setProtocol(LOCAL_PROTOCOL)
+                // 127.0.0.1
                 .setHost(LOCALHOST_VALUE)
+                // 0
                 .setPort(0)
                 .build();
+        // protocol 的实例代码，protocol 实际是 Protocol$Adaptive 实例
+        // package org.apache.dubbo.rpc;
+        // import org.apache.dubbo.common.extension.ExtensionLoader;
+        // public class Protocol$Adaptive implements org.apache.dubbo.rpc.Protocol {
+        //     public void destroy() {
+        //         throw new UnsupportedOperationException("The method public abstract void org.apache.dubbo.rpc.Protocol.destroy() of interface org.apache.dubbo.rpc.Protocol is not adaptive method!");
+        //
+        //     public int getDefaultPort() {
+        //         throw new UnsupportedOperationException("The method public abstract int org.apache.dubbo.rpc.Protocol.getDefaultPort() of interface org.apache.dubbo.rpc.Protocol is not adaptive method!");
+        //
+        // 这里的 arg0 实际是一个 AbstractProxyInvoker，是通过 new 的方式获得，它引用了 wrapper（动态构造）实例，保存了 DemoServiceImpl、DemoService、url 地址
+        //     public org.apache.dubbo.rpc.Exporter export(org.apache.dubbo.rpc.Invoker arg0) throws org.apache.dubbo.rpc.RpcException {
+        //         if (arg0 == null) throw new IllegalArgumentException("org.apache.dubbo.rpc.Invoker argument == null");
+        //         if (arg0.getUrl() == null)
+        //             throw new IllegalArgumentException("org.apache.dubbo.rpc.Invoker argument getUrl() == null");
+        //         org.apache.dubbo.common.URL url = arg0.getUrl();
+        //         String extName = (url.getProtocol() == null ? "dubbo" : url.getProtocol());
+        //         if (extName == null)
+        //             throw new IllegalStateException("Failed to get extension (org.apache.dubbo.rpc.Protocol) name from url (" + url.toString() + ") use keys([protocol])");
+        //         org.apache.dubbo.rpc.Protocol extension = (org.apache.dubbo.rpc.Protocol) ExtensionLoader.getExtensionLoader(org.apache.dubbo.rpc.Protocol.class).getExtension(extName);
+        //         return extension.export(arg0);
+        //
+        //     public org.apache.dubbo.rpc.Invoker refer(java.lang.Class arg0, org.apache.dubbo.common.URL arg1) throws org.apache.dubbo.rpc.RpcException {
+        //         if (arg1 == null) throw new IllegalArgumentException("url == null");
+        //         org.apache.dubbo.common.URL url = arg1;
+        //         String extName = (url.getProtocol() == null ? "dubbo" : url.getProtocol());
+        //         if (extName == null)
+        //             throw new IllegalStateException("Failed to get extension (org.apache.dubbo.rpc.Protocol) name from url (" + url.toString() + ") use keys([protocol])");
+        //         org.apache.dubbo.rpc.Protocol extension = (org.apache.dubbo.rpc.Protocol) ExtensionLoader.getExtensionLoader(org.apache.dubbo.rpc.Protocol.class).getExtension(extName);
+        //         return extension.refer(arg0, arg1);
+        //     }
+        // }
         Exporter<?> exporter = protocol.export(
+                // proxyFactory 的实例源码
+                // package org.apache.dubbo.rpc;
+                // import org.apache.dubbo.common.extension.ExtensionLoader;
+                // public class ProxyFactory$Adaptive implements org.apache.dubbo.rpc.ProxyFactory {
+                //     public org.apache.dubbo.rpc.Invoker getInvoker(java.lang.Object arg0, java.lang.Class arg1, org.apache.dubbo.common.URL arg2) throws org.apache.dubbo.rpc.RpcException {
+                //         if (arg2 == null) throw new IllegalArgumentException("url == null");
+                //         org.apache.dubbo.common.URL url = arg2;
+                //         String extName = url.getParameter("proxy", "javassist");
+                //         if (extName == null)
+                //             throw new IllegalStateException("Failed to get extension (org.apache.dubbo.rpc.ProxyFactory) name from url (" + url.toString() + ") use keys([proxy])");
+                //         org.apache.dubbo.rpc.ProxyFactory extension = (org.apache.dubbo.rpc.ProxyFactory) ExtensionLoader.getExtensionLoader(org.apache.dubbo.rpc.ProxyFactory.class).getExtension(extName);
+                // 这里的 extension 实际为 StubProxyFactoryWrapper
+                //         return extension.getInvoker(arg0, arg1, arg2);
+                //     }
+                //     public java.lang.Object getProxy(org.apache.dubbo.rpc.Invoker arg0, boolean arg1) throws org.apache.dubbo.rpc.RpcException {
+                //         if (arg0 == null) throw new IllegalArgumentException("org.apache.dubbo.rpc.Invoker argument == null");
+                //         if (arg0.getUrl() == null)
+                //             throw new IllegalArgumentException("org.apache.dubbo.rpc.Invoker argument getUrl() == null");
+                //         org.apache.dubbo.common.URL url = arg0.getUrl();
+                //         String extName = url.getParameter("proxy", "javassist");
+                //         if (extName == null)
+                //             throw new IllegalStateException("Failed to get extension (org.apache.dubbo.rpc.ProxyFactory) name from url (" + url.toString() + ") use keys([proxy])");
+                // 这里得到的 extension 为 ProtocolListenerWrapper 包含了 ProtocolFilterWrapper 属性，而 ProtocolFilterWrapper 才是包含了真正的 InjvmProtocol 属性
+                //         org.apache.dubbo.rpc.ProxyFactory extension = (org.apache.dubbo.rpc.ProxyFactory) ExtensionLoader.getExtensionLoader(org.apache.dubbo.rpc.ProxyFactory.class).getExtension(extName);
+                // 这里便是调用的 InjvmProtocol.getProxy 方法
+                //         return extension.getProxy(arg0, arg1);
+                //     }
+                //     public java.lang.Object getProxy(org.apache.dubbo.rpc.Invoker arg0) throws org.apache.dubbo.rpc.RpcException {
+                //         if (arg0 == null) throw new IllegalArgumentException("org.apache.dubbo.rpc.Invoker argument == null");
+                //         if (arg0.getUrl() == null)
+                //             throw new IllegalArgumentException("org.apache.dubbo.rpc.Invoker argument getUrl() == null");
+                //         org.apache.dubbo.common.URL url = arg0.getUrl();
+                //         String extName = url.getParameter("proxy", "javassist");
+                //         if (extName == null)
+                //             throw new IllegalStateException("Failed to get extension (org.apache.dubbo.rpc.ProxyFactory) name from url (" + url.toString() + ") use keys([proxy])");
+                //         org.apache.dubbo.rpc.ProxyFactory extension = (org.apache.dubbo.rpc.ProxyFactory) ExtensionLoader.getExtensionLoader(org.apache.dubbo.rpc.ProxyFactory.class).getExtension(extName);
+                //         return extension.getProxy(arg0);
+                //     }
+                // }
+                // ref 为 interfaceClass 的实例类型，interfaceClass 为要发布的服务接口，local 为本地 url
+                // getInvoker 得到的实际是一个 AbstractProxyInvoker
                 proxyFactory.getInvoker(ref, (Class) interfaceClass, local));
         exporters.add(exporter);
         logger.info("Export dubbo service " + interfaceClass.getName() + " to local registry url : " + local);
@@ -823,6 +971,7 @@ public class ServiceConfig<T> extends AbstractServiceConfig {
     }
 
     /**
+     * 针对 default、bind、registry 三种类型的端口进行处理，返回 registryPort
      * Register port and bind port for the provider, can be configured separately
      * Configuration priority: environment variable -> java system properties -> port property in protocol config file
      * -> protocol default port
@@ -848,14 +997,19 @@ public class ServiceConfig<T> extends AbstractServiceConfig {
                 // protocolConfig 中没有获取到 port，尝试从 provider 中获取
                 portToBind = provider.getPort();
             }
+            // 这里获取的 Extension 其实是一个 ProtocolListenerWrapper，getDefaultPort 方法实际是获取的 wrapper 类属性 protocol 的默认端口
             final int defaultPort = ExtensionLoader.getExtensionLoader(Protocol.class).getExtension(name).getDefaultPort();
             if (portToBind == null || portToBind == 0) {
+                // 如果绑定端口为空或者 0，将获取的默认端口赋值给绑定端口
                 portToBind = defaultPort;
             }
             if (portToBind == null || portToBind <= 0) {
+                // 根据 name 从 RANDOM_PORT_MAP 获取随机端口，没有获取到便是 Integer.MIN_VALUE
                 portToBind = getRandomPort(name);
                 if (portToBind == null || portToBind < 0) {
+                    // 根据 defaultPort 获取绑定端口
                     portToBind = getAvailablePort(defaultPort);
+                    // 将 name -> portToBind 保存到 RANDOM_PORT_MAP
                     putRandomPort(name, portToBind);
                 }
             }
@@ -865,9 +1019,11 @@ public class ServiceConfig<T> extends AbstractServiceConfig {
         map.put(RemotingConstants.BIND_PORT_KEY, String.valueOf(portToBind));
 
         // registry port, not used as bind port by default
+        // // 分别从系统环境 evn 和系统属性 property 中获取 key 相关的系统属性
         String portToRegistryStr = getValueFromConfig(protocolConfig, DUBBO_PORT_TO_REGISTRY);
         Integer portToRegistry = parsePort(portToRegistryStr);
         if (portToRegistry == null) {
+            // 获取的 registry 端口为空，就使用绑定端口作为 registry 端口
             portToRegistry = portToBind;
         }
 
@@ -890,6 +1046,7 @@ public class ServiceConfig<T> extends AbstractServiceConfig {
         return port;
     }
 
+    // 分别从系统环境 evn 和系统属性 property 中获取 key 相关的系统属性
     private String getValueFromConfig(ProtocolConfig protocolConfig, String key) {
         // protocolPrefix : DUBBO_
         String protocolPrefix = protocolConfig.getName().toUpperCase() + "_";

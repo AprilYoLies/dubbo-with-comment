@@ -19,6 +19,7 @@ package org.apache.dubbo.common.bytecode;
 import org.apache.dubbo.common.utils.ClassUtils;
 import org.apache.dubbo.common.utils.ReflectUtils;
 
+import java.io.FileOutputStream;
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
@@ -240,8 +241,7 @@ public abstract class Wrapper {
                 c3.append(" if( \"").append(mn).append("\".equals( $2 ) ");
                 int len = m.getParameterTypes().length;
                 // 补上方法参数信息
-                // public Object invokeMethod (Object o, String n, Class[]p, Object[]v) throws
-                // java.lang.reflect.InvocationTargetException {
+                // public Object invokeMethod (Object o, String n, Class[]p, Object[]v) throws java.lang.reflect.InvocationTargetException {
                 //     org.apache.dubbo.demo.DemoService w;
                 //     try {
                 //         w = ((org.apache.dubbo.demo.DemoService) $1);
@@ -264,8 +264,7 @@ public abstract class Wrapper {
                     if (len > 0) {
                         for (int l = 0; l < len; l++) {
                             // 补上方法参数信息
-                            // public Object invokeMethod (Object o, String n, Class[]p, Object[]v) throws
-                            // java.lang.reflect.InvocationTargetException {
+                            // public Object invokeMethod (Object o, String n, Class[]p, Object[]v) throws java.lang.reflect.InvocationTargetException {
                             //     org.apache.dubbo.demo.DemoService w;
                             //     try {
                             //         w = ((org.apache.dubbo.demo.DemoService) $1);
@@ -280,8 +279,7 @@ public abstract class Wrapper {
                         }
                     }
                 }
-                // public Object invokeMethod (Object o, String n, Class[]p, Object[]v) throws
-                // java.lang.reflect.InvocationTargetException {
+                // public Object invokeMethod (Object o, String n, Class[]p, Object[]v) throws java.lang.reflect.InvocationTargetException {
                 //     org.apache.dubbo.demo.DemoService w;
                 //     try {
                 //         w = ((org.apache.dubbo.demo.DemoService) $1);
@@ -300,8 +298,7 @@ public abstract class Wrapper {
                 }
 
                 // 拼接完返回值后
-                // public Object invokeMethod (Object o, String n, Class[]p, Object[]v) throws
-                // java.lang.reflect.InvocationTargetException {
+                // public Object invokeMethod (Object o, String n, Class[]p, Object[]v) throws java.lang.reflect.InvocationTargetException {
                 //     org.apache.dubbo.demo.DemoService w;
                 //     try {
                 //         w = ((org.apache.dubbo.demo.DemoService) $1);

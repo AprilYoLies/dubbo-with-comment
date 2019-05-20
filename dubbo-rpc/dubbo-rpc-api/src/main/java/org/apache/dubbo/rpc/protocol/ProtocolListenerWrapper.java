@@ -49,6 +49,7 @@ public class ProtocolListenerWrapper implements Protocol {
     }
 
     @Override
+    // 从 protocol 属性中获取默认端口
     public int getDefaultPort() {
         return protocol.getDefaultPort();
     }

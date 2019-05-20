@@ -44,6 +44,22 @@ public abstract class AbstractProxyInvoker<T> implements Invoker<T> {
 
     private final URL url;
 
+    // 以 DemoServiceImpl 为例，这里的 proxy 为 DemoServiceImpl，type 为 org.apache.dubbo.demo.DemoService
+    // url 为 injvm://127.0.0.1/org.apache.dubbo.demo.DemoService?
+    //         anyhost=true&
+    //         application=demo-provider&
+    //         bean.name=org.apache.dubbo.demo.DemoService&
+    //         bind.ip=192.168.1.104&
+    //         bind.port=20880&
+    //         deprecated=false&
+    //         dubbo=2.0.2&
+    //         dynamic=true&
+    //         generic=false&
+    //         interface=org.apache.dubbo.demo.DemoService&
+    //         methods=sayHello&
+    //         pid=5188&register=true&
+    //         release=&side=provider&
+    //         timestamp=1558341157391
     public AbstractProxyInvoker(T proxy, Class<T> type, URL url) {
         if (proxy == null) {
             throw new IllegalArgumentException("proxy == null");
@@ -87,7 +103,7 @@ public abstract class AbstractProxyInvoker<T> implements Invoker<T> {
             if (RpcUtils.isReturnTypeFuture(invocation)) {
                 return new AsyncRpcResult((CompletableFuture<Object>) obj);
             } else if (rpcContext.isAsyncStarted()) { // ignore obj in case of RpcContext.startAsync()? always rely on user to write back.
-                return new AsyncRpcResult(((AsyncContextImpl)(rpcContext.getAsyncContext())).getInternalFuture());
+                return new AsyncRpcResult(((AsyncContextImpl) (rpcContext.getAsyncContext())).getInternalFuture());
             } else {
                 return new RpcResult(obj);
             }

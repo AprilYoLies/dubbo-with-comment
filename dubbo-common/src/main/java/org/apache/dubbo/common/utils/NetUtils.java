@@ -71,6 +71,7 @@ public class NetUtils {
 
     public static int getAvailablePort() {
         try (ServerSocket ss = new ServerSocket()) {
+            // 这种情况就会产生一个随机的端口
             ss.bind(null);
             return ss.getLocalPort();
         } catch (IOException e) {
@@ -80,9 +81,11 @@ public class NetUtils {
 
     public static int getAvailablePort(int port) {
         if (port <= 0) {
+            // 这里是传入的 default 端口小于等于 0 的情况
             return getAvailablePort();
         }
         for (int i = port; i < MAX_PORT; i++) {
+            // 从 port 端口逐个向上找可以使用的端口
             try (ServerSocket ss = new ServerSocket(i)) {
                 return i;
             } catch (IOException e) {

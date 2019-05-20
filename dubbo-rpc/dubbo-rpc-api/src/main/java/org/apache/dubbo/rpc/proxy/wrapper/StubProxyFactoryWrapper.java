@@ -49,6 +49,7 @@ public class StubProxyFactoryWrapper implements ProxyFactory {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(StubProxyFactoryWrapper.class);
 
+    // 实际为 JavassistProxyFactory，因为 StubProxyFactoryWrapper 是一个 wrapper 类，所以对 ProxyFactory 实例进行了封装
     private final ProxyFactory proxyFactory;
 
     private Protocol protocol;
@@ -115,6 +116,7 @@ public class StubProxyFactoryWrapper implements ProxyFactory {
 
     @Override
     public <T> Invoker<T> getInvoker(T proxy, Class<T> type, URL url) throws RpcException {
+        // 调用 JavassistProxyFactory 的 getInvoker 方法
         return proxyFactory.getInvoker(proxy, type, url);
     }
 
