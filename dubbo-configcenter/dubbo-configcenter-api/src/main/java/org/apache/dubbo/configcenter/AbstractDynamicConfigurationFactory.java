@@ -19,7 +19,7 @@ package org.apache.dubbo.configcenter;
 import org.apache.dubbo.common.URL;
 
 /**
- *
+ * DynamicConfigurationFactory 抽象类，用来提取公共方法
  */
 public abstract class AbstractDynamicConfigurationFactory implements DynamicConfigurationFactory {
 
@@ -30,6 +30,8 @@ public abstract class AbstractDynamicConfigurationFactory implements DynamicConf
         if (dynamicConfiguration == null) {
             synchronized (this) {
                 if (dynamicConfiguration == null) {
+                    // 这是一个模板方法设计模式，模板是一个从缓存中获取 DynamicConfiguration 的架构，
+                    // 在没有从缓存中获取到 DynamicConfiguration 的情况下，具体的创建方法由子类实现
                     dynamicConfiguration = createDynamicConfiguration(url);
                 }
             }

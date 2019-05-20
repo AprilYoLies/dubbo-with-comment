@@ -50,6 +50,7 @@ public class ZookeeperDynamicConfiguration implements DynamicConfiguration {
 
 
     ZookeeperDynamicConfiguration(URL url, ZookeeperTransporter zookeeperTransporter) {
+        // 完成对相关属性的填充
         this.url = url;
         rootPath = "/" + url.getParameter(CONFIG_NAMESPACE_KEY, DEFAULT_GROUP) + "/config";
 
@@ -57,6 +58,7 @@ public class ZookeeperDynamicConfiguration implements DynamicConfiguration {
         this.cacheListener = new CacheListener(rootPath, initializedLatch);
         this.executor = Executors.newFixedThreadPool(1, new NamedThreadFactory(this.getClass().getSimpleName(), true));
 
+        // 获取 ZookeeperClient
         zkClient = zookeeperTransporter.connect(url);
         zkClient.addDataListener(rootPath, cacheListener, executor);
         try {

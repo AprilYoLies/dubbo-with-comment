@@ -122,11 +122,11 @@ public abstract class AbstractZookeeperClient<TargetDataListener, TargetChildLis
     }
 
     @Override
-    public void removeDataListener(String path, DataListener listener ){
+    public void removeDataListener(String path, DataListener listener) {
         ConcurrentMap<DataListener, TargetDataListener> dataListenerMap = listeners.get(path);
         if (dataListenerMap != null) {
             TargetDataListener targetListener = dataListenerMap.remove(listener);
-            if(targetListener != null){
+            if (targetListener != null) {
                 removeTargetDataListener(path, targetListener);
             }
         }
@@ -144,6 +144,7 @@ public abstract class AbstractZookeeperClient<TargetDataListener, TargetChildLis
     }
 
     protected void stateChanged(int state) {
+        // 向每一个 stateListener 传递连接状态改变的消息
         for (StateListener sessionListener : getSessionListeners()) {
             sessionListener.stateChanged(state);
         }

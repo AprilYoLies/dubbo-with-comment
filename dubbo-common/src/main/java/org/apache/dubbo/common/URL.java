@@ -363,11 +363,14 @@ class URL implements Serializable {
         return new URL(protocol, username, password, host, port, path, getParameters());
     }
 
+    // 获取授权信息
     public String getAuthority() {
+        // 如果 username 和 password 都为空，直接返回 null
         if (StringUtils.isEmpty(username)
                 && StringUtils.isEmpty(password)) {
             return null;
         }
+        // 否则返回  username:password
         return (username == null ? "" : username)
                 + ":" + (password == null ? "" : password);
     }
@@ -1325,6 +1328,7 @@ class URL implements Serializable {
 
     /**
      * The format of return value is '{group}/{interfaceName}:{version}'
+     *
      * @return
      */
     public String getServiceKey() {
@@ -1337,6 +1341,7 @@ class URL implements Serializable {
 
     /**
      * The format of return value is '{group}/{path/interfaceName}:{version}'
+     *
      * @return
      */
     public String getPathKey() {

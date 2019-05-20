@@ -52,21 +52,28 @@ public abstract class AbstractZookeeperTransporter implements ZookeeperTransport
     @Override
     public ZookeeperClient connect(URL url) {
         ZookeeperClient zookeeperClient;
+        // 获取 url 主机地址及备用地址
         List<String> addressList = getURLBackupAddress(url);
         // The field define the zookeeper server , including protocol, host, port, username, password
+        // fetchAndUpdateZookeeperClientCache 这个方法，会查看 addressList 中是否有一个地址是出于连接状态，
+        // 如果有，就返回这个连接，同时将所有的地址都使用这个 zookeeperClient，并缓存到 zookeeperClientMap 中
         if ((zookeeperClient = fetchAndUpdateZookeeperClientCache(addressList)) != null && zookeeperClient.isConnected()) {
             logger.info("find valid zookeeper client from the cache for address: " + url);
             return zookeeperClient;
         }
         // avoid creating too many connections， so add lock
+        // 如果执行到这里，就说明所有的地址，没有一个是出于连接状态的
         synchronized (zookeeperClientMap) {
+            // 双重检查
             if ((zookeeperClient = fetchAndUpdateZookeeperClientCache(addressList)) != null && zookeeperClient.isConnected()) {
                 logger.info("find valid zookeeper client from the cache for address: " + url);
                 return zookeeperClient;
             }
 
+            // 创建 ZookeeperClient 实际是创建的 CuratorZookeeperClient
             zookeeperClient = createZookeeperClient(toClientURL(url));
             logger.info("No valid zookeeper client found from cache, therefore create a new client for url. " + url);
+            // 所有的地址都使用这个已经连接的 zookeeperClient，并保存到 zookeeperClientMap
             writeToClientMap(addressList, zookeeperClient);
         }
         return zookeeperClient;
@@ -91,12 +98,14 @@ public abstract class AbstractZookeeperTransporter implements ZookeeperTransport
     ZookeeperClient fetchAndUpdateZookeeperClientCache(List<String> addressList) {
 
         ZookeeperClient zookeeperClient = null;
+        // 遍历地址，如果缓存中存在这个地址，并且已经是连接状态就终止遍历
         for (String address : addressList) {
             if ((zookeeperClient = zookeeperClientMap.get(address)) != null && zookeeperClient.isConnected()) {
                 break;
             }
         }
         if (zookeeperClient != null && zookeeperClient.isConnected()) {
+            // 所有的地址都使用这个已经连接的 zookeeperClient，并保存到 zookeeperClientMap
             writeToClientMap(addressList, zookeeperClient);
         }
         return zookeeperClient;
@@ -104,14 +113,17 @@ public abstract class AbstractZookeeperTransporter implements ZookeeperTransport
 
     /**
      * get all zookeeper urls (such as :zookeeper://127.0.0.1:2181?127.0.0.1:8989,127.0.0.1:9999)
+     * 获取 url 主机地址及备用地址
      *
      * @param url such as:zookeeper://127.0.0.1:2181?127.0.0.1:8989,127.0.0.1:9999
      * @return such as 127.0.0.1:2181,127.0.0.1:8989,127.0.0.1:9999
      */
     List<String> getURLBackupAddress(URL url) {
         List<String> addressList = new ArrayList<String>();
+        // 获取 url 主机地址
         addressList.add(url.getAddress());
 
+        // 获取 url 备用地址（由 backup 参数进行传入）
         addressList.addAll(url.getParameter(RemotingConstants.BACKUP_KEY, Collections.EMPTY_LIST));
         return addressList;
     }
@@ -124,6 +136,7 @@ public abstract class AbstractZookeeperTransporter implements ZookeeperTransport
      */
     void writeToClientMap(List<String> addressList, ZookeeperClient zookeeperClient) {
         for (String address : addressList) {
+            // 所有的地址都使用这个已经连接的 zookeeperClient，并保存到 zookeeperClientMap
             zookeeperClientMap.put(address, zookeeperClient);
         }
     }
@@ -138,11 +151,14 @@ public abstract class AbstractZookeeperTransporter implements ZookeeperTransport
         Map<String, String> parameterMap = new HashMap<>();
         // for CuratorZookeeperClient
         if (url.getParameter(TIMEOUT_KEY) != null) {
+            // 获取 timeout 参数
             parameterMap.put(TIMEOUT_KEY, url.getParameter(TIMEOUT_KEY));
         }
         if (url.getParameter(RemotingConstants.BACKUP_KEY) != null) {
+            // 获取备用地址
             parameterMap.put(RemotingConstants.BACKUP_KEY, url.getParameter(RemotingConstants.BACKUP_KEY));
         }
+        // 这里的 path 为 ZookeeperTransporter，参数就只有 timeout 和 backup
         return new URL(url.getProtocol(), url.getUsername(), url.getPassword(), url.getHost(), url.getPort(),
                 ZookeeperTransporter.class.getName(), parameterMap);
     }

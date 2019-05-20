@@ -26,8 +26,10 @@ import org.apache.dubbo.remoting.zookeeper.ZookeeperTransporter;
  */
 public class ZookeeperDynamicConfigurationFactory extends AbstractDynamicConfigurationFactory {
 
+    // 注意这个属性就是通过 injectExtension 方法进行注入的
     private ZookeeperTransporter zookeeperTransporter;
 
+    // injectExtension 通过这个 setter 方法，对 zookeeperTransporter 进行赋值操作
     public void setZookeeperTransporter(ZookeeperTransporter zookeeperTransporter) {
         this.zookeeperTransporter = zookeeperTransporter;
     }

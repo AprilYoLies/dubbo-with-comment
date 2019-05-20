@@ -337,6 +337,7 @@ public abstract class AbstractInterfaceConfig extends AbstractMethodConfig {
         //          prefix=dubbo.config-center&
         //          timeout=3000&
         //          valid=true
+        // 通过 DynamicConfigurationFactory SPI 接口的 ExtensionLoader 获取 别名为 url.getProtocol() 的 DynamicConfigurationFactory
         DynamicConfigurationFactory factories = ExtensionLoader
                 .getExtensionLoader(DynamicConfigurationFactory.class)
                 .getExtension(url.getProtocol());

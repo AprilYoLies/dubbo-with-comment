@@ -55,26 +55,37 @@ public class CuratorZookeeperClient extends AbstractZookeeperClient<CuratorZooke
 
 
     public CuratorZookeeperClient(URL url) {
+        // 保存 url 地址
         super(url);
         try {
             int timeout = url.getParameter(TIMEOUT_KEY, 5000);
             CuratorFrameworkFactory.Builder builder = CuratorFrameworkFactory.builder()
+                    // 备用地址
                     .connectString(url.getBackupAddress())
+                    // 重试策略
                     .retryPolicy(new RetryNTimes(1, 1000))
+                    // 连接超时策略
                     .connectionTimeoutMs(timeout);
+            // 获取授权信息
             String authority = url.getAuthority();
             if (authority != null && authority.length() > 0) {
                 builder = builder.authorization("digest", authority.getBytes());
             }
+            // 就是根据 builder 获取一个 CuratorFrameworkImpl
             client = builder.build();
+            // 添加一个连接监听器
             client.getConnectionStateListenable().addListener(new ConnectionStateListener() {
                 @Override
+                // 如果连接状态发生改变，就会执行此方法
                 public void stateChanged(CuratorFramework client, ConnectionState state) {
                     if (state == ConnectionState.LOST) {
+                        // 断开连接
                         CuratorZookeeperClient.this.stateChanged(StateListener.DISCONNECTED);
                     } else if (state == ConnectionState.CONNECTED) {
+                        // 连接成功
                         CuratorZookeeperClient.this.stateChanged(StateListener.CONNECTED);
                     } else if (state == ConnectionState.RECONNECTED) {
+                        // 重连
                         CuratorZookeeperClient.this.stateChanged(StateListener.RECONNECTED);
                     }
                 }
