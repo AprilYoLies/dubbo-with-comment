@@ -306,20 +306,28 @@ public abstract class AbstractInterfaceConfig extends AbstractMethodConfig {
                 return;
             }
             // configCenter.toUrl() 是根据 configCenter 生成完整的 url 地址
+            // getDynamicConfiguration 获取到的是 DynamicConfiguration
+            // 以 ZookeeperDynamicConfiguration 为例，ZookeeperDynamicConfiguration 此时已经是持有了 zkClient 实例了
             DynamicConfiguration dynamicConfiguration = getDynamicConfiguration(configCenter.toUrl());
+            // 尝试从 zookeeper 中获取配置文件，参数 key 和 group 均是通过 config-center 标签进行设置
             String configContent = dynamicConfiguration.getConfig(configCenter.getConfigFile(), configCenter.getGroup());
 
+            // 使用 application name 作为 appGroup
             String appGroup = application != null ? application.getName() : null;
             String appConfigContent = null;
             if (StringUtils.isNotEmpty(appGroup)) {
+                // 从 zookeeper 的 appGroup/configCenter.getAppConfigFile 或者 appGroup/configCenter.getConfigFile 路径下获取 appConfigContent
                 appConfigContent = dynamicConfiguration.getConfig
                         (StringUtils.isNotEmpty(configCenter.getAppConfigFile()) ? configCenter.getAppConfigFile() : configCenter.getConfigFile(),
                                 appGroup
                         );
             }
             try {
+                // 设置 configCenter 的优先级
                 Environment.getInstance().setConfigCenterFirst(configCenter.isHighestPriority());
+                // 将从 zookeeper 中获取的配置更新到 ExternalConfigurationMap 中
                 Environment.getInstance().updateExternalConfigurationMap(parseProperties(configContent));
+                // 将从 zookeeper 中获取的配置更新到 AppExternalConfiguration 中
                 Environment.getInstance().updateAppExternalConfigurationMap(parseProperties(appConfigContent));
             } catch (IOException e) {
                 throw new IllegalStateException("Failed to parse configurations from Config Center.", e);
@@ -341,7 +349,9 @@ public abstract class AbstractInterfaceConfig extends AbstractMethodConfig {
         DynamicConfigurationFactory factories = ExtensionLoader
                 .getExtensionLoader(DynamicConfigurationFactory.class)
                 .getExtension(url.getProtocol());
+        // 通过 factories 工厂类获取 DynamicConfiguration
         DynamicConfiguration configuration = factories.getDynamicConfiguration(url);
+        // 将 DynamicConfiguration 保存到 Environment 中
         Environment.getInstance().setDynamicConfiguration(configuration);
         return configuration;
     }

@@ -75,6 +75,7 @@ public class ZookeeperDynamicConfiguration implements DynamicConfiguration {
      */
     @Override
     public Object getInternalProperty(String key) {
+        // 获取位于 zookeeper 中的配置文件 /dubbo/config/demo-provider/dubbo.properties
         return zkClient.getContent(key);
     }
 
@@ -91,11 +92,21 @@ public class ZookeeperDynamicConfiguration implements DynamicConfiguration {
         cacheListener.removeListener(key, listener);
     }
 
+    /**
+     * 尝试从 zookeeper 中获取配置文件
+     *
+     * @param key     the key to represent a configuration
+     * @param group   the group where the key belongs to
+     * @param timeout timeout value for fetching the target config
+     * @return
+     * @throws IllegalStateException
+     */
     @Override
     public String getConfig(String key, String group, long timeout) throws IllegalStateException {
         /**
          * when group is not null, we are getting startup configs from Config Center, for example:
          * group=dubbo, key=dubbo.properties
+         * 存在 group 的情况下就是 group/key
          */
         if (StringUtils.isNotEmpty(group)) {
             key = group + "/" + key;
@@ -104,12 +115,14 @@ public class ZookeeperDynamicConfiguration implements DynamicConfiguration {
          * when group is null, we are fetching governance rules, for example:
          * 1. key=org.apache.dubbo.DemoService.configurators
          * 2. key = org.apache.dubbo.DemoService.condition-router
+         * 不存在 group 的情况下就是直接将 key 的 . 替换为 / 即可
          */
         else {
             int i = key.lastIndexOf(".");
             key = key.substring(0, i) + "/" + key.substring(i + 1);
         }
 
+        // 尝试获取 zookeeper 中的配置文件
         return (String) getInternalProperty(rootPath + "/" + key);
     }
 }

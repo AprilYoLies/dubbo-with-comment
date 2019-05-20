@@ -70,13 +70,16 @@ public class ConfigurationUtils {
         return StringUtils.trim(Environment.getInstance().getConfiguration().getString(property, defaultValue));
     }
 
+    // 将 content 解析为属性键值对，放入 map
     public static Map<String, String> parseProperties(String content) throws IOException {
         Map<String, String> map = new HashMap<>();
         if (StringUtils.isEmpty(content)) {
             logger.warn("You specified the config centre, but there's not even one single config item in it.");
         } else {
+            // 需要通过 properties 加载内容
             Properties properties = new Properties();
             properties.load(new StringReader(content));
+            // 映射属性键值对
             properties.stringPropertyNames().forEach(
                     k -> map.put(k, properties.getProperty(k))
             );

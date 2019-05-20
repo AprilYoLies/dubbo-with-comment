@@ -179,6 +179,8 @@ public abstract class AbstractZookeeperClient<TargetDataListener, TargetChildLis
         }
     }
 
+    // 这个方法应该是获取位于 zookeeper 中的配置文件
+    // /dubbo/config/demo-provider/dubbo.properties
     @Override
     public String getContent(String path) {
         if (!checkExists(path)) {

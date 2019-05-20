@@ -83,6 +83,7 @@ public interface DynamicConfiguration extends Configuration {
 
     /**
      * Get the configuration mapped to the given key and the given group
+     * 尝试从 zookeeper 中获取配置文件
      *
      * @param key   the key to represent a configuration
      * @param group the group where the key belongs to
