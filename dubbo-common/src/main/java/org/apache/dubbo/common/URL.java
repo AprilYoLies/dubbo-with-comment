@@ -494,9 +494,11 @@ class URL implements Serializable {
         return decode(getParameter(key, defaultValue));
     }
 
+    // 从参数中获取 key 的值，没有的话就获取 default.key
     public String getParameter(String key) {
         String value = parameters.get(key);
         if (StringUtils.isEmpty(value)) {
+            // 获取 default.key
             value = parameters.get(DEFAULT_KEY_PREFIX + key);
         }
         return value;
@@ -1332,10 +1334,15 @@ class URL implements Serializable {
      * @return
      */
     public String getServiceKey() {
+        // url interface 参数的值
+        // inf -> org.apache.dubbo.demo.DemoService
         String inf = getServiceInterface();
         if (inf == null) {
             return null;
         }
+        // getParameter 从参数中获取 key 的值，没有的话就获取 default.key
+        // 构建的模式 group/path:version，根据 group 和 version 是否为空，有几种不同的构建结果
+        // 这里的构建结果为 org.apache.dubbo.demo.DemoService,因为 group 和 version 参数都没设置
         return buildKey(inf, getParameter(GROUP_KEY), getParameter(VERSION_KEY));
     }
 
@@ -1352,10 +1359,11 @@ class URL implements Serializable {
         return buildKey(inf, getParameter(GROUP_KEY), getParameter(VERSION_KEY));
     }
 
-    // 构建的模式 group/path:version
+    // 构建的模式 group/path:version，根据 group 和 version 是否为空，有几种不同的构建结果
     public static String buildKey(String path, String group, String version) {
         StringBuilder buf = new StringBuilder();
         if (group != null && group.length() > 0) {
+            // group 不为空，构建结果为 group/
             buf.append(group).append("/");
         }
         buf.append(path);
@@ -1379,6 +1387,7 @@ class URL implements Serializable {
     }
 
     public String getServiceInterface() {
+        // 获取 url 中的 interface 参数的信息
         return getParameter(INTERFACE_KEY, path);
     }
 

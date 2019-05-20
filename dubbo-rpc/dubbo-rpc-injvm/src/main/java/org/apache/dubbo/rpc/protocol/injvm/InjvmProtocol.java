@@ -88,6 +88,7 @@ public class InjvmProtocol extends AbstractProtocol implements Protocol {
     }
 
     @Override
+    // 这里的 invoker 实际是一个 AbstractProxyInvoker，是通过 new 的方式获得，它引用了 wrapper（动态构造）实例，保存了 DemoServiceImpl、DemoService、url 地址
     public <T> Exporter<T> export(Invoker<T> invoker) throws RpcException {
         return new InjvmExporter<T>(invoker, invoker.getUrl().getServiceKey(), exporterMap);
     }

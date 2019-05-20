@@ -57,10 +57,13 @@ public class ProtocolListenerWrapper implements Protocol {
     @Override
     public <T> Exporter<T> export(Invoker<T> invoker) throws RpcException {
         if (REGISTRY_PROTOCOL.equals(invoker.getUrl().getProtocol())) {
+            // 如果 url 使用的协议是 registry，就会执行此 export 方法
             return protocol.export(invoker);
         }
+        // ListenerExporterWrapper 对直接返回的 Exporter 进行了封装，主要是增加了一些监听器属性
         return new ListenerExporterWrapper<T>(protocol.export(invoker),
                 Collections.unmodifiableList(ExtensionLoader.getExtensionLoader(ExporterListener.class)
+                        // 
                         .getActivateExtension(invoker.getUrl(), EXPORTER_LISTENER_KEY)));
     }
 

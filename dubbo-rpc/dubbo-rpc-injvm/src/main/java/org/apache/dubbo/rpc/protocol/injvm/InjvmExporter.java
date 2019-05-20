@@ -29,12 +29,15 @@ class InjvmExporter<T> extends AbstractExporter<T> {
 
     private final String key;
 
+    // 保存的是服务名 -> Export 对
+    // org.apache.dubbo.demo.DemoService -> Exporter
     private final Map<String, Exporter<?>> exporterMap;
 
     InjvmExporter(Invoker<T> invoker, String key, Map<String, Exporter<?>> exporterMap) {
         super(invoker);
         this.key = key;
         this.exporterMap = exporterMap;
+        // 保存的是 org.apache.dubbo.demo.DemoService -> Exporter
         exporterMap.put(key, this);
     }
 

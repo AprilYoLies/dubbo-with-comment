@@ -207,13 +207,15 @@ public class ExtensionLoader<T> {
      * This is equivalent to {@code getActivateExtension(url, url.getParameter(key).split(","), null)}
      *
      * @param url   url
-     * @param key   url parameter key which used to get extension point names
-     * @param group group
+     * @param key   url parameter key which used to get extension point names，为 exporter.listener
+     * @param group group 此时为 null
      * @return extension list which are activated.
      * @see #getActivateExtension(org.apache.dubbo.common.URL, String[], String)
      */
     public List<T> getActivateExtension(URL url, String key, String group) {
+        // 获取 url 中的 key 参数
         String value = url.getParameter(key);
+        // 这里第二个参数为全部的 listener 的信息，group 为分组信息，这里为 null
         return getActivateExtension(url, StringUtils.isEmpty(value) ? null : COMMA_SPLIT_PATTERN.split(value), group);
     }
 
@@ -226,44 +228,60 @@ public class ExtensionLoader<T> {
      * @return extension list which are activated
      * @see org.apache.dubbo.common.extension.Activate
      */
+    // 第二个参数为全部的 listener 的信息（从 url 中获取），group 为分组信息，这里为 null（特殊情况）
     public List<T> getActivateExtension(URL url, String[] values, String group) {
         List<T> exts = new ArrayList<>();
         List<String> names = values == null ? new ArrayList<>(0) : Arrays.asList(values);
+        // listener 不包括 -default 的参数
         if (!names.contains(REMOVE_VALUE_PREFIX + DEFAULT_KEY)) {
+            // 加载全部的 ExtensionClasses 到 cachedClasses 中，同时也会对 cachedActivates 进行填充
             getExtensionClasses();
+            // cachedActivates 存储的是类全限定名和对应的 Activate 注解
             for (Map.Entry<String, Object> entry : cachedActivates.entrySet()) {
                 String name = entry.getKey();
+                // 这是 Activate 注解
                 Object activate = entry.getValue();
 
                 String[] activateGroup, activateValue;
 
                 if (activate instanceof Activate) {
+                    // 获取 Activate 注解的 group 和 value 信息
                     activateGroup = ((Activate) activate).group();
                     activateValue = ((Activate) activate).value();
                 } else if (activate instanceof com.alibaba.dubbo.common.extension.Activate) {
+                    // 这是兼容老版本的 Activate 注解的信息
                     activateGroup = ((com.alibaba.dubbo.common.extension.Activate) activate).group();
                     activateValue = ((com.alibaba.dubbo.common.extension.Activate) activate).value();
                 } else {
                     continue;
                 }
+                // group 为空或者空串，group 存在于 activateGroup 中
                 if (isMatchGroup(group, activateGroup)) {
                     T ext = getExtension(name);
+                    // 那这里就是获取 url 中没有指定的 extension ？？
                     if (!names.contains(name)
                             && !names.contains(REMOVE_VALUE_PREFIX + name)
+                            // activateValue 为 Activate 注解的 value 值，如果 activateValue 的某一项 存在于 url 的某一个参数，
+                            // 并且值不为空，返回 true，keys 为空也是返回 true
                             && isActive(activateValue, url)) {
                         exts.add(ext);
                     }
                 }
             }
+            // 对这些 extension 进行排序
             exts.sort(ActivateComparator.COMPARATOR);
         }
+        // 这里就是用来处理 url 中不包含的 extension 了
         List<T> usrs = new ArrayList<>();
         for (int i = 0; i < names.size(); i++) {
             String name = names.get(i);
+            // 如果 name 不是 - 开头，且 names 不存在 -name 的元素
             if (!name.startsWith(REMOVE_VALUE_PREFIX)
                     && !names.contains(REMOVE_VALUE_PREFIX + name)) {
+                // 如果是 default
                 if (DEFAULT_KEY.equals(name)) {
                     if (!usrs.isEmpty()) {
+                        // 这里也就是说先加 usrs 的 extension，再是 url 中不包括的 extension
                         exts.addAll(0, usrs);
                         usrs.clear();
                     }
@@ -274,6 +292,7 @@ public class ExtensionLoader<T> {
             }
         }
         if (!usrs.isEmpty()) {
+            // 再把剩余的 usrs 添加到 exts 中
             exts.addAll(usrs);
         }
         return exts;
@@ -293,14 +312,17 @@ public class ExtensionLoader<T> {
         return false;
     }
 
+    // keys 为 Activate 注解的 value 值，如果 keys 的某一项存在于 url 的某一个参数，并且值不为空，返回 true，keys 为空也是返回 true
     private boolean isActive(String[] keys, URL url) {
         if (keys.length == 0) {
             return true;
         }
         for (String key : keys) {
+            // 遍历 url 的每一个参数项
             for (Map.Entry<String, String> entry : url.getParameters().entrySet()) {
                 String k = entry.getKey();
                 String v = entry.getValue();
+                // 如果参数的 key 存在于 Activate 注解的 value 中，并且 值不为空
                 if ((k.equals(key) || k.endsWith("." + key))
                         && ConfigUtils.isNotEmpty(v)) {
                     return true;
