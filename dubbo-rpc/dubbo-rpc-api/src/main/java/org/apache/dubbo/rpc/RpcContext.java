@@ -137,6 +137,7 @@ public class RpcContext {
      * @return context
      */
     public static RpcContext getContext() {
+        // 获取线程本地变量， LOCAL 是 InternalThreadLocal 实例（实际是调用的 InternalThreadLocalMap 的 get 方法），具有唯一的 id
         return LOCAL.get();
     }
 

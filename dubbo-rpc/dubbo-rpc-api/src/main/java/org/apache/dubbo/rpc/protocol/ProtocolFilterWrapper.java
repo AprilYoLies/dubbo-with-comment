@@ -49,32 +49,49 @@ public class ProtocolFilterWrapper implements Protocol {
         this.protocol = protocol;
     }
 
+    /**
+     * 构建 Invoker 链
+     *
+     * @param invoker 在 JavassistProxyFactory 类中创建的 AbstractProxyInvoker 匿名类
+     * @param key     service.filter 或者 reference.filter
+     * @param group   provider 或者 consumer
+     * @param <T>
+     * @return
+     */
     private static <T> Invoker<T> buildInvokerChain(final Invoker<T> invoker, String key, String group) {
         Invoker<T> last = invoker;
+        // getActivateExtension 方法是先获取 url 参数 key 的值中 default 元素（如果存在）之前的全部 extension，然后是不在 key 指定
+        // 值中的其他 extension，最后才是剩下的 default（如果存在）元素之后的全部 extension
         List<Filter> filters = ExtensionLoader.getExtensionLoader(Filter.class).getActivateExtension(invoker.getUrl(), key, group);
         if (!filters.isEmpty()) {
+            // 遍历所获取的全部 Filter extension 元素
             for (int i = filters.size() - 1; i >= 0; i--) {
                 final Filter filter = filters.get(i);
                 final Invoker<T> next = last;
+                // 这里应该是使用 Invoker 对获取的 filter 进行了封装，last 指向新建的 Invoker
                 last = new Invoker<T>() {
 
                     @Override
                     public Class<T> getInterface() {
+                        // 使用 invoker 的 interface 作为新建 Invoker 的 getInterface 方法的返回值
                         return invoker.getInterface();
                     }
 
                     @Override
                     public URL getUrl() {
+                        // 使用 invoker 的 url 作为新建 Invoker 的 getUrl 方法的返回值
                         return invoker.getUrl();
                     }
 
                     @Override
                     public boolean isAvailable() {
+                        // 使用 invoker 的状态作为新建 Invoker 的 isAvailable 方法的返回值
                         return invoker.isAvailable();
                     }
 
                     @Override
                     public Result invoke(Invocation invocation) throws RpcException {
+                        // 这个 filter 以 AccessLogFilter 的实现作为实例
                         Result result = filter.invoke(next, invocation);
                         if (result instanceof AsyncRpcResult) {
                             AsyncRpcResult asyncResult = (AsyncRpcResult) result;
@@ -87,11 +104,13 @@ public class ProtocolFilterWrapper implements Protocol {
 
                     @Override
                     public void destroy() {
+                        // 使用 invoker 的 destroy 作为新建 Invoker 的 destroy 方法的返回值
                         invoker.destroy();
                     }
 
                     @Override
                     public String toString() {
+                        // 使用 invoker 的 toString 作为新建 Invoker 的 toString 方法的返回值
                         return invoker.toString();
                     }
                 };
@@ -108,8 +127,10 @@ public class ProtocolFilterWrapper implements Protocol {
     @Override
     public <T> Exporter<T> export(Invoker<T> invoker) throws RpcException {
         if (REGISTRY_PROTOCOL.equals(invoker.getUrl().getProtocol())) {
+            // 如果 url 使用的是 registry 协议，执行这个 export 方法
             return protocol.export(invoker);
         }
+        // invoker 是在 JavassistProxyFactory 类中创建的 AbstractProxyInvoker 匿名类
         return protocol.export(buildInvokerChain(invoker, SERVICE_FILTER_KEY, CommonConstants.PROVIDER));
     }
 

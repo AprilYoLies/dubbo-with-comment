@@ -38,7 +38,7 @@ import static org.apache.dubbo.common.constants.RpcConstants.EXPORTER_LISTENER_K
  * ListenerProtocol
  */
 public class ProtocolListenerWrapper implements Protocol {
-
+    // 被包装的 protocol，类型为 ProtocolFilterWrapper
     private final Protocol protocol;
 
     public ProtocolListenerWrapper(Protocol protocol) {
@@ -63,7 +63,8 @@ public class ProtocolListenerWrapper implements Protocol {
         // ListenerExporterWrapper 对直接返回的 Exporter 进行了封装，主要是增加了一些监听器属性
         return new ListenerExporterWrapper<T>(protocol.export(invoker),
                 Collections.unmodifiableList(ExtensionLoader.getExtensionLoader(ExporterListener.class)
-                        // 
+                        // getActivateExtension 这个函数主要是根据 url 中的 exporter.listener 参数，条件性的获取
+                        // org.apache.dubbo.rpc.ExporterListener 接口对应的 extension
                         .getActivateExtension(invoker.getUrl(), EXPORTER_LISTENER_KEY)));
     }
 

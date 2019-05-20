@@ -188,6 +188,7 @@ public class ExtensionLoader<T> {
      * @see #getActivateExtension(org.apache.dubbo.common.URL, String, String)
      */
     public List<T> getActivateExtension(URL url, String key) {
+        // 不考虑分组的情况
         return getActivateExtension(url, key, null);
     }
 
@@ -204,6 +205,7 @@ public class ExtensionLoader<T> {
     }
 
     /**
+     * 获取 url 中的
      * This is equivalent to {@code getActivateExtension(url, url.getParameter(key).split(","), null)}
      *
      * @param url   url
@@ -213,9 +215,9 @@ public class ExtensionLoader<T> {
      * @see #getActivateExtension(org.apache.dubbo.common.URL, String[], String)
      */
     public List<T> getActivateExtension(URL url, String key, String group) {
-        // 获取 url 中的 key 参数
+        // 获取 url 中的 key 参数（比如 exporter.listener）
         String value = url.getParameter(key);
-        // 这里第二个参数为全部的 listener 的信息，group 为分组信息，这里为 null
+        // 这里第二个参数为全部的 listener 的信息，group 为分组信息，这里为 null，条件性的获取 extension
         return getActivateExtension(url, StringUtils.isEmpty(value) ? null : COMMA_SPLIT_PATTERN.split(value), group);
     }
 
@@ -229,6 +231,8 @@ public class ExtensionLoader<T> {
      * @see org.apache.dubbo.common.extension.Activate
      */
     // 第二个参数为全部的 listener 的信息（从 url 中获取），group 为分组信息，这里为 null（特殊情况）
+    // 获取的 extension 有一定的排序规则，先是 values 中 default 之前的全部元素，再是非 values 中的全部元素，
+    // 最后才是 default 之后的全部 extension 元素
     public List<T> getActivateExtension(URL url, String[] values, String group) {
         List<T> exts = new ArrayList<>();
         List<String> names = values == null ? new ArrayList<>(0) : Arrays.asList(values);

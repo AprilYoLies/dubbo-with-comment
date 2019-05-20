@@ -43,10 +43,13 @@ public final class InternalThreadLocalMap {
     }
 
     public static InternalThreadLocalMap get() {
+        // 要获取 InternalThreadLocalMap，需要当前线程是 InternalThread
         Thread thread = Thread.currentThread();
         if (thread instanceof InternalThread) {
+            // fastGet 应该是相对于 jdk 默认 ThreadLocal 的一种线程本地变量获取方式
             return fastGet((InternalThread) thread);
         }
+        // 这就是传统的 jdk ThreadLocal 获取线程本地变量的方式
         return slowGet();
     }
 
@@ -63,7 +66,9 @@ public final class InternalThreadLocalMap {
         slowThreadLocalMap = null;
     }
 
+    // 获取下一个可用的 index
     public static int nextVariableIndex() {
+        // NEXT_INDEX 是 AtomicInteger 原子类，可以保证获取的 index 的唯一性、可见性
         int index = NEXT_INDEX.getAndIncrement();
         if (index < 0) {
             NEXT_INDEX.decrementAndGet();
@@ -80,8 +85,12 @@ public final class InternalThreadLocalMap {
         indexedVariables = newIndexedVariableTable();
     }
 
+    // 通过 InternalThreadLocal 的唯一 id 进行查找,数组结构，查找快
     public Object indexedVariable(int index) {
+        // 通过这句代码，可以想到 InternalThreadLocalMap 的内部是通过数组的方式进行存储的
         Object[] lookup = indexedVariables;
+        // 通过 InternalThreadLocal 的唯一 id 进行查找，因为内部是数组结构，所以被称为 fastGet？？
+        // 如果查找的 InternalThreadLocal 的唯一 id 大于 indexedVariables 的长度，直接返回一个新 Object
         return index < lookup.length ? lookup[index] : UNSET;
     }
 
@@ -130,18 +139,26 @@ public final class InternalThreadLocalMap {
         return array;
     }
 
+    // fastGet 应该是相对于 jdk 默认 ThreadLocal 的一种线程本地变量获取方式
     private static InternalThreadLocalMap fastGet(InternalThread thread) {
+        // 获取 InternalThread 的 threadLoaclMap，这是自定义的 InternalThread 的一个特殊 map
         InternalThreadLocalMap threadLocalMap = thread.threadLocalMap();
         if (threadLocalMap == null) {
+            // 采用的延迟加载，即在真正使用时才会进行初始化
             thread.setThreadLocalMap(threadLocalMap = new InternalThreadLocalMap());
         }
+        // 返回自定义线程中的 threadLocalMap
         return threadLocalMap;
     }
 
+    // 这就是传统的 jdk ThreadLocal 获取线程本地变量的方式
     private static InternalThreadLocalMap slowGet() {
+        // slowThreadLocalMap 就是一个 jdk 的 ThreadLocal 变量，内部保存的是一个 InternalThreadLocalMap
         ThreadLocal<InternalThreadLocalMap> slowThreadLocalMap = InternalThreadLocalMap.slowThreadLocalMap;
+        // 拿到 ThreadLocal 中保存的那个 InternalThreadLocalMap
         InternalThreadLocalMap ret = slowThreadLocalMap.get();
         if (ret == null) {
+            // 也是采用的延迟加载的方式，在真正使用的时候才进行初始化
             ret = new InternalThreadLocalMap();
             slowThreadLocalMap.set(ret);
         }

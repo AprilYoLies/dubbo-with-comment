@@ -32,12 +32,14 @@ import java.util.Set;
  * This design is learning from {@see io.netty.util.concurrent.FastThreadLocal} which is in Netty.
  */
 public class InternalThreadLocal<V> {
-
+    // 根据类加载机制，可以确定 VARIABLES_TO_REMOVE_INDEX 是所有 InternalThreadLocal 的 index 中最小的那个值减去一
     private static final int VARIABLES_TO_REMOVE_INDEX = InternalThreadLocalMap.nextVariableIndex();
 
+    // 这个应该是属于 InternalThreadLocal 的唯一 id
     private final int index;
 
     public InternalThreadLocal() {
+        // 在构建 InternalThreadLocal 时，通过 InternalThreadLocalMap 获取唯一 id
         index = InternalThreadLocalMap.nextVariableIndex();
     }
 
@@ -84,17 +86,26 @@ public class InternalThreadLocal<V> {
         InternalThreadLocalMap.destroy();
     }
 
+    /**
+     * 将新建这个初始化值添加到待删除的集合中
+     *
+     * @param threadLocalMap
+     * @param variable
+     */
     @SuppressWarnings("unchecked")
     private static void addToVariablesToRemove(InternalThreadLocalMap threadLocalMap, InternalThreadLocal<?> variable) {
+        // 可以肯定 VARIABLES_TO_REMOVE_INDEX 是此 InternalThreadLocal 的第一个 id 号（此位置是为了保存一个 set 集合，其中存放的是 InternalThreadLocal）
         Object v = threadLocalMap.indexedVariable(VARIABLES_TO_REMOVE_INDEX);
         Set<InternalThreadLocal<?>> variablesToRemove;
         if (v == InternalThreadLocalMap.UNSET || v == null) {
+            // VARIABLES_TO_REMOVE_INDEX 位置为空，就新建一个 set 保存到 VARIABLES_TO_REMOVE_INDEX 位置
             variablesToRemove = Collections.newSetFromMap(new IdentityHashMap<InternalThreadLocal<?>, Boolean>());
             threadLocalMap.setIndexedVariable(VARIABLES_TO_REMOVE_INDEX, variablesToRemove);
         } else {
+            // 执行到这里，说明这个用于存放 InternalThreadLocal 的集合是存在的，获取这个集合就行
             variablesToRemove = (Set<InternalThreadLocal<?>>) v;
         }
-
+        // 将当前这个 InternalThreadLocal 添加到这个集合中
         variablesToRemove.add(variable);
     }
 
@@ -116,24 +127,32 @@ public class InternalThreadLocal<V> {
      */
     @SuppressWarnings("unchecked")
     public final V get() {
+        // 获取 InternalThreadLocalMap，根据当前线程的类型，可以分为 fastGet 和 slowGet
         InternalThreadLocalMap threadLocalMap = InternalThreadLocalMap.get();
+        // 通过 InternalThreadLocal 的唯一 id 进行查找,数组结构，查找快
         Object v = threadLocalMap.indexedVariable(index);
         if (v != InternalThreadLocalMap.UNSET) {
+            // 如果获取的不是默认的新 Object，返回获取的值
             return (V) v;
         }
 
+        // 返回初始化的值
         return initialize(threadLocalMap);
     }
 
     private V initialize(InternalThreadLocalMap threadLocalMap) {
         V v = null;
         try {
+            // 获取初始化的值，如果不对此方法进行重写，默认为 null
             v = initialValue();
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
 
+        // 将获取的这个初始化的值保存到当前线程的 InternalThreadLocalMap 中，键为 InternalThreadLocal 的唯一 id
         threadLocalMap.setIndexedVariable(index, v);
+        // 将当前这个 InternalThreadLocal 添加到 threadLocalMap 的 VARIABLES_TO_REMOVE_INDEX 位置中去
+        // VARIABLES_TO_REMOVE_INDEX 这个位置存放的是一个 set 集合，里边的内容是 InternalThreadLocal
         addToVariablesToRemove(threadLocalMap, this);
         return v;
     }

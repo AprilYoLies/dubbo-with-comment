@@ -94,7 +94,7 @@ public class AccessLogFilter implements Filter {
     /**
      * This method logs the access log for service method invocation call.
      *
-     * @param invoker service
+     * @param invoker service，应该是表示下一个 invoker
      * @param inv     Invocation service method.
      * @return Result from service method.
      * @throws RpcException
@@ -103,7 +103,9 @@ public class AccessLogFilter implements Filter {
     public Result invoke(Invoker<?> invoker, Invocation inv) throws RpcException {
         try {
             String accessLogKey = invoker.getUrl().getParameter(ACCESS_LOG_KEY);
+            // 这里也就是说，只有在 url 具有 dubbo.accesslog 参数时，才会记录相关的日志信息
             if (ConfigUtils.isNotEmpty(accessLogKey)) {
+                // 构建 AccessLogData 访问日志属性
                 AccessLogData logData = buildAccessLogData(invoker, inv);
                 log(accessLogKey, logData);
             }
@@ -161,6 +163,7 @@ public class AccessLogFilter implements Filter {
         }
     }
 
+    // 构建访问日志数据
     private AccessLogData buildAccessLogData(Invoker<?> invoker, Invocation inv) {
         RpcContext context = RpcContext.getContext();
         AccessLogData logData = AccessLogData.newLogData();

@@ -813,7 +813,7 @@ public class ServiceConfig<T> extends AbstractServiceConfig {
         //         if (extName == null)
         //             throw new IllegalStateException("Failed to get extension (org.apache.dubbo.rpc.Protocol) name from url (" + url.toString() + ") use keys([protocol])");
         //         org.apache.dubbo.rpc.Protocol extension = (org.apache.dubbo.rpc.Protocol) ExtensionLoader.getExtensionLoader(org.apache.dubbo.rpc.Protocol.class).getExtension(extName);
-        // 这里返回的 Exporter 实际是 ListenerExporterWrapper，它对实际的 Exporter 进行了封装
+        // 这里返回的 Exporter 实际是 ProtocolListenerWrapper，它对实际的 Exporter 进行了封装
         //         return extension.export(arg0);
         //
         //     public org.apache.dubbo.rpc.Invoker refer(java.lang.Class arg0, org.apache.dubbo.common.URL arg1) throws org.apache.dubbo.rpc.RpcException {
