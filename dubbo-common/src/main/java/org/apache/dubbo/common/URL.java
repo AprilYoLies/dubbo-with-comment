@@ -317,6 +317,7 @@ class URL implements Serializable {
                 : new URL(url.getProtocol(), url.getUsername(), url.getPassword(), url.getHost(), url.getPort(), url.getPath(), newMap);
     }
 
+    // 使用 URLEncoder 对字符串进行编码
     public static String encode(String value) {
         if (StringUtils.isEmpty(value)) {
             return "";
@@ -957,9 +958,19 @@ class URL implements Serializable {
 
     public URL addParameterAndEncoded(String key, String value) {
         if (StringUtils.isEmpty(value)) {
+            // value 为空不做任何处理
             return this;
         }
-        return addParameter(key, encode(value));
+        // 为 url 添加一对属性
+        // registry://127.0.0.1:2181/org.apache.dubbo.registry.RegistryService?
+        // application=demo-provider&
+        // dubbo=2.0.2&
+        // export=dubbo%3A%2F%2F192.168.1.104%3A20880%2Forg.apache.dubbo.demo.DemoService%3Fanyhost%3Dtrue%26application%3Ddemo-provider%26bean.name%3Dorg.apache.dubbo.demo.DemoService%26bind.ip%3D192.168.1.104%26bind.port%3D20880%26deprecated%3Dfalse%26dubbo%3D2.0.2%26dynamic%3Dtrue%26generic%3Dfalse%26interface%3Dorg.apache.dubbo.demo.DemoService%26methods%3DsayHello%26pid%3D4280%26register%3Dtrue%26release%3D%26side%3Dprovider%26timestamp%3D1558423288116&
+        // pid=4280&
+        // registry=zookeeper&
+        // timestamp=1558423288108
+        URL url = addParameter(key, encode(value));
+        return url;
     }
 
     public URL addParameter(String key, boolean value) {
@@ -1018,6 +1029,7 @@ class URL implements Serializable {
     public URL addParameter(String key, String value) {
         if (StringUtils.isEmpty(key)
                 || StringUtils.isEmpty(value)) {
+            // 键值对都不应该为空或者空串
             return this;
         }
         // if value doesn't change, return immediately
@@ -1045,12 +1057,14 @@ class URL implements Serializable {
 
     /**
      * Add parameters to a new url.
+     * 根据一定的条件添加参数，重构 URL
      *
      * @param parameters parameters in key-value pairs
      * @return A new URL
      */
     public URL addParameters(Map<String, String> parameters) {
         if (CollectionUtils.isEmptyMap(parameters)) {
+            // 参数为空，直接返回
             return this;
         }
 
@@ -1058,12 +1072,15 @@ class URL implements Serializable {
         for (Map.Entry<String, String> entry : parameters.entrySet()) {
             String value = getParameters().get(entry.getKey());
             if (value == null) {
+                // 如果当前 URL 的 parameters 中不存在对应 key 的值，且参数 parameters 对应的 value 不为空
                 if (entry.getValue() != null) {
+                    // 标记不存在
                     hasAndEqual = false;
                     break;
                 }
             } else {
                 if (!value.equals(entry.getValue())) {
+                    // 两个 value 不相等，也标记为不存在
                     hasAndEqual = false;
                     break;
                 }
@@ -1071,11 +1088,13 @@ class URL implements Serializable {
         }
         // return immediately if there's no change
         if (hasAndEqual) {
+            // 这里说明不需要重构 URL
             return this;
         }
 
         Map<String, String> map = new HashMap<>(getParameters());
         map.putAll(parameters);
+        // 合并两个 parameters 集合，重构 URL
         return new URL(protocol, username, password, host, port, path, map);
     }
 
@@ -1088,16 +1107,20 @@ class URL implements Serializable {
         return new URL(protocol, username, password, host, port, path, map);
     }
 
+    // 添加可变参数类型的参数
     public URL addParameters(String... pairs) {
         if (pairs == null || pairs.length == 0) {
+            // 可变参数类型长度为 0，直接返回
             return this;
         }
         if (pairs.length % 2 != 0) {
+            // 要求可变参数长度为偶数
             throw new IllegalArgumentException("Map pairs can not be odd number.");
         }
         Map<String, String> map = new HashMap<>();
         int len = pairs.length / 2;
         for (int i = 0; i < len; i++) {
+            // 将可变参数整理为键值对的形式
             map.put(pairs[2 * i], pairs[2 * i + 1]);
         }
         return addParameters(map);
@@ -1214,6 +1237,21 @@ class URL implements Serializable {
         if (full != null) {
             return full;
         }
+        // dubbo:// 192.168.1.104:20880/org.apache.dubbo.demo.DemoService?
+        // anyhost=true&
+        // application=demo-provider&
+        // bean.name=org.apache.dubbo.demo.DemoService&
+        // bind.ip=192.168.1.104&
+        // bind.port=20880&
+        // deprecated=false&
+        // dubbo=2.0.2&
+        // dynamic=true&
+        // generic=false&
+        // interface=org.apache.dubbo.demo.DemoService&
+        // methods=sayHello&
+        // pid=4111&register=true&
+        // release=&side=provider&
+        // timestamp=1558422811358
         return full = buildString(true, true);
     }
 
@@ -1234,15 +1272,19 @@ class URL implements Serializable {
         return buf.toString();
     }
 
+    // 添加 parameters,只添加存在于 parameters 中的 URL 的 parameter
     private void buildParameters(StringBuilder buf, boolean concat, String[] parameters) {
         if (CollectionUtils.isNotEmptyMap(getParameters())) {
             List<String> includes = (ArrayUtils.isEmpty(parameters) ? null : Arrays.asList(parameters));
             boolean first = true;
+            // 遍历 URL 的 parameters
             for (Map.Entry<String, String> entry : new TreeMap<>(getParameters()).entrySet()) {
                 if (entry.getKey() != null && entry.getKey().length() > 0
+                        // 只添加 parameters 中包含的参数
                         && (includes == null || includes.contains(entry.getKey()))) {
                     if (first) {
                         if (concat) {
+                            // dubbo://username:password@127.0.0.1:8888/path?key1=value1&key2=value2
                             buf.append("?");
                         }
                         first = false;
@@ -1264,11 +1306,14 @@ class URL implements Serializable {
     private String buildString(boolean appendUser, boolean appendParameter, boolean useIP, boolean useService, String... parameters) {
         StringBuilder buf = new StringBuilder();
         if (StringUtils.isNotEmpty(protocol)) {
+            // 添加协议前缀 比如：dubbo://
             buf.append(protocol);
             buf.append("://");
         }
         if (appendUser && StringUtils.isNotEmpty(username)) {
             buf.append(username);
+            // 添加 username 和 password
+            // dubbo://username:password@
             if (password != null && password.length() > 0) {
                 buf.append(":");
                 buf.append(password);
@@ -1277,11 +1322,14 @@ class URL implements Serializable {
         }
         String host;
         if (useIP) {
+            // 获取 ip，如果 ip 属性为空，直接通过主机名进行获取
             host = getIp();
         } else {
+            // 直接使用主机名
             host = getHost();
         }
         if (host != null && host.length() > 0) {
+            // dubbo://username:password@127.0.0.1:8888
             buf.append(host);
             if (port > 0) {
                 buf.append(":");
@@ -1295,11 +1343,13 @@ class URL implements Serializable {
             path = getPath();
         }
         if (path != null && path.length() > 0) {
+            // dubbo://username:password@127.0.0.1:8888/path
             buf.append("/");
             buf.append(path);
         }
 
         if (appendParameter) {
+            // dubbo://username:password@127.0.0.1:8888/path?key1=value1&key2=value2
             buildParameters(buf, true, parameters);
         }
         return buf.toString();

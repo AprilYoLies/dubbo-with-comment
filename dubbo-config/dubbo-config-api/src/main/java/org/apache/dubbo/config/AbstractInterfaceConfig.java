@@ -243,7 +243,9 @@ public abstract class AbstractInterfaceConfig extends AbstractMethodConfig {
         }
     }
 
+    // 检查 monitor 属性是否存在且有效
     protected void checkMonitor() {
+        // 检查 monitor 属性，没有的话就新建一个
         createMonitorIfAbsent();
         if (!monitor.isValid()) {
             logger.info("There's no valid monitor config found, if you want to open monitor statistics for Dubbo, " +
@@ -251,6 +253,7 @@ public abstract class AbstractInterfaceConfig extends AbstractMethodConfig {
         }
     }
 
+    // 检查 monitor 属性，没有的话就新建一个
     private void createMonitorIfAbsent() {
         if (this.monitor != null) {
             return;
@@ -259,6 +262,7 @@ public abstract class AbstractInterfaceConfig extends AbstractMethodConfig {
         setMonitor(
                 configManager
                         .getMonitor()
+                        // 尝试获取 MonitorConfig，没有的话就直接创建
                         .orElseGet(() -> {
                             MonitorConfig monitorConfig = new MonitorConfig();
                             monitorConfig.refresh();
@@ -425,36 +429,55 @@ public abstract class AbstractInterfaceConfig extends AbstractMethodConfig {
      * @return
      */
     protected URL loadMonitor(URL registryURL) {
+        // 检查 monitor 属性是否存在且有效
         checkMonitor();
         Map<String, String> map = new HashMap<String, String>();
+        // interface -> org.apache.dubbo.monitor.MonitorService
         map.put(INTERFACE_KEY, MonitorService.class.getName());
+        // 添加一些运行时的参数信息，比如：
+        // dubbo -> dubbo 协议版本
+        // release -> dubbo 版本
+        // timestamp -> 运行的时间戳
+        // 进程 id 号
         appendRuntimeParameters(map);
         //set ip
         String hostToRegistry = ConfigUtils.getSystemProperty(DUBBO_IP_TO_REGISTRY);
         if (StringUtils.isEmpty(hostToRegistry)) {
+            // 系统属性中没有获取到 DUBBO_IP_TO_REGISTRY，使用 127.0.0.1 或者本机 ip
             hostToRegistry = NetUtils.getLocalHost();
         } else if (NetUtils.isInvalidLocalHost(hostToRegistry)) {
+            // 系统属性一定要设置正确，否则报错
             throw new IllegalArgumentException("Specified invalid registry ip from property:" +
                     DUBBO_IP_TO_REGISTRY + ", value:" + hostToRegistry);
         }
+        // ip 键值对
         map.put(REGISTER_IP_KEY, hostToRegistry);
+        // 从 config 中获取相关参数，添加到 parameters 中
         appendParameters(map, monitor);
         appendParameters(map, application);
         String address = monitor.getAddress();
         String sysaddress = System.getProperty("dubbo.monitor.address");
         if (sysaddress != null && sysaddress.length() > 0) {
+            // dubbo.monitor.address 系统属性优先
             address = sysaddress;
         }
         if (ConfigUtils.isNotEmpty(address)) {
+            // map 中没有 protocol 属性
             if (!map.containsKey(PROTOCOL_KEY)) {
+                // 有别名为 logstat 的 MonitorFactory SPI 接口的
                 if (getExtensionLoader(MonitorFactory.class).hasExtension(LOGSTAT_PROTOCOL)) {
+                    // protocol -> logstat
                     map.put(PROTOCOL_KEY, LOGSTAT_PROTOCOL);
                 } else {
+                    // protocol -> dubbo
                     map.put(PROTOCOL_KEY, DUBBO_PROTOCOL);
                 }
             }
+            // 为 address 拼接相关属性
             return UrlUtils.parseURL(address, map);
         } else if (REGISTRY_PROTOCOL.equals(monitor.getProtocol()) && registryURL != null) {
+            // 如果 monitor 的协议属性为 registry，registryURL 不为空
+            // 根据 registryURL 重构 URL
             return URLBuilder.from(registryURL)
                     .setProtocol(DUBBO_PROTOCOL)
                     .addParameter(PROTOCOL_KEY, REGISTRY_PROTOCOL)

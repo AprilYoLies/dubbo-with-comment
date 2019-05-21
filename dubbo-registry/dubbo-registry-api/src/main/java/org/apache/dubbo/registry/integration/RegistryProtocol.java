@@ -191,19 +191,88 @@ public class RegistryProtocol implements Protocol {
     }
 
     @Override
+    // 这里的 originInvoker 是通过 DelegateProviderMetaDataInvoker wrapperInvoker = new DelegateProviderMetaDataInvoker(invoker, this); 进行构建
     public <T> Exporter<T> export(final Invoker<T> originInvoker) throws RpcException {
+        // zookeeper://127.0.0.1:2181/org.apache.dubbo.registry.RegistryService?
+        // application=demo-provider&
+        // dubbo=2.0.2&
+        // export=dubbo%3A%2F%2F192.168.1.104%3A20880%2Forg.apache.dubbo.demo.DemoService%3Fanyhost%3Dtrue%26application%3Ddemo-provider%26bean.name%3Dorg.apache.dubbo.demo.DemoService%26bind.ip%3D192.168.1.104%26bind.port%3D20880%26deprecated%3Dfalse%26dubbo%3D2.0.2%26dynamic%3Dtrue%26generic%3Dfalse%26interface%3Dorg.apache.dubbo.demo.DemoService%26methods%3DsayHello%26pid%3D5980%26register%3Dtrue%26release%3D%26side%3Dprovider%26timestamp%3D1558427892398&
+        // pid=5980&
+        // timestamp=1558427892390
+        // 获取 originInvoker 的 url，根据 url 本身的 registry 参数修改 url 的协议，并移除 registry 参数
         URL registryUrl = getRegistryUrl(originInvoker);
         // url to export locally
+        // dubbo://192.168.1.104:20880/org.apache.dubbo.demo.DemoService?
+        // anyhost=true&
+        // application=demo-provider&
+        // bean.name=org.apache.dubbo.demo.DemoService&
+        // bind.ip=192.168.1.104&
+        // bind.port=20880&
+        // deprecated=false&
+        // dubbo=2.0.2&
+        // dynamic=true&
+        // generic=false&
+        // interface=org.apache.dubbo.demo.DemoService&
+        // methods=sayHello&
+        // pid=5980&
+        // register=true&
+        // release=&
+        // side=provider&
+        // timestamp=1558427892398
+        // 将 originInvoker 的 url 的 export 参数值反解为 URL 对象
         URL providerUrl = getProviderUrl(originInvoker);
 
         // Subscribe the override data
         // FIXME When the provider subscribes, it will affect the scene : a certain JVM exposes the service and call
         //  the same service. Because the subscribed is cached key with the name of the service, it causes the
         //  subscription information to cover.
+        // 修改 registeredProviderUrl 协议为 provider，添加
+        // category -> configurators
+        // check -> false 参数
+        // provider://192.168.1.104:20880/org.apache.dubbo.demo.DemoService?
+        // anyhost=true&
+        // application=demo-provider&
+        // bean.name=org.apache.dubbo.demo.DemoService&
+        // bind.ip=192.168.1.104&
+        // bind.port=20880&
+        // category=configurators&
+        // check=false&
+        // deprecated=false&
+        // dubbo=2.0.2&
+        // dynamic=true&
+        // generic=false&
+        // interface=org.apache.dubbo.demo.DemoService&
+        // methods=sayHello&
+        // pid=8518&
+        // register=true&
+        // release=&
+        // side=provider&
+        // timestamp=1558439540723
         final URL overrideSubscribeUrl = getSubscribedOverrideUrl(providerUrl);
+        // 封装 overrideSubscribeUrl 和 originInvoker 为 OverrideListener
         final OverrideListener overrideSubscribeListener = new OverrideListener(overrideSubscribeUrl, originInvoker);
+        // 缓存 OverrideListener 实例和 overrideSubscribeUrl
         overrideListeners.put(overrideSubscribeUrl, overrideSubscribeListener);
 
+        // 通过 configurators 对 providerUrl 的部分属性进行重写，同时缓存了封装重写过的 providerUrl
+        // 和 listener 的 ServiceConfigurationListener
+        // dubbo://192.168.1.104:20880/org.apache.dubbo.demo.DemoService?
+        // anyhost=true&
+        // application=demo-provider&
+        // bean.name=org.apache.dubbo.demo.DemoService&
+        // bind.ip=192.168.1.104&
+        // bind.port=20880&
+        // deprecated=false&
+        // dubbo=2.0.2&
+        // dynamic=true&
+        // generic=false&
+        // interface=org.apache.dubbo.demo.DemoService&
+        // methods=sayHello&
+        // pid=8603&
+        // register=true&
+        // release=&
+        // side=provider&
+        // timestamp=1558439778014
         providerUrl = overrideUrlWithConfig(providerUrl, overrideSubscribeListener);
         //export invoker
         final ExporterChangeableWrapper<T> exporter = doLocalExport(originInvoker, providerUrl);
@@ -229,18 +298,39 @@ public class RegistryProtocol implements Protocol {
         return new DestroyableExporter<>(exporter);
     }
 
+    // 通过 configurators 对 providerUrl 的部分属性进行重写，同时缓存了封装重写过的 providerUrl 和 listener 的 ServiceConfigurationListener
     private URL overrideUrlWithConfig(URL providerUrl, OverrideListener listener) {
+        // 通过 configurators 重写部分 providerUrl 属性
         providerUrl = providerConfigurationListener.overrideUrl(providerUrl);
+        // 封装重写过的 providerUrl 和 listener 为 ServiceConfigurationListener
         ServiceConfigurationListener serviceConfigurationListener = new ServiceConfigurationListener(providerUrl, listener);
+        // 缓存此 ServiceConfigurationListener，键为 providerUrl 的 interface 属性
         serviceConfigurationListeners.put(providerUrl.getServiceKey(), serviceConfigurationListener);
         return serviceConfigurationListener.overrideUrl(providerUrl);
     }
 
     @SuppressWarnings("unchecked")
     private <T> ExporterChangeableWrapper<T> doLocalExport(final Invoker<T> originInvoker, URL providerUrl) {
+        // dubbo://192.168.1.104:20880/org.apache.dubbo.demo.DemoService?
+        // anyhost=true&
+        // application=demo-provider&
+        // bean.name=org.apache.dubbo.demo.DemoService&
+        // bind.ip=192.168.1.104&
+        // bind.port=20880&
+        // deprecated=false&
+        // dubbo=2.0.2&
+        // generic=false&
+        // interface=org.apache.dubbo.demo.DemoService&
+        // methods=sayHello&
+        // pid=8684&
+        // register=true&
+        // release=&
+        // side=provider&
+        // timestamp=1558440008495
         String key = getCacheKey(originInvoker);
 
         return (ExporterChangeableWrapper<T>) bounds.computeIfAbsent(key, s -> {
+            // 用 InvokerDelegate 封装 originInvoker，providerUrl
             Invoker<?> invokerDelegate = new InvokerDelegate<>(originInvoker, providerUrl);
             return new ExporterChangeableWrapper<>((Exporter<T>) protocol.export(invokerDelegate), originInvoker);
         });
@@ -298,10 +388,15 @@ public class RegistryProtocol implements Protocol {
         return registryFactory.getRegistry(registryUrl);
     }
 
+    // originInvoker 是 DelegateProviderMetaDataInvoker 的实例
     private URL getRegistryUrl(Invoker<?> originInvoker) {
+        // 从 DelegateProviderMetaDataInvoker 获取 registryUrl
         URL registryUrl = originInvoker.getUrl();
         if (REGISTRY_PROTOCOL.equals(registryUrl.getProtocol())) {
+            // 是使用的 registry 协议（只是理解为一种协议）
+            // 获取 url 的 registry 参数值
             String protocol = registryUrl.getParameter(REGISTRY_KEY, DEFAULT_REGISTRY);
+            // 根据 url 本身的 registry 参数修改 url 的协议，并移除 registry 参数
             registryUrl = registryUrl.setProtocol(protocol).removeParameter(REGISTRY_KEY);
         }
         return registryUrl;
@@ -338,8 +433,14 @@ public class RegistryProtocol implements Protocol {
 
     }
 
+    // 修改 registeredProviderUrl 协议为 provider，添加
+    // category -> configurators
+    // check -> false 参数
     private URL getSubscribedOverrideUrl(URL registeredProviderUrl) {
         return registeredProviderUrl.setProtocol(PROVIDER_PROTOCOL)
+                // 添加可变参数类型的参数，返回通过新参数重构的 URL
+                // category -> configurators
+                // check -> false
                 .addParameters(CATEGORY_KEY, CONFIGURATORS_CATEGORY, CHECK_KEY, String.valueOf(false));
     }
 
@@ -350,10 +451,12 @@ public class RegistryProtocol implements Protocol {
      * @return
      */
     private URL getProviderUrl(final Invoker<?> originInvoker) {
+        // 获取 originInvoker 的 url 的 export 参数
         String export = originInvoker.getUrl().getParameterAndDecoded(EXPORT_KEY);
         if (export == null || export.length() == 0) {
             throw new IllegalArgumentException("The registry export url is null! registry: " + originInvoker.getUrl());
         }
+        // 将 export 参数值反解为 URL 对象
         return URL.valueOf(export);
     }
 
@@ -364,7 +467,9 @@ public class RegistryProtocol implements Protocol {
      * @return
      */
     private String getCacheKey(final Invoker<?> originInvoker) {
+        // 获取 originInvoker 的 url 属性的 export 参数对应的 url
         URL providerUrl = getProviderUrl(originInvoker);
+        // 去掉 dynamic 和 enable 两个参数
         String key = providerUrl.removeParameters("dynamic", "enabled").toFullString();
         return key;
     }
@@ -451,6 +556,7 @@ public class RegistryProtocol implements Protocol {
     private static URL getConfigedInvokerUrl(List<Configurator> configurators, URL url) {
         if (configurators != null && configurators.size() > 0) {
             for (Configurator configurator : configurators) {
+                // 遍历 configurator 实例，对 url 进行配置
                 url = configurator.configure(url);
             }
         }
@@ -596,6 +702,7 @@ public class RegistryProtocol implements Protocol {
         }
 
         private <T> URL overrideUrl(URL providerUrl) {
+            // 通过 configurators 对 providerUrl 进行相应的配置
             return RegistryProtocol.getConfigedInvokerUrl(configurators, providerUrl);
         }
 
@@ -619,6 +726,7 @@ public class RegistryProtocol implements Protocol {
          * @return
          */
         private <T> URL overrideUrl(URL providerUrl) {
+            // 通过 configurators 对 providerUrl 进行相应的配置
             return RegistryProtocol.getConfigedInvokerUrl(configurators, providerUrl);
         }
 

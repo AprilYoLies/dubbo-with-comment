@@ -325,6 +325,7 @@ public class NetUtils {
      */
     public static String getIpByHost(String hostName) {
         try {
+            // 通过主机名获取主机 ip
             return InetAddress.getByName(hostName).getHostAddress();
         } catch (UnknownHostException e) {
             return hostName;

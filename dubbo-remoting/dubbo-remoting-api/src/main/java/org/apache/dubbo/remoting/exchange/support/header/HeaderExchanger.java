@@ -40,6 +40,7 @@ public class HeaderExchanger implements Exchanger {
     }
 
     @Override
+    // handler 为 org.apache.dubbo.rpc.protocol.dubbo.DubboProtocol.requestHandler
     public ExchangeServer bind(URL url, ExchangeHandler handler) throws RemotingException {
         return new HeaderExchangeServer(Transporters.bind(url, new DecodeHandler(new HeaderExchangeHandler(handler))));
     }

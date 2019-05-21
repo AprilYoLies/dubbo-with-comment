@@ -62,19 +62,27 @@ public abstract class AbstractConfigurator implements Configurator {
     @Override
     public URL configure(URL url) {
         // If override url is not enabled or is invalid, just return.
+        // 要求 configuratorUrl 的 enable 参数为 null 或者 true
+        // configuratorUrl 的 host 不为空
+        // url 和 url 的 host 不为空
         if (!configuratorUrl.getParameter(ENABLED_KEY, true) || configuratorUrl.getHost() == null || url == null || url.getHost() == null) {
             return url;
         }
         /**
          * This if branch is created since 2.7.0.
          */
+        // 获取 configuratorUrl 中的 configVersion 属性值
         String apiVersion = configuratorUrl.getParameter(CONFIG_VERSION_KEY);
         if (StringUtils.isNotEmpty(apiVersion)) {
+            // 分别获取 url 和 configuratorUrl 的 side 信息
             String currentSide = url.getParameter(SIDE_KEY);
             String configuratorSide = configuratorUrl.getParameter(SIDE_KEY);
             if (currentSide.equals(configuratorSide) && CONSUMER.equals(configuratorSide) && 0 == configuratorUrl.getPort()) {
+                // url 和 configuratorUrl 的 side 信息一致为 consumer，端口信息为 0
+                // NetUtils.getLocalHost() 获取 127.0.0.1 或者本机 ip
                 url = configureIfMatch(NetUtils.getLocalHost(), url);
             } else if (currentSide.equals(configuratorSide) && PROVIDER.equals(configuratorSide) && url.getPort() == configuratorUrl.getPort()) {
+                // url 和 configuratorUrl 的 side 信息一致为 provider，且二者的端口号配置相同
                 url = configureIfMatch(url.getHost(), url);
             }
         }
@@ -107,36 +115,45 @@ public abstract class AbstractConfigurator implements Configurator {
     }
 
     private URL configureIfMatch(String host, URL url) {
+        // configuratorUrl 主机名为 0.0.0.0 或者为 127.0.0.1 或者本机 ip
         if (ANYHOST_VALUE.equals(configuratorUrl.getHost()) || host.equals(configuratorUrl.getHost())) {
             // TODO, to support wildcards
+            // 获取 providerAddresses 参数
             String providers = configuratorUrl.getParameter(OVERRIDE_PROVIDERS_KEY);
             if (StringUtils.isEmpty(providers) || providers.contains(url.getAddress()) || providers.contains(ANYHOST_VALUE)) {
+                // providers 为空，或者包含 url 的地址，或者 providers 包含 0.0.0.0
+                // 从 configuratorUrl 中获取 application 参数，没有的话就获取 username
                 String configApplication = configuratorUrl.getParameter(APPLICATION_KEY,
                         configuratorUrl.getUsername());
+                // 从 url 中获取 application 参数，没有的话就获取 username
                 String currentApplication = url.getParameter(APPLICATION_KEY, url.getUsername());
                 if (configApplication == null || ANY_VALUE.equals(configApplication)
                         || configApplication.equals(currentApplication)) {
+                    // 满足的情况下
                     Set<String> conditionKeys = new HashSet<String>();
-                    conditionKeys.add(CATEGORY_KEY);
-                    conditionKeys.add(RemotingConstants.CHECK_KEY);
-                    conditionKeys.add(DYNAMIC_KEY);
-                    conditionKeys.add(ENABLED_KEY);
-                    conditionKeys.add(GROUP_KEY);
-                    conditionKeys.add(VERSION_KEY);
-                    conditionKeys.add(APPLICATION_KEY);
-                    conditionKeys.add(SIDE_KEY);
-                    conditionKeys.add(CONFIG_VERSION_KEY);
+                    conditionKeys.add(CATEGORY_KEY); // category
+                    conditionKeys.add(RemotingConstants.CHECK_KEY); // check
+                    conditionKeys.add(DYNAMIC_KEY); // dynamic
+                    conditionKeys.add(ENABLED_KEY); // enable
+                    conditionKeys.add(GROUP_KEY); // group
+                    conditionKeys.add(VERSION_KEY); // version
+                    conditionKeys.add(APPLICATION_KEY); // application
+                    conditionKeys.add(SIDE_KEY); // side
+                    conditionKeys.add(CONFIG_VERSION_KEY); // configVersion
                     for (Map.Entry<String, String> entry : configuratorUrl.getParameters().entrySet()) {
                         String key = entry.getKey();
                         String value = entry.getValue();
                         if (key.startsWith("~") || APPLICATION_KEY.equals(key) || SIDE_KEY.equals(key)) {
+                            // 从 configuratorUrl 参数中获取 ~ 开头、application、side 三种键，将其添加到 conditionKeys
                             conditionKeys.add(key);
+                            // 如果键值非空，非 *，且不等于 url 相对应的键值，直接返回 url
                             if (value != null && !ANY_VALUE.equals(value)
                                     && !value.equals(url.getParameter(key.startsWith("~") ? key.substring(1) : key))) {
                                 return url;
                             }
                         }
                     }
+                    // 用 configuratorUrl 剩余的 parameters 对 url 进行配置，分为覆盖和非覆盖两种方式
                     return doConfigure(url, configuratorUrl.removeParameters(conditionKeys));
                 }
             }

@@ -47,11 +47,14 @@ public abstract class AbstractProtocol implements Protocol {
     protected final Set<Invoker<?>> invokers = new ConcurrentHashSet<Invoker<?>>();
 
     protected static String serviceKey(URL url) {
+        // 尝试从参数中获取端口号，没有的话就默认使用 url 端口号
         int port = url.getParameter(RemotingConstants.BIND_PORT_KEY, url.getPort());
+        // 通过 port、servieName、serviceVersion、serviceGroup 构建 serviceKey
         return serviceKey(port, url.getPath(), url.getParameter(VERSION_KEY), url.getParameter(GROUP_KEY));
     }
 
     protected static String serviceKey(int port, String serviceName, String serviceVersion, String serviceGroup) {
+        // group/serviceName:serviceVersion:port
         return ProtocolUtils.serviceKey(port, serviceName, serviceVersion, serviceGroup);
     }
 

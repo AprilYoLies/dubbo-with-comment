@@ -59,14 +59,18 @@ public class Exchangers {
         return bind(URL.valueOf(url), handler);
     }
 
+    // handler 为 org.apache.dubbo.rpc.protocol.dubbo.DubboProtocol.requestHandler
     public static ExchangeServer bind(URL url, ExchangeHandler handler) throws RemotingException {
+        // 参数有效性检验
         if (url == null) {
             throw new IllegalArgumentException("url == null");
         }
         if (handler == null) {
             throw new IllegalArgumentException("handler == null");
         }
+        // url 如果没有 codec 参数，那么就添加一个 codec 为 exchange
         url = url.addParameterIfAbsent(RemotingConstants.CODEC_KEY, "exchange");
+        // getExchanger 方法获取的 Exchanger 就是 HeaderExchanger
         return getExchanger(url).bind(url, handler);
     }
 
@@ -109,12 +113,15 @@ public class Exchangers {
         return getExchanger(url).connect(url, handler);
     }
 
+    // 获取的 Exchanger 就是 HeaderExchanger
     public static Exchanger getExchanger(URL url) {
+        // 获取 url 中的 exchanger，没有的话就使用默认的 header
         String type = url.getParameter(RemotingConstants.EXCHANGER_KEY, RemotingConstants.DEFAULT_EXCHANGER);
         return getExchanger(type);
     }
 
     public static Exchanger getExchanger(String type) {
+        // type 为 header，获取的 Extension 就是 HeaderExchanger
         return ExtensionLoader.getExtensionLoader(Exchanger.class).getExtension(type);
     }
 

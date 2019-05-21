@@ -280,25 +280,47 @@ public class DubboProtocol extends AbstractProtocol {
 
     @Override
     public <T> Exporter<T> export(Invoker<T> invoker) throws RpcException {
+        // dubbo://192.168.1.104:20880/org.apache.dubbo.demo.DemoService?
+        // anyhost=true&
+        // application=demo-provider&
+        // bean.name=org.apache.dubbo.demo.DemoService&
+        // bind.ip=192.168.1.104&
+        // bind.port=20880&
+        // deprecated=false&
+        // dubbo=2.0.2&
+        // dynamic=true&
+        // generic=false&
+        // interface=org.apache.dubbo.demo.DemoService&
+        // methods=sayHello&
+        // pid=9288&
+        // register=true&
+        // release=&
+        // side=provider&
+        // timestamp=1558441849441
         URL url = invoker.getUrl();
-
         // export service.
+        // group/serviceName:serviceVersion:port
         String key = serviceKey(url);
         DubboExporter<T> exporter = new DubboExporter<T>(invoker, key, exporterMap);
+        // 缓存 key -> exporter 键值对信息
         exporterMap.put(key, exporter);
 
         //export an stub service for dispatching event
+        // 获取 dubbo.stub.event 和 is_callback_service 属性值，没有获取到的情况下，默认为 false
         Boolean isStubSupportEvent = url.getParameter(STUB_EVENT_KEY, DEFAULT_STUB_EVENT);
         Boolean isCallbackservice = url.getParameter(IS_CALLBACK_SERVICE, false);
         if (isStubSupportEvent && !isCallbackservice) {
+            // 获取 dubbo.stub.event.methods 属性值
             String stubServiceMethods = url.getParameter(STUB_EVENT_METHODS_KEY);
             if (stubServiceMethods == null || stubServiceMethods.length() == 0) {
+                // 这里也就是说 dubbo.stub.event 和 dubbo.stub.event.methods 参数必须同时存在
                 if (logger.isWarnEnabled()) {
                     logger.warn(new IllegalStateException("consumer [" + url.getParameter(INTERFACE_KEY) +
                             "], has set stubproxy support event ,but no stub methods founded."));
                 }
 
             } else {
+                // 缓存 stubServiceMethods，键为 ServiceKey
                 stubServiceMethodsMap.put(url.getServiceKey(), stubServiceMethods);
             }
         }
@@ -318,8 +340,10 @@ public class DubboProtocol extends AbstractProtocol {
             ExchangeServer server = serverMap.get(key);
             if (server == null) {
                 synchronized (this) {
+                    // 双重检查是否存在 key 所对应的 ExchangeServer
                     server = serverMap.get(key);
                     if (server == null) {
+                        // 没有的话，创建并缓存
                         serverMap.put(key, createServer(url));
                     }
                 }
@@ -333,19 +357,25 @@ public class DubboProtocol extends AbstractProtocol {
     private ExchangeServer createServer(URL url) {
         url = URLBuilder.from(url)
                 // send readonly event when server closes, it's enabled by default
+                // channel.readonly.sent -> true
                 .addParameterIfAbsent(RemotingConstants.CHANNEL_READONLYEVENT_SENT_KEY, Boolean.TRUE.toString())
                 // enable heartbeat by default
+                // heartbeat 心跳检测 60000
                 .addParameterIfAbsent(RemotingConstants.HEARTBEAT_KEY, String.valueOf(RemotingConstants.DEFAULT_HEARTBEAT))
+                // codec 编解码 dubbo
                 .addParameter(RemotingConstants.CODEC_KEY, DubboCodec.NAME)
                 .build();
+        // server 服务器信息 netty
         String str = url.getParameter(RemotingConstants.SERVER_KEY, RemotingConstants.DEFAULT_REMOTING_SERVER);
 
+        // 指定的 server 信息必须存在
         if (str != null && str.length() > 0 && !ExtensionLoader.getExtensionLoader(Transporter.class).hasExtension(str)) {
             throw new RpcException("Unsupported server type: " + str + ", url: " + url);
         }
 
         ExchangeServer server;
         try {
+            // 根据
             server = Exchangers.bind(url, requestHandler);
         } catch (RemotingException e) {
             throw new RpcException("Fail to start server(url: " + url + ") " + e.getMessage(), e);
