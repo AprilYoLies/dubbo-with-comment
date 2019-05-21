@@ -92,12 +92,18 @@ public class ProtocolFilterWrapper implements Protocol {
                     @Override
                     public Result invoke(Invocation invocation) throws RpcException {
                         // 这个 filter 以 AccessLogFilter 的实现作为实例
+                        // 执行了相应的 filter 的逻辑，再调用下一个 Invoker 的 invoke 方法
                         Result result = filter.invoke(next, invocation);
                         if (result instanceof AsyncRpcResult) {
+                            // 这里是针对 AsyncRpcResult 类型 result 的处理方式
                             AsyncRpcResult asyncResult = (AsyncRpcResult) result;
+                            // 将 asyncResult 交由 beforeContext、r -> filter.onResponse(r, invoker, invocation)、afterContext 进行处理
+                            // 这里的 filter 以 org.apache.dubbo.rpc.filter.ContextFilter 为例
                             asyncResult.thenApplyWithContext(r -> filter.onResponse(r, invoker, invocation));
+                            // 返回处理过的结果
                             return asyncResult;
                         } else {
+                            // 这种方式，仅仅是少了 beforeContext、afterContext 两个函数的处理过程
                             return filter.onResponse(result, invoker, invocation);
                         }
                     }
@@ -125,12 +131,17 @@ public class ProtocolFilterWrapper implements Protocol {
     }
 
     @Override
+    // invoker 是在 JavassistProxyFactory 类中创建的 AbstractProxyInvoker 匿名类
     public <T> Exporter<T> export(Invoker<T> invoker) throws RpcException {
         if (REGISTRY_PROTOCOL.equals(invoker.getUrl().getProtocol())) {
             // 如果 url 使用的是 registry 协议，执行这个 export 方法
             return protocol.export(invoker);
         }
         // invoker 是在 JavassistProxyFactory 类中创建的 AbstractProxyInvoker 匿名类
+        // buildInvokerChain 返回的是一个 Invoker，引用了 filter 和下一个 Invoker，调用 Invoker 的 invoke 方法，
+        // 就会调用 filter 的 invoke 方法，这又会触发下一个 Invoker 的 invoke 方法，最后的一个 Invoker 即是
+        // 在 JavassistProxyFactory 类中创建的 AbstractProxyInvoker 匿名类
+        // 这个 protocol 就是真正的 Protocol 的实现类
         return protocol.export(buildInvokerChain(invoker, SERVICE_FILTER_KEY, CommonConstants.PROVIDER));
     }
 

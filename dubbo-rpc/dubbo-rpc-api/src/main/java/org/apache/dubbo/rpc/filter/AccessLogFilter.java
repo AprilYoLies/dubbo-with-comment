@@ -102,23 +102,28 @@ public class AccessLogFilter implements Filter {
     @Override
     public Result invoke(Invoker<?> invoker, Invocation inv) throws RpcException {
         try {
+            // 获取 url 中的 dubbo.accesslog 参数
             String accessLogKey = invoker.getUrl().getParameter(ACCESS_LOG_KEY);
             // 这里也就是说，只有在 url 具有 dubbo.accesslog 参数时，才会记录相关的日志信息
             if (ConfigUtils.isNotEmpty(accessLogKey)) {
                 // 构建 AccessLogData 访问日志属性
                 AccessLogData logData = buildAccessLogData(invoker, inv);
+                // 将 logData 存入 LOG_ENTRIES 中 accessLogKey 所对应的 set 中
                 log(accessLogKey, logData);
             }
         } catch (Throwable t) {
             logger.warn("Exception in AccessLogFilter of service(" + invoker + " -> " + inv + ")", t);
         }
+        // 继续调用后继的 Invoker
         return invoker.invoke(inv);
     }
 
     private void log(String accessLog, AccessLogData accessLogData) {
+        // 如果 LOG_ENTRIES 中没有键为 accessLog 的记录，就新建一个记录，以 accessLog 为键存入 LOG_ENTRIES 中
         Set<AccessLogData> logSet = LOG_ENTRIES.computeIfAbsent(accessLog, k -> new ConcurrentHashSet<>());
 
         if (logSet.size() < LOG_MAX_BUFFER) {
+            // accessLog 所对应的 AccessLogData 不应该超过 5000 条
             logSet.add(accessLogData);
         } else {
             //TODO we needs use force writing to file so that buffer gets clear and new log can be written.
@@ -165,8 +170,11 @@ public class AccessLogFilter implements Filter {
 
     // 构建访问日志数据
     private AccessLogData buildAccessLogData(Invoker<?> invoker, Invocation inv) {
+        // 获取 RpcContext，是从线程本地变量中获取，根据线程的类型来决定是采用 fastGet 还是 slowGet
         RpcContext context = RpcContext.getContext();
+        // 非单例获取 AccessLogData 实例
         AccessLogData logData = AccessLogData.newLogData();
+        // 对相关的属性进行填充
         logData.setServiceName(invoker.getInterface().getName());
         logData.setMethodName(inv.getMethodName());
         logData.setVersion(invoker.getUrl().getParameter(VERSION_KEY));

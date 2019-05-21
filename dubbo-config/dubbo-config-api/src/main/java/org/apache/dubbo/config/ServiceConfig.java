@@ -726,6 +726,7 @@ public class ServiceConfig<T> extends AbstractServiceConfig {
             // export to local if the config is not remote (export to remote only when config is remote)
             // 如果 url 的 scope 参数为 remote，那么就只会进行进行远程的 url 暴露，而不会进行本地模式的 url 暴露
             if (!SCOPE_REMOTE.equalsIgnoreCase(scope)) {
+                // 所做的就是将 url 封装成 Exporter，然后保存到 ServiceBean 的 exporters 属性中
                 exportLocal(url);
             }
             // export to remote if the config is not local (export to local only when config is local)
@@ -869,6 +870,8 @@ public class ServiceConfig<T> extends AbstractServiceConfig {
                 // ref 为 interfaceClass 的实例类型，interfaceClass 为要发布的服务接口，local 为本地 url
                 // getInvoker 得到的实际是一个 AbstractProxyInvoker
                 proxyFactory.getInvoker(ref, (Class) interfaceClass, local));
+        // 这里获取的 exporter 其实就是 ProtocolListenerWrapper（为返回的 Exporter 添加了监听器），它引用了 ProtocolFilterWrapper（为
+        // invoker 添加了过滤器），ProtocolFilterWrapper 又引用了 InjvmProtocol，它引用了添加了过滤器的 invoker，返回原始的 Export 实例
         exporters.add(exporter);
         logger.info("Export dubbo service " + interfaceClass.getName() + " to local registry url : " + local);
     }

@@ -31,7 +31,7 @@ import java.util.function.Function;
  * You should never rely on this class directly when using or extending Dubbo, the implementation of {@link AsyncRpcResult}
  * is only a workaround for compatibility purpose. It may be changed or even get removed from the next major version.
  * Please only use {@link Result} or {@link RpcResult}.
- *
+ * <p>
  * Extending the {@link Filter} is one typical use case:
  * <pre>
  * {@code
@@ -203,15 +203,20 @@ public class AsyncRpcResult extends AbstractResult {
     private RpcContext tmpContext;
     private RpcContext tmpServerContext;
 
+    // 这个函数应该就只是个 Context 更新的过程
     private Function<Result, Result> beforeContext = (result) -> {
+        // 分别从线程本地变量中获取 Context 和 ServerContext，具有 fastGet 和 slowGet 两种方式
         tmpContext = RpcContext.getContext();
         tmpServerContext = RpcContext.getServerContext();
+        // 分别将 Context 和 ServerContext 存储到线程本地变量中
         RpcContext.restoreContext(storedContext);
         RpcContext.restoreServerContext(storedServerContext);
         return result;
     };
 
+    // 这一步就是为了恢复 org.apache.dubbo.rpc.AsyncRpcResult.beforeContext 函数调用之前的状态
     private Function<Result, Result> afterContext = (result) -> {
+        // 分别将 Context 和 ServerContext 存储到线程本地变量中
         RpcContext.restoreContext(tmpContext);
         RpcContext.restoreServerContext(tmpServerContext);
         return result;

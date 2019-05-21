@@ -97,9 +97,11 @@ public class ContextFilter implements Filter {
         }
     }
 
+    // 如果 filter.invoker 方法返回的结果是 AsyncRpcResult 类型，在响应结果时，调用此方法
     @Override
     public Result onResponse(Result result, Invoker<?> invoker, Invocation invocation) {
         // pass attachments to result
+        // 仅仅是将 ServerContext 的部分附件添加到 Result 中
         result.addAttachments(RpcContext.getServerContext().getAttachments());
         return result;
     }

@@ -61,6 +61,7 @@ public class RpcContext {
     private static final InternalThreadLocal<RpcContext> LOCAL = new InternalThreadLocal<RpcContext>() {
         @Override
         protected RpcContext initialValue() {
+            // 初始值就是直接新建一个 RpcContext
             return new RpcContext();
         }
     };
