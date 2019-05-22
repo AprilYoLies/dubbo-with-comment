@@ -67,6 +67,7 @@ public class CodecSupport {
 
     public static Serialization getSerialization(URL url) {
         return ExtensionLoader.getExtensionLoader(Serialization.class).getExtension(
+                // 获取 Serialization SPI 接口的 extension 拓展类，优先获取 serialization，没有获取到的话就使用 hessian2
                 url.getParameter(RemotingConstants.SERIALIZATION_KEY, RemotingConstants.DEFAULT_REMOTING_SERIALIZATION));
     }
 

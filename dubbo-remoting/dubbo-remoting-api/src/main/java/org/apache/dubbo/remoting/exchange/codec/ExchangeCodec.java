@@ -64,10 +64,13 @@ public class ExchangeCodec extends TelnetCodec {
     }
 
     @Override
+    // 这里的 channel 为对 netty 原生 channel 进行包装后得到的 NettyChannel
     public void encode(Channel channel, ChannelBuffer buffer, Object msg) throws IOException {
         if (msg instanceof Request) {
+            // 如果 msg 的类型为 Request
             encodeRequest(channel, buffer, (Request) msg);
         } else if (msg instanceof Response) {
+            // 如果 msg 的类型为 Response
             encodeResponse(channel, buffer, (Response) msg);
         } else {
             super.encode(channel, buffer, msg);
@@ -207,16 +210,25 @@ public class ExchangeCodec extends TelnetCodec {
         return req.getData();
     }
 
+    // 对 Request 消息的编码
+    // 这里的 channel 为对 netty 原生 channel 进行包装后得到的 NettyChannel
     protected void encodeRequest(Channel channel, ChannelBuffer buffer, Request req) throws IOException {
+        // 根据 channel 的 url 的 serialization 参数值获取 Serialization SPI 接口对应的实现类
         Serialization serialization = getSerialization(channel);
         // header.
+        // 共 16 个字节
+        // | magic | ContentTypeId | null | reqID | len |
+        // |   2   |       1       |   1  |   8   |  4  |
         byte[] header = new byte[HEADER_LENGTH];
         // set magic number.
+        // 将魔幻数字填充到 header 中，以大端的模式进行填充，占用两个字节
         Bytes.short2bytes(MAGIC, header);
 
         // set request and serialization flag.
+        // 这里使用的是 Hessian2Serialization，所以获取的 ContentTypeId 为 2
         header[2] = (byte) (FLAG_REQUEST | serialization.getContentTypeId());
 
+        // req 的 two 和 event 信息存储到 header[2]
         if (req.isTwoWay()) {
             header[2] |= FLAG_TWOWAY;
         }
@@ -228,28 +240,40 @@ public class ExchangeCodec extends TelnetCodec {
         Bytes.long2bytes(req.getId(), header, 4);
 
         // encode request data.
+        // 记录 writerIndex 的位置
         int savedWriteIndex = buffer.writerIndex();
         buffer.writerIndex(savedWriteIndex + HEADER_LENGTH);
         ChannelBufferOutputStream bos = new ChannelBufferOutputStream(buffer);
+        // 得到的是 new Hessian2ObjectOutput(out)，它对 Hessian2Output 进行了封装
         ObjectOutput out = serialization.serialize(channel.getUrl(), bos);
         if (req.isEvent()) {
+            // 根本是调用了 Hessian2ObjectOutput 的 writeObject，而这个方法中又是调用了它所封装的 Hessian2Output 的 writeObject 方法
             encodeEventData(channel, out, req.getData());
         } else {
+            // 此方法的作用和 if 代码块中的方法作用是一样的，都是将 req.getData() 写入到 out 中
             encodeRequestData(channel, out, req.getData(), req.getVersion());
         }
         out.flushBuffer();
         if (out instanceof Cleanable) {
             ((Cleanable) out).cleanup();
         }
+        // 调用 flush 函数，才会进行真正的数据写操作
         bos.flush();
         bos.close();
+        // 获取写入的字节数
         int len = bos.writtenBytes();
+        // 传输的数据量不应该超过 payload 上限
         checkPayload(channel, len);
+        // 这是最终的填充的结果
+        // | magic | ContentTypeId | null | reqID | len |
+        // |   2   |       1       |   1  |   8   |  4  |
         Bytes.int2bytes(len, header, 12);
-
         // write
+        // 恢复 writerIndex
         buffer.writerIndex(savedWriteIndex);
+        // 写入 header 信息
         buffer.writeBytes(header); // write header.
+        // 确定新的写入位置
         buffer.writerIndex(savedWriteIndex + HEADER_LENGTH + len);
     }
 
@@ -301,6 +325,7 @@ public class ExchangeCodec extends TelnetCodec {
             buffer.writerIndex(savedWriteIndex + HEADER_LENGTH + len);
         } catch (Throwable t) {
             // clear buffer
+            // 恢复 writerIndex 的值
             buffer.writerIndex(savedWriteIndex);
             // send error message to Consumer, otherwise, Consumer will wait till timeout.
             if (!res.isEvent() && res.getStatus() != Response.BAD_RESPONSE) {
@@ -433,6 +458,7 @@ public class ExchangeCodec extends TelnetCodec {
         encodeRequestData(channel, out, data);
     }
 
+    // data 为从 request 中获取的 data
     private void encodeEventData(Channel channel, ObjectOutput out, Object data) throws IOException {
         encodeEventData(out, data);
     }

@@ -30,7 +30,9 @@ public class Hessian2ObjectOutput implements ObjectOutput {
     private final Hessian2Output mH2o;
 
     public Hessian2ObjectOutput(OutputStream os) {
+        // 创建 Hessian2Output 实例
         mH2o = new Hessian2Output(os);
+        // 这是 Hessian2Output 的使用方式（找个关于 Hessian2 的使用方式的文档）
         mH2o.setSerializerFactory(Hessian2SerializerFactory.SERIALIZER_FACTORY);
     }
 
@@ -86,6 +88,7 @@ public class Hessian2ObjectOutput implements ObjectOutput {
 
     @Override
     public void writeObject(Object obj) throws IOException {
+        // 在构造函数中 mH2o = new Hessian2Output(os);
         mH2o.writeObject(obj);
     }
 

@@ -32,7 +32,7 @@ import static org.apache.dubbo.common.constants.RpcConstants.INPUT_KEY;
 import static org.apache.dubbo.common.constants.RpcConstants.OUTPUT_KEY;
 
 public final class DubboCountCodec implements Codec2 {
-
+    // 通过 DubboCodec 进行
     private DubboCodec codec = new DubboCodec();
 
     @Override

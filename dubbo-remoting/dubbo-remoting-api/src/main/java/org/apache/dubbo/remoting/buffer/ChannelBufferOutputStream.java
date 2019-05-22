@@ -30,6 +30,7 @@ public class ChannelBufferOutputStream extends OutputStream {
             throw new NullPointerException("buffer");
         }
         this.buffer = buffer;
+        // 记录下 buffer 的 writerIndex
         startIndex = buffer.writerIndex();
     }
 
