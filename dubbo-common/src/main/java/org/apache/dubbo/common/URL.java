@@ -675,11 +675,13 @@ class URL implements Serializable {
         return value;
     }
 
+    // 获取为正数的参数值
     public int getPositiveParameter(String key, int defaultValue) {
         if (defaultValue <= 0) {
             throw new IllegalArgumentException("defaultValue <= 0");
         }
         int value = getParameter(key, defaultValue);
+        // 要求 defaultValue 和 url 的参数值都为正数
         if (value <= 0) {
             return defaultValue;
         }

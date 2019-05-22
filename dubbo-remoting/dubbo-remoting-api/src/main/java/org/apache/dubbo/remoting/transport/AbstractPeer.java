@@ -30,6 +30,7 @@ public abstract class AbstractPeer implements Endpoint, ChannelHandler {
 
     private final ChannelHandler handler;
 
+    // dubbo://192.168.1.104:20880/org.apache.dubbo.demo.DemoService?anyhost=true&application=demo-provider&bean.name=org.apache.dubbo.demo.DemoService&bind.ip=192.168.1.104&bind.port=20880&channel.readonly.sent=true&codec=dubbo&deprecated=false&dubbo=2.0.2&dynamic=true&generic=false&heartbeat=60000&interface=org.apache.dubbo.demo.DemoService&methods=sayHello&pid=16139&register=true&release=&side=provider&timestamp=1558494604758
     private volatile URL url;
 
     // closing closed means the process is being closed and close is finished
@@ -44,6 +45,7 @@ public abstract class AbstractPeer implements Endpoint, ChannelHandler {
         if (handler == null) {
             throw new IllegalArgumentException("handler == null");
         }
+        // 保存 url 和 handler 参数
         this.url = url;
         this.handler = handler;
     }

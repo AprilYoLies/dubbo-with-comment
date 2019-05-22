@@ -27,8 +27,6 @@ import org.apache.dubbo.remoting.transport.DecodeHandler;
 
 /**
  * DefaultMessenger
- *
- *
  */
 public class HeaderExchanger implements Exchanger {
 
@@ -40,8 +38,9 @@ public class HeaderExchanger implements Exchanger {
     }
 
     @Override
-    // handler 为 org.apache.dubbo.rpc.protocol.dubbo.DubboProtocol.requestHandler
+    // handler 为 org.apache.dubbo.rpc.protocol.dubbo.DubboProtocol.requestHandler，实际是一个 ExchangeHandlerAdapter 实例
     public ExchangeServer bind(URL url, ExchangeHandler handler) throws RemotingException {
+        // 这里通过 HeaderExchangeHandler 对 ExchangeHandlerAdapter 进行了封装，然后又通过 DecodeHandler 对 HeaderExchangeHandler 进行了封装
         return new HeaderExchangeServer(Transporters.bind(url, new DecodeHandler(new HeaderExchangeHandler(handler))));
     }
 

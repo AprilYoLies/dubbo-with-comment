@@ -512,8 +512,11 @@ public class UrlUtils {
     }
 
     public static int getIdleTimeout(URL url) {
+        // 从 url 中获取 heartbeat 参数
         int heartBeat = getHeartbeat(url);
+        // 从 url 中获取 idleTimeout 参数，如果没有获取到，就直接使用 heartBeat 的三倍时长
         int idleTimeout = url.getParameter(RemotingConstants.HEARTBEAT_TIMEOUT_KEY, heartBeat * 3);
+        // 也就是说 idleTimeout 必须是 2 倍的 heartBeat 及以上
         if (idleTimeout < heartBeat * 2) {
             throw new IllegalStateException("idleTimeout < heartbeatInterval * 2");
         }

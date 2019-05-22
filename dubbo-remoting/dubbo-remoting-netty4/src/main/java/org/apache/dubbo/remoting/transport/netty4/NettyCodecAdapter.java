@@ -39,6 +39,7 @@ final public class NettyCodecAdapter {
 
     private final ChannelHandler decoder = new InternalDecoder();
 
+    // 这里保存的其实是 org.apache.dubbo.rpc.protocol.dubbo.DubboCountCodec
     private final Codec2 codec;
 
     private final URL url;
@@ -63,10 +64,13 @@ final public class NettyCodecAdapter {
 
         @Override
         protected void encode(ChannelHandlerContext ctx, Object msg, ByteBuf out) throws Exception {
+            // 将 netty 原生 ByteBuf 包装成为 NettyBackedChannelBuffer
             org.apache.dubbo.remoting.buffer.ChannelBuffer buffer = new NettyBackedChannelBuffer(out);
             Channel ch = ctx.channel();
+            // 将 netty 原生 channel 包装成为 NettyChannel
             NettyChannel channel = NettyChannel.getOrAddChannel(ch, url, handler);
             try {
+                // 这是真正的编码逻辑
                 codec.encode(channel, buffer, msg);
             } finally {
                 NettyChannel.removeChannelIfDisconnected(ch);
@@ -87,6 +91,7 @@ final public class NettyCodecAdapter {
                 // decode object.
                 do {
                     int saveReaderIndex = message.readerIndex();
+                    // 这是真正的解码逻辑
                     Object msg = codec.decode(channel, message);
                     if (msg == Codec2.DecodeResult.NEED_MORE_INPUT) {
                         message.readerIndex(saveReaderIndex);

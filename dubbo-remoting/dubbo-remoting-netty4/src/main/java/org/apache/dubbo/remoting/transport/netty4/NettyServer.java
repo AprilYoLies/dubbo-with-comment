@@ -66,15 +66,18 @@ public class NettyServer extends AbstractServer implements Server {
     private EventLoopGroup bossGroup;
     private EventLoopGroup workerGroup;
 
+    // 此处的 handler 实际是一个 DecodeHandler
     public NettyServer(URL url, ChannelHandler handler) throws RemotingException {
+        // 通过 AllDispatcher 根据本函数的 handler 参数构建 AllChannelHandler，并最终包装成 MultiMessageHandler
         super(url, ChannelHandlers.wrap(handler, ExecutorUtil.setThreadName(url, SERVER_THREAD_POOL_NAME)));
     }
 
     @Override
     protected void doOpen() throws Throwable {
         bootstrap = new ServerBootstrap();
-
+        // netty 采用经典的 reactor 模型，所以这里新建两个 NioEventLoopGroup
         bossGroup = new NioEventLoopGroup(1, new DefaultThreadFactory("NettyServerBoss", true));
+        // 根据 url 的 iothreads 参数来确定 NioEventLoopGroup 工作线程组的线程数，如果没有获取到，则默认使用 13 个线程
         workerGroup = new NioEventLoopGroup(getUrl().getPositiveParameter(IO_THREADS_KEY, RemotingConstants.DEFAULT_IO_THREADS),
                 new DefaultThreadFactory("NettyServerWorker", true));
 
@@ -90,11 +93,12 @@ public class NettyServer extends AbstractServer implements Server {
                     @Override
                     protected void initChannel(NioSocketChannel ch) throws Exception {
                         // FIXME: should we use getTimeout()?
+                        // 从 url 中获取 idleTimeout 时长，如果 url 参数中没有指定，那么就直接使用三倍的 heartBeat 时长
                         int idleTimeout = UrlUtils.getIdleTimeout(getUrl());
                         NettyCodecAdapter adapter = new NettyCodecAdapter(getCodec(), getUrl(), NettyServer.this);
                         ch.pipeline()//.addLast("logging",new LoggingHandler(LogLevel.INFO))//for debug
-                                .addLast("decoder", adapter.getDecoder())
-                                .addLast("encoder", adapter.getEncoder())
+                                .addLast("decoder", adapter.getDecoder())   // InternalDecoder
+                                .addLast("encoder", adapter.getEncoder())   // InternalEncoder
                                 .addLast("server-idle-handler", new IdleStateHandler(0, 0, idleTimeout, MILLISECONDS))
                                 .addLast("handler", nettyServerHandler);
                     }

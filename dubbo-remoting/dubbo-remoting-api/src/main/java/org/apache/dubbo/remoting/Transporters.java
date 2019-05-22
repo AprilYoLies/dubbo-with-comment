@@ -40,7 +40,9 @@ public class Transporters {
         return bind(URL.valueOf(url), handler);
     }
 
+    // handlers 这里实际是一个 DecodeHandler
     public static Server bind(URL url, ChannelHandler... handlers) throws RemotingException {
+        // 验证参数的有效性
         if (url == null) {
             throw new IllegalArgumentException("url == null");
         }
@@ -49,10 +51,38 @@ public class Transporters {
         }
         ChannelHandler handler;
         if (handlers.length == 1) {
+            // 如果 handlers 只要一个，那么就直接使用
             handler = handlers[0];
         } else {
+            // 如果 handlers 有多个，那么将其封装为 ChannelHandlerDispatcher 再使用
             handler = new ChannelHandlerDispatcher(handlers);
         }
+        // getTransporter 方法获取的 Transpoter 的实例代码
+        // package org.apache.dubbo.remoting;
+        // import org.apache.dubbo.common.extension.ExtensionLoader;
+        // public class Transporter$Adaptive implements org.apache.dubbo.remoting.Transporter {
+        //     public org.apache.dubbo.remoting.Client connect(org.apache.dubbo.common.URL arg0, org.apache.dubbo.remoting.ChannelHandler arg1) throws org.apache.dubbo.remoting.RemotingException {
+        //         if (arg0 == null) throw new IllegalArgumentException("url == null");
+        //         org.apache.dubbo.common.URL url = arg0;
+        //         String extName = url.getParameter("client", url.getParameter("transporter", "netty"));
+        //         if (extName == null)
+        //             throw new IllegalStateException("Failed to get extension (org.apache.dubbo.remoting.Transporter) name from url (" + url.toString() + ") use keys([client, transporter])");
+        //         org.apache.dubbo.remoting.Transporter extension = (org.apache.dubbo.remoting.Transporter) ExtensionLoader.getExtensionLoader(org.apache.dubbo.remoting.Transporter.class).getExtension(extName);
+        //         return extension.connect(arg0, arg1);
+        //     }
+        //
+        //     public org.apache.dubbo.remoting.Server bind(org.apache.dubbo.common.URL arg0, org.apache.dubbo.remoting.ChannelHandler arg1) throws org.apache.dubbo.remoting.RemotingException {
+        //         if (arg0 == null) throw new IllegalArgumentException("url == null");
+        //         org.apache.dubbo.common.URL url = arg0;
+        // 可以看到这里是最先匹配 server 参数，如果没有的话，再匹配 transporter 参数，如果还是没有，则默认使用 netty 参数
+        //         String extName = url.getParameter("server", url.getParameter("transporter", "netty"));
+        //         if (extName == null)
+        //             throw new IllegalStateException("Failed to get extension (org.apache.dubbo.remoting.Transporter) name from url (" + url.toString() + ") use keys([server, transporter])");
+        // 这里获取的 extension 其实是一个 NettyTransporter
+        //         org.apache.dubbo.remoting.Transporter extension = (org.apache.dubbo.remoting.Transporter) ExtensionLoader.getExtensionLoader(org.apache.dubbo.remoting.Transporter.class).getExtension(extName);
+        //         return extension.bind(arg0, arg1);
+        //     }
+        // }
         return getTransporter().bind(url, handler);
     }
 

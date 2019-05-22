@@ -37,6 +37,7 @@ public abstract class AbstractEndpoint extends AbstractPeer implements Resetable
 
     private static final Logger logger = LoggerFactory.getLogger(AbstractEndpoint.class);
 
+    // 这里保存的其实是 org.apache.dubbo.rpc.protocol.dubbo.DubboCountCodec
     private Codec2 codec;
 
     private int timeout;
@@ -45,16 +46,21 @@ public abstract class AbstractEndpoint extends AbstractPeer implements Resetable
 
     public AbstractEndpoint(URL url, ChannelHandler handler) {
         super(url, handler);
+        // 保存 url 中的指定参数值
         this.codec = getChannelCodec(url);
         this.timeout = url.getPositiveParameter(TIMEOUT_KEY, DEFAULT_TIMEOUT);
         this.connectTimeout = url.getPositiveParameter(RemotingConstants.CONNECT_TIMEOUT_KEY, RemotingConstants.DEFAULT_CONNECT_TIMEOUT);
     }
 
+    // 这里实际获取到的是 org.apache.dubbo.rpc.protocol.dubbo.DubboCountCodec
     protected static Codec2 getChannelCodec(URL url) {
+        // 尝试从 url 中获取 codec 参数，如果没有的话就直接使用 telnet
         String codecName = url.getParameter(RemotingConstants.CODEC_KEY, "telnet");
+        // 优先从 Codec2 SPI 接口对应的实现中获取 extension
         if (ExtensionLoader.getExtensionLoader(Codec2.class).hasExtension(codecName)) {
             return ExtensionLoader.getExtensionLoader(Codec2.class).getExtension(codecName);
         } else {
+            // Codec2 SPI 接口中没有 codecName 对应的 extension，那就从 Codec SPI 接口对应的实现中获取 extension
             return new CodecAdapter(ExtensionLoader.getExtensionLoader(Codec.class)
                     .getExtension(codecName));
         }

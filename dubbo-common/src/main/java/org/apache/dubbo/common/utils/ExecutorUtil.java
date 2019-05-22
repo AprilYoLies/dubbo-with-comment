@@ -126,11 +126,14 @@ public class ExecutorUtil {
     /**
      * append thread name with url address
      *
+     * @param defaultName DubboServerHandler
      * @return new url with updated thread name
      */
     public static URL setThreadName(URL url, String defaultName) {
+        // 从 url 中获取 threadname 参数,没有的话就是 DubboServerHandler
         String name = url.getParameter(THREAD_NAME_KEY, defaultName);
         name = name + "-" + url.getAddress();
+        // 注册为 threadname -> DubboServerHandler-192.168.1.104:20880
         url = url.addParameter(THREAD_NAME_KEY, name);
         return url;
     }

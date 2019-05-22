@@ -55,14 +55,17 @@ final class NettyChannel extends AbstractChannel {
         this.channel = channel;
     }
 
+    // 尝试从 CHANNEL_MAP 中获取 netty 原生 channel 的装饰者 channel，如果没有获取到，那么就直接新建一个
     static NettyChannel getOrAddChannel(Channel ch, URL url, ChannelHandler handler) {
         if (ch == null) {
             return null;
         }
         NettyChannel ret = CHANNEL_MAP.get(ch);
         if (ret == null) {
+            // 应该就是装饰者模式，用 NettyChannel 对 netty 的原生 Channel 进行封装
             NettyChannel nettyChannel = new NettyChannel(ch, url, handler);
             if (ch.isActive()) {
+                // CHANNEL_MAP 缓存 netty 原生 channel 和它对应的装饰者 Channel 信息
                 ret = CHANNEL_MAP.putIfAbsent(ch, nettyChannel);
             }
             if (ret == null) {
