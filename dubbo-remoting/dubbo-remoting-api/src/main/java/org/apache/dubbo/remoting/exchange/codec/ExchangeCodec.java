@@ -85,7 +85,7 @@ public class ExchangeCodec extends TelnetCodec {
         byte[] header = new byte[Math.min(readable, HEADER_LENGTH)];
         // 读取 header 部分的数据
         buffer.readBytes(header);
-        // 解码剩余的其它内容
+        // 解码除 header 以外剩余的其它内容，得到的是一个 request 或者 response 实例
         return decode(channel, buffer, readable, header);
     }
 
@@ -124,20 +124,20 @@ public class ExchangeCodec extends TelnetCodec {
             return DecodeResult.NEED_MORE_INPUT;
         }
 
-        // get data length.
+        // get data length. 根据 header 获取 len 信息
         int len = Bytes.bytes2int(header, 12);
         checkPayload(channel, len);
-
+        // 总长度为 header + 数据长度（header 后四位进行记录）
         int tt = len + HEADER_LENGTH;
         if (readable < tt) {
             return DecodeResult.NEED_MORE_INPUT;
         }
 
-        // limit input stream.
+        // limit input stream.通过 ChannelBufferInputStream 对 buffer 进行封装，记录了内容读取的上下界
         ChannelBufferInputStream is = new ChannelBufferInputStream(buffer, len);
 
         try {
-            return decodeBody(channel, is, header);
+            return decodeBody(channel, is, header); // 解码除开 header 以外的信息
         } finally {
             if (is.available() > 0) {
                 try {

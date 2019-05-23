@@ -829,7 +829,7 @@ public final class ReflectUtils {
      * @throws ClassNotFoundException
      */
     private static Class<?>[] desc2classArray(ClassLoader cl, String desc) throws ClassNotFoundException {
-        if (desc.length() == 0) {
+        if (desc.length() == 0) {   // desc 不能为空
             return EMPTY_CLASS_ARRAY;
         }
 

@@ -70,15 +70,15 @@ public class DecodeableRpcInvocation extends RpcInvocation implements Codec, Dec
     public void decode() throws Exception {
         if (!hasDecoded && channel != null && inputStream != null) {
             try {
-                decode(channel, inputStream);
+                decode(channel, inputStream);   // 进行解码操作，解码出来的内容实际是保存在当前类的父类中的
             } catch (Throwable e) {
                 if (log.isWarnEnabled()) {
                     log.warn("Decode rpc invocation failed: " + e.getMessage(), e);
                 }
-                request.setBroken(true);
-                request.setData(e);
+                request.setBroken(true);    // 解码失败，设置 mBroken 标志
+                request.setData(e);     // 设置 mData 为异常信息（标志着解码的失败）
             } finally {
-                hasDecoded = true;
+                hasDecoded = true;  // 更新解码的状态
             }
         }
     }
@@ -88,6 +88,7 @@ public class DecodeableRpcInvocation extends RpcInvocation implements Codec, Dec
         throw new UnsupportedOperationException();
     }
 
+    // 可以看出解码内容：DUBBO_VERSION_KEY、PATH_KEY、VERSION_KEY、methodName、desc、实际的参数对象、attachment
     @Override
     public Object decode(Channel channel, InputStream input) throws IOException {
         ObjectInput in = CodecSupport.getSerialization(channel.getUrl(), serializationType)
@@ -95,25 +96,25 @@ public class DecodeableRpcInvocation extends RpcInvocation implements Codec, Dec
 
         String dubboVersion = in.readUTF();
         request.setVersion(dubboVersion);
-        setAttachment(DUBBO_VERSION_KEY, dubboVersion);
+        setAttachment(DUBBO_VERSION_KEY, dubboVersion); // 缓存到 RpcInvocation 的 attachments 属性中
 
         setAttachment(PATH_KEY, in.readUTF());
         setAttachment(VERSION_KEY, in.readUTF());
 
-        setMethodName(in.readUTF());
+        setMethodName(in.readUTF());    // 缓存到 RpcInvocation 的 methodName 属性中
         try {
-            Object[] args;
-            Class<?>[] pts;
+            Object[] args;  // args 应该是实际的参数
+            Class<?>[] pts; // pts 应该是参数类型数组
             String desc = in.readUTF();
-            if (desc.length() == 0) {
+            if (desc.length() == 0) {   // desc为空，赋空值
                 pts = DubboCodec.EMPTY_CLASS_ARRAY;
                 args = DubboCodec.EMPTY_OBJECT_ARRAY;
             } else {
-                pts = ReflectUtils.desc2classArray(desc);
+                pts = ReflectUtils.desc2classArray(desc);   // pts 应该是参数类型数组
                 args = new Object[pts.length];
                 for (int i = 0; i < args.length; i++) {
                     try {
-                        args[i] = in.readObject(pts[i]);
+                        args[i] = in.readObject(pts[i]);    // 逐个读取参数的实例
                     } catch (Exception e) {
                         if (log.isWarnEnabled()) {
                             log.warn("Decode argument failed: " + e.getMessage(), e);
@@ -121,7 +122,7 @@ public class DecodeableRpcInvocation extends RpcInvocation implements Codec, Dec
                     }
                 }
             }
-            setParameterTypes(pts);
+            setParameterTypes(pts); // 缓存参数类型参数
 
             Map<String, String> map = (Map<String, String>) in.readObject(Map.class);
             if (map != null && map.size() > 0) {
@@ -129,7 +130,7 @@ public class DecodeableRpcInvocation extends RpcInvocation implements Codec, Dec
                 if (attachment == null) {
                     attachment = new HashMap<String, String>();
                 }
-                attachment.putAll(map);
+                attachment.putAll(map); // 将反序列化出来的 attachment 追加到 attachments 中
                 setAttachments(attachment);
             }
             //decode argument ,may be callback
@@ -146,7 +147,7 @@ public class DecodeableRpcInvocation extends RpcInvocation implements Codec, Dec
                 ((Cleanable) in).cleanup();
             }
         }
-        return this;
+        return this;    // 解码的结果都已经是保存到父类中了，直接返回本身即可
     }
 
 }

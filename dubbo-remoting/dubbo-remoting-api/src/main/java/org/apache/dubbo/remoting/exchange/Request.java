@@ -120,7 +120,7 @@ public class Request {
     }
 
     public boolean isHeartbeat() {
-        return mEvent && HEARTBEAT_EVENT == mData;
+        return mEvent && HEARTBEAT_EVENT == mData;  // 是 event 类型，且数据项为空
     }
 
     public void setHeartbeat(boolean isHeartbeat) {

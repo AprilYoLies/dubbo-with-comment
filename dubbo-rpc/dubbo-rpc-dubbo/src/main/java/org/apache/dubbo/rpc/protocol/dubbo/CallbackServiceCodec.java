@@ -65,12 +65,12 @@ class CallbackServiceCodec {
         // parameter callback rule: method-name.parameter-index(starting from 0).callback
         byte isCallback = CALLBACK_NONE;
         if (url != null) {
-            String callback = url.getParameter(methodName + "." + argIndex + ".callback");
+            String callback = url.getParameter(methodName + "." + argIndex + ".callback");  // sayHello.n.callback
             if (callback != null) {
                 if (callback.equalsIgnoreCase("true")) {
-                    isCallback = CALLBACK_CREATE;
+                    isCallback = CALLBACK_CREATE;   // 1 为创建
                 } else if (callback.equalsIgnoreCase("false")) {
-                    isCallback = CALLBACK_DESTROY;
+                    isCallback = CALLBACK_DESTROY;  //  2 为销毁
                 }
             }
         }
@@ -138,6 +138,7 @@ class CallbackServiceCodec {
 
     /**
      * refer or destroy callback service on server side
+     * 处理 channel 中 proxy 和 invoker 等相关的一些属性
      *
      * @param url
      */
@@ -148,45 +149,45 @@ class CallbackServiceCodec {
         String proxyCacheKey = getServerSideCallbackServiceCacheKey(channel, clazz.getName(), instid);
         proxy = channel.getAttribute(proxyCacheKey);
         String countkey = getServerSideCountKey(channel, clazz.getName());
-        if (isRefer) {
+        if (isRefer) {  // 这里是 refer
             if (proxy == null) {
-                URL referurl = URL.valueOf("callback://" + url.getAddress() + "/" + clazz.getName() + "?" + INTERFACE_KEY + "=" + clazz.getName());
-                referurl = referurl.addParametersIfAbsent(url.getParameters()).removeParameter(METHODS_KEY);
-                if (!isInstancesOverLimit(channel, referurl, clazz.getName(), instid, true)) {
+                URL referurl = URL.valueOf("callback://" + url.getAddress() + "/" + clazz.getName() + "?" + INTERFACE_KEY + "=" + clazz.getName()); // 重构 URL
+                referurl = referurl.addParametersIfAbsent(url.getParameters()).removeParameter(METHODS_KEY);    // 添加缺失的参数
+                if (!isInstancesOverLimit(channel, referurl, clazz.getName(), instid, true)) {  // 实例的个数不能超出限制
                     @SuppressWarnings("rawtypes")
                     Invoker<?> invoker = new ChannelWrappedInvoker(clazz, channel, referurl, String.valueOf(instid));
                     proxy = PROXY_FACTORY.getProxy(invoker);
-                    channel.setAttribute(proxyCacheKey, proxy);
+                    channel.setAttribute(proxyCacheKey, proxy); // 缓存 proxy 和 invoker
                     channel.setAttribute(invokerCacheKey, invoker);
-                    increaseInstanceCount(channel, countkey);
+                    increaseInstanceCount(channel, countkey);   // 更新 countkey 对应的计数
 
                     //convert error fail fast .
                     //ignore concurrent problem.
-                    Set<Invoker<?>> callbackInvokers = (Set<Invoker<?>>) channel.getAttribute(CHANNEL_CALLBACK_KEY);
+                    Set<Invoker<?>> callbackInvokers = (Set<Invoker<?>>) channel.getAttribute(CHANNEL_CALLBACK_KEY);    // channel.callback.invokers.key
                     if (callbackInvokers == null) {
                         callbackInvokers = new ConcurrentHashSet<Invoker<?>>(1);
                         callbackInvokers.add(invoker);
-                        channel.setAttribute(CHANNEL_CALLBACK_KEY, callbackInvokers);
+                        channel.setAttribute(CHANNEL_CALLBACK_KEY, callbackInvokers);   // 更新 invoker 集合的信息
                     }
                     logger.info("method " + inv.getMethodName() + " include a callback service :" + invoker.getUrl() + ", a proxy :" + invoker + " has been created.");
                 }
             }
-        } else {
+        } else {    // 这里是 destory
             if (proxy != null) {
                 Invoker<?> invoker = (Invoker<?>) channel.getAttribute(invokerCacheKey);
                 try {
                     Set<Invoker<?>> callbackInvokers = (Set<Invoker<?>>) channel.getAttribute(CHANNEL_CALLBACK_KEY);
                     if (callbackInvokers != null) {
-                        callbackInvokers.remove(invoker);
+                        callbackInvokers.remove(invoker);   // 从 invoker 集合中移除 invoker
                     }
                     invoker.destroy();
                 } catch (Exception e) {
                     logger.error(e.getMessage(), e);
                 }
                 // cancel refer, directly remove from the map
-                channel.removeAttribute(proxyCacheKey);
+                channel.removeAttribute(proxyCacheKey);     // 清除 proxy 和 invoker 等相关的信息
                 channel.removeAttribute(invokerCacheKey);
-                decreaseInstanceCount(channel, countkey);
+                decreaseInstanceCount(channel, countkey);   // 清理计数
             }
         }
         return proxy;
@@ -214,7 +215,7 @@ class CallbackServiceCodec {
 
     private static boolean isInstancesOverLimit(Channel channel, URL url, String interfaceClass, int instid, boolean isServer) {
         Integer count = (Integer) channel.getAttribute(isServer ? getServerSideCountKey(channel, interfaceClass) : getClientSideCountKey(interfaceClass));
-        int limit = url.getParameter(CALLBACK_INSTANCES_LIMIT_KEY, DEFAULT_CALLBACK_INSTANCES);
+        int limit = url.getParameter(CALLBACK_INSTANCES_LIMIT_KEY, DEFAULT_CALLBACK_INSTANCES); // callbacks -> 默认 1
         if (count != null && count >= limit) {
             //client side error
             throw new IllegalStateException("interface " + interfaceClass + " `s callback instances num exceed providers limit :" + limit
@@ -273,31 +274,34 @@ class CallbackServiceCodec {
         }
     }
 
+    // 根据 url 的 sayHello.n.callback 参数确定 callbackstatus，然后选择性的执行 referOrDestroyCallbackService 或者直接返回
     public static Object decodeInvocationArgument(Channel channel, RpcInvocation inv, Class<?>[] pts, int paraIndex, Object inObject) throws IOException {
         // if it's a callback, create proxy on client side, callback interface on client side can be invoked through channel
         // need get URL from channel and env when decode
         URL url = null;
         try {
-            url = DubboProtocol.getDubboProtocol().getInvoker(channel, inv).getUrl();
+            url = DubboProtocol.getDubboProtocol().getInvoker(channel, inv).getUrl(); // 从 DubboProtocol 缓存的 Exporter 中获取相应的 invoker，invoker 有 url 相关的信息
         } catch (RemotingException e) {
             if (logger.isInfoEnabled()) {
                 logger.info(e.getMessage(), e);
             }
             return inObject;
         }
-        byte callbackstatus = isCallBack(url, inv.getMethodName(), paraIndex);
+        byte callbackstatus = isCallBack(url, inv.getMethodName(), paraIndex);  // 根据 url 的 sayHello.n.callback 参数确定 callbackstatus
         switch (callbackstatus) {
-            case CallbackServiceCodec.CALLBACK_NONE:
+            case CallbackServiceCodec.CALLBACK_NONE:    // url 的 sayHello.n.callback 参数为 null
                 return inObject;
-            case CallbackServiceCodec.CALLBACK_CREATE:
+            case CallbackServiceCodec.CALLBACK_CREATE:  // url 的 sayHello.n.callback 参数为 true
                 try {
+                    // sys_callback_arg-
+                    // 处理 channel 中 proxy 和 invoker 等相关的一些属性
                     return referOrDestroyCallbackService(channel, url, pts[paraIndex], inv, Integer.parseInt(inv.getAttachment(INV_ATT_CALLBACK_KEY + paraIndex)), true);
                 } catch (Exception e) {
                     logger.error(e.getMessage(), e);
                     throw new IOException(StringUtils.toString(e));
                 }
-            case CallbackServiceCodec.CALLBACK_DESTROY:
-                try {
+            case CallbackServiceCodec.CALLBACK_DESTROY: // url 的 sayHello.n.callback 参数为 false
+                try {                                                                                                       // sys_callback_arg-
                     return referOrDestroyCallbackService(channel, url, pts[paraIndex], inv, Integer.parseInt(inv.getAttachment(INV_ATT_CALLBACK_KEY + paraIndex)), false);
                 } catch (Exception e) {
                     throw new IOException(StringUtils.toString(e));

@@ -222,7 +222,7 @@ public class DubboProtocol extends AbstractProtocol {
 
     public static DubboProtocol getDubboProtocol() {
         if (INSTANCE == null) {
-            // load
+            // load 获取 DubboProtocol
             ExtensionLoader.getExtensionLoader(Protocol.class).getExtension(DubboProtocol.NAME);
         }
 

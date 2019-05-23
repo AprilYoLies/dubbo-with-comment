@@ -38,14 +38,14 @@ import static org.apache.dubbo.common.serialize.Constants.NATIVE_JAVA_SERIALIZAT
 public class CodecSupport {
 
     private static final Logger logger = LoggerFactory.getLogger(CodecSupport.class);
-    private static Map<Byte, Serialization> ID_SERIALIZATION_MAP = new HashMap<Byte, Serialization>();
-    private static Map<Byte, String> ID_SERIALIZATIONNAME_MAP = new HashMap<Byte, String>();
+    private static Map<Byte, Serialization> ID_SERIALIZATION_MAP = new HashMap<Byte, Serialization>();  // ID_SERIALIZATION_MAP 映射 serialization 的 id 字节和 serialization 实例
+    private static Map<Byte, String> ID_SERIALIZATIONNAME_MAP = new HashMap<Byte, String>();    // ID_SERIALIZATIONNAME_MAP 映射 serialization 的 id 字节和 serialization 名字
 
     static {
-        Set<String> supportedExtensions = ExtensionLoader.getExtensionLoader(Serialization.class).getSupportedExtensions();
+        Set<String> supportedExtensions = ExtensionLoader.getExtensionLoader(Serialization.class).getSupportedExtensions(); // 获取的就是全部的 extensionClass
         for (String name : supportedExtensions) {
-            Serialization serialization = ExtensionLoader.getExtensionLoader(Serialization.class).getExtension(name);
-            byte idByte = serialization.getContentTypeId();
+            Serialization serialization = ExtensionLoader.getExtensionLoader(Serialization.class).getExtension(name); // 获取 name 对应的 extension
+            byte idByte = serialization.getContentTypeId(); // 获取 serialization 实例对应的 id 字节
             if (ID_SERIALIZATION_MAP.containsKey(idByte)) {
                 logger.error("Serialization extension " + serialization.getClass().getName()
                         + " has duplicate id to Serialization extension "
@@ -53,8 +53,8 @@ public class CodecSupport {
                         + ", ignore this Serialization extension");
                 continue;
             }
-            ID_SERIALIZATION_MAP.put(idByte, serialization);
-            ID_SERIALIZATIONNAME_MAP.put(idByte, name);
+            ID_SERIALIZATION_MAP.put(idByte, serialization);    // ID_SERIALIZATION_MAP 映射 serialization 的 id 字节和 serialization 实例
+            ID_SERIALIZATIONNAME_MAP.put(idByte, name);     // ID_SERIALIZATIONNAME_MAP 映射 serialization 的 id 字节和 serialization 名字
         }
     }
 
@@ -72,10 +72,10 @@ public class CodecSupport {
     }
 
     public static Serialization getSerialization(URL url, Byte id) throws IOException {
-        Serialization serialization = getSerializationById(id);
-        String serializationName = url.getParameter(RemotingConstants.SERIALIZATION_KEY, RemotingConstants.DEFAULT_REMOTING_SERIALIZATION);
+        Serialization serialization = getSerializationById(id); // 从缓存中获取 serialization 实例
+        String serializationName = url.getParameter(RemotingConstants.SERIALIZATION_KEY, RemotingConstants.DEFAULT_REMOTING_SERIALIZATION); // 获取 serialization 默认 hessian2
         // Check if "serialization id" passed from network matches the id on this side(only take effect for JDK serialization), for security purpose.
-        if (serialization == null
+        if (serialization == null  // 如果是条件中的三种 serialization，但是 url 指定的 serialization 不和 id 对应的名字一致
                 || ((id == JAVA_SERIALIZATION_ID || id == NATIVE_JAVA_SERIALIZATION_ID || id == COMPACTED_JAVA_SERIALIZATION_ID)
                 && !(serializationName.equals(ID_SERIALIZATIONNAME_MAP.get(id))))) {
             throw new IOException("Unexpected serialization id:" + id + " received from network, please check if the peer send the right id.");
@@ -84,7 +84,7 @@ public class CodecSupport {
     }
 
     public static ObjectInput deserialize(URL url, InputStream is, byte proto) throws IOException {
-        Serialization s = getSerialization(url, proto);
-        return s.deserialize(url, is);
+        Serialization s = getSerialization(url, proto); // 根据
+        return s.deserialize(url, is);  // 根本是通过 Hessian2ObjectInput 进行反序列化
     }
 }
