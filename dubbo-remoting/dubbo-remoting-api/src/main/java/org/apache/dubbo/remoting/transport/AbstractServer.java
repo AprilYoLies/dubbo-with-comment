@@ -191,7 +191,7 @@ public abstract class AbstractServer extends AbstractEndpoint implements Server 
 
     @Override
     public void connected(Channel ch) throws RemotingException {
-        // If the server has entered the shutdown process, reject any new connection
+        // If the server has entered the shutdown process, reject any new connection，检查 NettyServer 的状态，如果是正在关闭或者是关闭状态，就直接关闭 ch（NioSocketChannel）
         if (this.isClosing() || this.isClosed()) {
             logger.warn("Close new channel " + ch + ", cause: server is closing or has been closed. For example, receive a new connect request while in shutdown process.");
             ch.close();
@@ -199,6 +199,7 @@ public abstract class AbstractServer extends AbstractEndpoint implements Server 
         }
 
         Collection<Channel> channels = getChannels();
+        // 也就是说连接的 NioSocketChannel 总数不能超过 accepts，如果超过了，就需要关闭此 ch
         if (accepts > 0 && channels.size() > accepts) {
             logger.error("Close channel " + ch + ", cause: The server " + ch.getLocalAddress() + " connections greater than max config " + accepts);
             ch.close();

@@ -41,8 +41,11 @@ public class HeartbeatHandler extends AbstractChannelHandlerDelegate {
 
     @Override
     public void connected(Channel channel) throws RemotingException {
+        // 为 channel 添加一个 READ_TIMESTAMP 属性，值为当前的时间戳
         setReadTimestamp(channel);
+        // 为 channel 添加一个 WRITE_TIMESTAMP 属性，值为当前的时间戳
         setWriteTimestamp(channel);
+        // handler 为 AllChannelHandler 的实例
         handler.connected(channel);
     }
 
@@ -89,10 +92,12 @@ public class HeartbeatHandler extends AbstractChannelHandlerDelegate {
     }
 
     private void setReadTimestamp(Channel channel) {
+        // 为 channel 添加一个 READ_TIMESTAMP 属性，值为当前的时间戳
         channel.setAttribute(KEY_READ_TIMESTAMP, System.currentTimeMillis());
     }
 
     private void setWriteTimestamp(Channel channel) {
+        // 为 channel 添加一个 WRITE_TIMESTAMP 属性，值为当前的时间戳
         channel.setAttribute(KEY_WRITE_TIMESTAMP, System.currentTimeMillis());
     }
 

@@ -27,7 +27,7 @@ import org.apache.dubbo.remoting.RemotingException;
  * AbstractPeer
  */
 public abstract class AbstractPeer implements Endpoint, ChannelHandler {
-
+    // 为 org.apache.dubbo.remoting.transport.MultiMessageHandler 实例
     private final ChannelHandler handler;
 
     // dubbo://192.168.1.104:20880/org.apache.dubbo.demo.DemoService?anyhost=true&application=demo-provider&bean.name=org.apache.dubbo.demo.DemoService&bind.ip=192.168.1.104&bind.port=20880&channel.readonly.sent=true&codec=dubbo&deprecated=false&dubbo=2.0.2&dynamic=true&generic=false&heartbeat=60000&interface=org.apache.dubbo.demo.DemoService&methods=sayHello&pid=16139&register=true&release=&side=provider&timestamp=1558494604758
@@ -123,8 +123,10 @@ public abstract class AbstractPeer implements Endpoint, ChannelHandler {
     @Override
     public void connected(Channel ch) throws RemotingException {
         if (closed) {
+            // Server 的状态是已关闭，则直接返回，不处理
             return;
         }
+        // 为 org.apache.dubbo.remoting.transport.MultiMessageHandler 实例
         handler.connected(ch);
     }
 

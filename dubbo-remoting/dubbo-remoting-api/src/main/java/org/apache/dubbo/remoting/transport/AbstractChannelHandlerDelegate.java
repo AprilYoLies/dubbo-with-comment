@@ -22,7 +22,7 @@ import org.apache.dubbo.remoting.ChannelHandler;
 import org.apache.dubbo.remoting.RemotingException;
 
 public abstract class AbstractChannelHandlerDelegate implements ChannelHandlerDelegate {
-
+    // 这里持有的是 HearbeatHandler、AllChannelHandler、HeaderExchangeHandler
     protected ChannelHandler handler;
 
     protected AbstractChannelHandlerDelegate(ChannelHandler handler) {
@@ -40,6 +40,7 @@ public abstract class AbstractChannelHandlerDelegate implements ChannelHandlerDe
 
     @Override
     public void connected(Channel channel) throws RemotingException {
+        // 这里持有的是 HearbeatHandler
         handler.connected(channel);
     }
 

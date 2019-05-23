@@ -48,10 +48,16 @@ public class SimpleDataStore implements DataStore {
         return data.get(componentName).get(key);
     }
 
+    /**
+     * @param componentName java.util.concurrent.ExecutorService
+     * @param key           20880
+     * @param value         ThreadPoolExecutor
+     */
     @Override
     public void put(String componentName, String key, Object value) {
         Map<String, Object> componentData = data.get(componentName);
         if (null == componentData) {
+            // componentName 对应一个 ConcurrentHashMap，存储的内容为端口号 -> 线程池
             data.putIfAbsent(componentName, new ConcurrentHashMap<String, Object>());
             componentData = data.get(componentName);
         }

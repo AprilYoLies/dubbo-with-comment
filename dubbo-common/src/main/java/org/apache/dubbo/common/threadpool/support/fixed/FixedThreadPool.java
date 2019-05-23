@@ -43,14 +43,21 @@ public class FixedThreadPool implements ThreadPool {
 
     @Override
     public Executor getExecutor(URL url) {
+        // 获取线程名字，默认为 Dubbo
         String name = url.getParameter(THREAD_NAME_KEY, DEFAULT_THREAD_NAME);
+        // 获取线程数量，默认为 200
         int threads = url.getParameter(THREADS_KEY, DEFAULT_THREADS);
+        // 获取队列长度，默认为 0
         int queues = url.getParameter(QUEUES_KEY, DEFAULT_QUEUES);
         return new ThreadPoolExecutor(threads, threads, 0, TimeUnit.MILLISECONDS,
                 queues == 0 ? new SynchronousQueue<Runnable>() :
+                        // queues 小于 0，创建的队列没有空间限制
                         (queues < 0 ? new LinkedBlockingQueue<Runnable>()
                                 : new LinkedBlockingQueue<Runnable>(queues)),
-                new NamedInternalThreadFactory(name, true), new AbortPolicyWithReport(name, url));
+                // 此线程工厂，创建的是 InternalThread，线程的名字是 prefix-thread-n
+                new NamedInternalThreadFactory(name, true),
+                // 这个 RejectedExecutionHandler 添加了打印线程 stack 信息的功能
+                new AbortPolicyWithReport(name, url));
     }
 
 }

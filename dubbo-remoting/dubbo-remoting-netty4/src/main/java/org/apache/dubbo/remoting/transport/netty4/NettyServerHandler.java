@@ -43,7 +43,7 @@ public class NettyServerHandler extends ChannelDuplexHandler {
     private final Map<String, Channel> channels = new ConcurrentHashMap<String, Channel>(); // <ip:port, channel>
 
     private final URL url;
-
+    // 此 handler 实际为 org.apache.dubbo.remoting.transport.MultiMessageHandler，或者为 NettyServer，这种情况是在 NettyServer 类中构建 NettyServerHandler 时传入的
     private final ChannelHandler handler;
 
     public NettyServerHandler(URL url, ChannelHandler handler) {
@@ -68,13 +68,15 @@ public class NettyServerHandler extends ChannelDuplexHandler {
         // ctx.channel() 为从 ChannelHandlerContext 中获取对应的 channel
         // NettyChannel.getOrAddChannel 尝试从 CHANNEL_MAP 中获取 netty 原生 channel 的装饰者 channel，
         // 如果没有获取到，那么就直接新建一个
+        // 此 channel 封装的是 NioSocketChannel
         NettyChannel channel = NettyChannel.getOrAddChannel(ctx.channel(), url, handler);
         try {
             if (channel != null) {
                 // ctx.channel().remoteAddress() 为获取 channel 对应的远端的 InetSocketAddress，
-                // 然后将 InetSocketAddress 转换为字符串，和 channel 一起缓存到 channels 中
+                // 然后将 InetSocketAddress 转换为字符串，和 channel 一起缓存到 channels 中,这里缓存的
                 channels.put(NetUtils.toAddressString((InetSocketAddress) ctx.channel().remoteAddress()), channel);
             }
+            // 此 handler 实际为 org.apache.dubbo.remoting.transport.MultiMessageHandler
             handler.connected(channel);
         } finally {
             NettyChannel.removeChannelIfDisconnected(ctx.channel());

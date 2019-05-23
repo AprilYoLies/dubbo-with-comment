@@ -33,13 +33,17 @@ public class NamedInternalThreadFactory extends NamedThreadFactory {
         super(prefix, false);
     }
 
+    // prefix -> url 中获取线程名字，默认为 Dubbo
     public NamedInternalThreadFactory(String prefix, boolean daemon) {
         super(prefix, daemon);
     }
 
+    // 创建 Internal 线程
     @Override
     public Thread newThread(Runnable runnable) {
+        // prefix-thread-n
         String name = mPrefix + mThreadNum.getAndIncrement();
+        // 这里创建的是 InternalThread
         InternalThread ret = new InternalThread(mGroup, runnable, name, 0);
         ret.setDaemon(mDaemon);
         return ret;

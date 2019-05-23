@@ -28,6 +28,7 @@ public class NamedThreadFactory implements ThreadFactory {
 
     protected final AtomicInteger mThreadNum = new AtomicInteger(1);
 
+    // prefix-thread-
     protected final String mPrefix;
 
     protected final boolean mDaemon;
@@ -49,9 +50,12 @@ public class NamedThreadFactory implements ThreadFactory {
         mGroup = (s == null) ? Thread.currentThread().getThreadGroup() : s.getThreadGroup();
     }
 
+    // 创建普通线程
     @Override
     public Thread newThread(Runnable runnable) {
+        // prefix-thread-n
         String name = mPrefix + mThreadNum.getAndIncrement();
+        // 这里创建的是普通线程
         Thread ret = new Thread(mGroup, runnable, name, 0);
         ret.setDaemon(mDaemon);
         return ret;

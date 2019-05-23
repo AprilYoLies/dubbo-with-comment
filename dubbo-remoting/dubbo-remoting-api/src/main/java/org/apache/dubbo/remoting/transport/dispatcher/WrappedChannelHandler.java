@@ -31,6 +31,7 @@ import org.apache.dubbo.remoting.transport.ChannelHandlerDelegate;
 
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.ThreadPoolExecutor;
 
 import static org.apache.dubbo.common.constants.CommonConstants.CONSUMER_SIDE;
 import static org.apache.dubbo.common.constants.CommonConstants.SIDE_KEY;
@@ -38,25 +39,71 @@ import static org.apache.dubbo.common.constants.CommonConstants.SIDE_KEY;
 public class WrappedChannelHandler implements ChannelHandlerDelegate {
 
     protected static final Logger logger = LoggerFactory.getLogger(WrappedChannelHandler.class);
-
+    // 共享的线程池，在 executor 为空或者关闭的情况下，使用这个
     protected static final ExecutorService SHARED_EXECUTOR = Executors.newCachedThreadPool(new NamedThreadFactory("DubboSharedHandler", true));
 
     protected final ExecutorService executor;
 
+    // 实际为 DecodeHandler 实例
     protected final ChannelHandler handler;
 
+    // dubbo://192.168.1.104:20880/org.apache.dubbo.demo.DemoService?
+    // anyhost=true&
+    // application=demo-provider&
+    // bean.name=org.apache.dubbo.demo.DemoService&
+    // bind.ip=192.168.1.104&
+    // bind.port=20880&
+    // channel.readonly.sent=true&
+    // codec=dubbo&
+    // deprecated=false&
+    // dubbo=2.0.2&
+    // dynamic=true&
+    // generic=false&
+    // heartbeat=60000&
+    // interface=org.apache.dubbo.demo.DemoService&
+    // methods=sayHello&
+    // pid=7595&
+    // register=true&
+    // release=&
+    // side=provider&
+    // threadname=DubboS
+    // erverHandler-192.168.1.104:20880&
+    // timestamp=1558522920136
     protected final URL url;
 
+    // handler 为 DecodeHandler 实例,构造函数中还保存了 componentKey 和线程池相关的关系
     public WrappedChannelHandler(ChannelHandler handler, URL url) {
         this.handler = handler;
         this.url = url;
+        // getAdaptiveExtension 方法获取的 extension 实例代码
+        // package org.apache.dubbo.common.threadpool;
+        // import org.apache.dubbo.common.extension.ExtensionLoader;
+        // public class ThreadPool$Adaptive implements org.apache.dubbo.common.threadpool.ThreadPool {
+        //     public java.util.concurrent.Executor getExecutor(org.apache.dubbo.common.URL arg0) {
+        //         if (arg0 == null) throw new IllegalArgumentException("url == null");
+        //         org.apache.dubbo.common.URL url = arg0;
+        // 这里获取的 extName 其实是 fixed
+        //         String extName = url.getParameter("threadpool", "fixed");
+        //         if (extName == null)
+        //             throw new IllegalStateException("Failed to get extension (org.apache.dubbo.common.threadpool.ThreadPool) name from url (" + url.toString() + ") use keys([threadpool])");
+        // 这里获取的 extension 实际为 FixedThreadPool
+        //         org.apache.dubbo.common.threadpool.ThreadPool extension = (org.apache.dubbo.common.threadpool.ThreadPool) ExtensionLoader.getExtensionLoader(org.apache.dubbo.common.threadpool.ThreadPool.class).getExtension(extName);
+        //         return extension.getExecutor(arg0);
+        //     }
+        // }
+        // 这里创建的是 ThreadPoolExecutor，固定线程数大小，因为获取的 extension 是 FixedThreadPool，
+        // 它的 org.apache.dubbo.common.threadpool.support.fixed.FixedThreadPool.getExecutor 方法返回 FixedThreadPool
         executor = (ExecutorService) ExtensionLoader.getExtensionLoader(ThreadPool.class).getAdaptiveExtension().getExecutor(url);
 
         String componentKey = RemotingConstants.EXECUTOR_SERVICE_COMPONENT_KEY;
         if (CONSUMER_SIDE.equalsIgnoreCase(url.getParameter(SIDE_KEY))) {
+            // url 的 side 参数值为 consumer，componentKey 赋值为 consumer
             componentKey = CONSUMER_SIDE;
         }
+        // 获取的 dataStore 实例为 org.apache.dubbo.common.store.support.SimpleDataStore
         DataStore dataStore = ExtensionLoader.getExtensionLoader(DataStore.class).getDefaultExtension();
+        // componentKey -> java.util.concurrent.ExecutorService
+        // componentKey 对应一个 ConcurrentHashMap，存储的内容为端口号 -> 线程池
         dataStore.put(componentKey, Integer.toString(url.getPort()), executor);
     }
 
@@ -115,6 +162,7 @@ public class WrappedChannelHandler implements ChannelHandlerDelegate {
     public ExecutorService getExecutorService() {
         ExecutorService cexecutor = executor;
         if (cexecutor == null || cexecutor.isShutdown()) {
+            // 在 executor 为空或者关闭的情况下，使用这个 SHARED_EXECUTOR
             cexecutor = SHARED_EXECUTOR;
         }
         return cexecutor;

@@ -195,16 +195,19 @@ public class NetUtils {
         }
         if (host.contains("://")) {
             URL u = URL.valueOf(host);
+            // host 包含 :// 串，直接将其转换为 URL，如果获得的 URL 的 host 不合法，直接将 host 替换为本机 ip 直接返回
             if (NetUtils.isInvalidLocalHost(u.getHost())) {
                 return u.setHost(NetUtils.getLocalHost()).toFullString();
             }
         } else if (host.contains(":")) {
             int i = host.lastIndexOf(':');
+            // host 包含 : 串，直接取 : 之前的内容，如果获得的 host 不合法，直接将 host 替换为本机 ip 然后拼接 : 之后的内容返回
             if (NetUtils.isInvalidLocalHost(host.substring(0, i))) {
                 return NetUtils.getLocalHost() + host.substring(i);
             }
         } else {
             if (NetUtils.isInvalidLocalHost(host)) {
+                // host 本身不合法，直接返回本机 ip
                 return NetUtils.getLocalHost();
             }
         }

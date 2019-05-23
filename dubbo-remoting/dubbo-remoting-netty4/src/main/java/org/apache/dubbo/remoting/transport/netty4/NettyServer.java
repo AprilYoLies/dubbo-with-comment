@@ -56,7 +56,7 @@ import static org.apache.dubbo.common.constants.CommonConstants.IO_THREADS_KEY;
 public class NettyServer extends AbstractServer implements Server {
 
     private static final Logger logger = LoggerFactory.getLogger(NettyServer.class);
-
+    // 此 channels 保存的是连接远端地址加端口号和 NioSocketChannel 信息
     private Map<String, Channel> channels; // <ip:port, channel>
 
     private ServerBootstrap bootstrap;
@@ -80,7 +80,7 @@ public class NettyServer extends AbstractServer implements Server {
         // 根据 url 的 iothreads 参数来确定 NioEventLoopGroup 工作线程组的线程数，如果没有获取到，则默认使用 13 个线程
         workerGroup = new NioEventLoopGroup(getUrl().getPositiveParameter(IO_THREADS_KEY, RemotingConstants.DEFAULT_IO_THREADS),
                 new DefaultThreadFactory("NettyServerWorker", true));
-
+        // NettyServer 类实际也是实现了 ChannelHandler 接口，这里通过 NettyServerHandler 对 NettyServer 进行了封装
         final NettyServerHandler nettyServerHandler = new NettyServerHandler(getUrl(), this);
         channels = nettyServerHandler.getChannels();
 
@@ -151,13 +151,16 @@ public class NettyServer extends AbstractServer implements Server {
         }
     }
 
+    // 获取的是 NioSocketChannel 集合
     @Override
     public Collection<Channel> getChannels() {
         Collection<Channel> chs = new HashSet<Channel>();
         for (Channel channel : this.channels.values()) {
             if (channel.isConnected()) {
+                // 获取处于连接状态的 NioSocketChannel
                 chs.add(channel);
             } else {
+                // 非连接状态的 NioSocketChannel 需要从 channels 移除
                 channels.remove(NetUtils.toAddressString(channel.getRemoteAddress()));
             }
         }

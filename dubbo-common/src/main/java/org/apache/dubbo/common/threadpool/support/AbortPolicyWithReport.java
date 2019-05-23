@@ -67,13 +67,14 @@ public class AbortPolicyWithReport extends ThreadPoolExecutor.AbortPolicy {
     @Override
     public void rejectedExecution(Runnable r, ThreadPoolExecutor e) {
         String msg = String.format("Thread pool is EXHAUSTED!" +
-                " Thread Name: %s, Pool Size: %d (active: %d, core: %d, max: %d, largest: %d), Task: %d (completed: "
-                + "%d)," +
-                " Executor status:(isShutdown:%s, isTerminated:%s, isTerminating:%s), in %s://%s:%d!",
-            threadName, e.getPoolSize(), e.getActiveCount(), e.getCorePoolSize(), e.getMaximumPoolSize(),
-            e.getLargestPoolSize(),
-            e.getTaskCount(), e.getCompletedTaskCount(), e.isShutdown(), e.isTerminated(), e.isTerminating(),
-            url.getProtocol(), url.getIp(), url.getPort());
+                        " Thread Name: %s, Pool Size: %d (active: %d, core: %d, max: %d, largest: %d), Task: %d (completed: "
+                        + "%d)," +
+                        " Executor status:(isShutdown:%s, isTerminated:%s, isTerminating:%s), in %s://%s:%d!",
+                threadName, e.getPoolSize(), e.getActiveCount(), e.getCorePoolSize(), e.getMaximumPoolSize(),
+                e.getLargestPoolSize(),
+                e.getTaskCount(), e.getCompletedTaskCount(), e.isShutdown(), e.isTerminated(), e.isTerminating(),
+                url.getProtocol(), url.getIp(), url.getPort());
+        // 生成并打印日志信息
         logger.warn(msg);
         dumpJStack();
         throw new RejectedExecutionException(msg);
@@ -83,6 +84,7 @@ public class AbortPolicyWithReport extends ThreadPoolExecutor.AbortPolicy {
         long now = System.currentTimeMillis();
 
         //dump every 10 minutes
+        // 打印间隔至少为 10 minutes
         if (now - lastPrintTime < TEN_MINUTES_MILLS) {
             return;
         }
@@ -93,23 +95,27 @@ public class AbortPolicyWithReport extends ThreadPoolExecutor.AbortPolicy {
 
         ExecutorService pool = Executors.newSingleThreadExecutor();
         pool.execute(() -> {
+            // dump.directory，默认为 user.home 系统属性
             String dumpPath = url.getParameter(DUMP_DIRECTORY, System.getProperty("user.home"));
 
             SimpleDateFormat sdf;
-
+            // os.name
             String os = System.getProperty(OS_NAME_KEY).toLowerCase();
 
             // window system don't support ":" in file name
             if (os.contains(OS_WIN_PREFIX)) {
+                // windows 系统 yyyy-MM-dd_HH-mm-ss
                 sdf = new SimpleDateFormat(WIN_DATETIME_FORMAT);
             } else {
+                // 其他系统 yyyy-MM-dd_HH:mm:ss
                 sdf = new SimpleDateFormat(DEFAULT_DATETIME_FORMAT);
             }
 
             String dateStr = sdf.format(new Date());
             //try-with-resources
             try (FileOutputStream jStackStream = new FileOutputStream(
-                new File(dumpPath, "Dubbo_JStack.log" + "." + dateStr))) {
+                    new File(dumpPath, "Dubbo_JStack.log" + "." + dateStr))) {
+                // 打印 stack 信息
                 JVMUtil.jstack(jStackStream);
             } catch (Throwable t) {
                 logger.error("dump jStack error", t);

@@ -84,7 +84,7 @@ final public class NettyCodecAdapter {
         protected void decode(ChannelHandlerContext ctx, ByteBuf input, List<Object> out) throws Exception {
 
             ChannelBuffer message = new NettyBackedChannelBuffer(input);
-
+            // 尝试从 CHANNEL_MAP 中获取 netty 原生 channel 的装饰者 channel，如果没有获取到，那么就直接新建一个
             NettyChannel channel = NettyChannel.getOrAddChannel(ctx.channel(), url, handler);
 
             try {

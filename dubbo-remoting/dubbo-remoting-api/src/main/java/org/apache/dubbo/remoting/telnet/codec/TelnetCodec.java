@@ -166,8 +166,10 @@ public class TelnetCodec extends TransportCodec {
     @SuppressWarnings("unchecked")
     protected Object decode(Channel channel, ChannelBuffer buffer, int readable, byte[] message) throws IOException {
         if (isClientSide(channel)) {
+            // 是客户端的话，直接将 byte 数组转换为字符串
             return toString(message, getCharset(channel));
         }
+        // readable 不能超过 8MB
         checkPayload(channel, readable);
         if (message == null || message.length == 0) {
             return DecodeResult.NEED_MORE_INPUT;
@@ -175,6 +177,7 @@ public class TelnetCodec extends TransportCodec {
 
         if (message[message.length - 1] == '\b') { // Windows backspace echo
             try {
+                // 这里是啥意思？？
                 boolean doublechar = message.length >= 3 && message[message.length - 3] < 0; // double byte char
                 channel.send(new String(doublechar ? new byte[]{32, 32, 8, 8} : new byte[]{32, 8}, getCharset(channel).name()));
             } catch (RemotingException e) {
@@ -184,6 +187,7 @@ public class TelnetCodec extends TransportCodec {
         }
 
         for (Object command : EXIT) {
+            // 处理退出消息
             if (isEquals(message, (byte[]) command)) {
                 if (logger.isInfoEnabled()) {
                     logger.info(new Exception("Close channel " + channel + " on exit command: " + Arrays.toString((byte[]) command)));
@@ -196,6 +200,7 @@ public class TelnetCodec extends TransportCodec {
         boolean up = endsWith(message, UP);
         boolean down = endsWith(message, DOWN);
         if (up || down) {
+            // 处理上下按键
             LinkedList<String> history = (LinkedList<String>) channel.getAttribute(HISTORY_LIST_KEY);
             if (CollectionUtils.isEmpty(history)) {
                 return DecodeResult.NEED_MORE_INPUT;
@@ -243,6 +248,7 @@ public class TelnetCodec extends TransportCodec {
             return DecodeResult.NEED_MORE_INPUT;
         }
         for (Object command : EXIT) {
+            // 处理退出消息
             if (isEquals(message, (byte[]) command)) {
                 if (logger.isInfoEnabled()) {
                     logger.info(new Exception("Close channel " + channel + " on exit command " + command));
@@ -253,6 +259,7 @@ public class TelnetCodec extends TransportCodec {
         }
         byte[] enter = null;
         for (Object command : ENTER) {
+            // 处理回车消息
             if (endsWith(message, (byte[]) command)) {
                 enter = (byte[]) command;
                 break;
@@ -261,31 +268,44 @@ public class TelnetCodec extends TransportCodec {
         if (enter == null) {
             return DecodeResult.NEED_MORE_INPUT;
         }
+        // 历史列表
         LinkedList<String> history = (LinkedList<String>) channel.getAttribute(HISTORY_LIST_KEY);
+        // 历史索引信息
         Integer index = (Integer) channel.getAttribute(HISTORY_INDEX_KEY);
+        // 清除历史索引信息
         channel.removeAttribute(HISTORY_INDEX_KEY);
         if (CollectionUtils.isNotEmpty(history) && index != null && index >= 0 && index < history.size()) {
             String value = history.get(index);
+            // 根据历史列表和索引获取相应的 value
             if (value != null) {
                 byte[] b1 = value.getBytes();
                 byte[] b2 = new byte[b1.length + message.length];
+                // 历史的 b1 拷贝到新建的 b2
                 System.arraycopy(b1, 0, b2, 0, b1.length);
+                // 待解码的拷贝到 b2，也就是做了合并操作
                 System.arraycopy(message, 0, b2, b1.length, message.length);
+                // message 指向 b2
                 message = b2;
             }
         }
+        // 针对 message 新建字符串
         String result = toString(message, getCharset(channel));
         if (result.trim().length() > 0) {
             if (history == null) {
                 history = new LinkedList<String>();
+                // 向 channel 添加一个 telnet.history.list
                 channel.setAttribute(HISTORY_LIST_KEY, history);
             }
             if (history.isEmpty()) {
+                // 历史列表为空直接进行添加
                 history.addLast(result);
             } else if (!result.equals(history.getLast())) {
+                // result 不为 history 的最后一个
                 history.remove(result);
                 history.addLast(result);
+                // 那么就从 history 中移除 result ，重新添加到末尾
                 if (history.size() > 10) {
+                    // 历史记录保留不超过 10 个
                     history.removeFirst();
                 }
             }

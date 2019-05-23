@@ -47,7 +47,7 @@ public class HeaderExchangeHandler implements ChannelHandlerDelegate {
     public static final String KEY_READ_TIMESTAMP = HeartbeatHandler.KEY_READ_TIMESTAMP;
 
     public static final String KEY_WRITE_TIMESTAMP = HeartbeatHandler.KEY_WRITE_TIMESTAMP;
-
+    // handler 为 DubboProtocol 类中的 ExchangeHandlerAdapter 匿名内部类
     private final ExchangeHandler handler;
 
     public HeaderExchangeHandler(ExchangeHandler handler) {
@@ -132,8 +132,11 @@ public class HeaderExchangeHandler implements ChannelHandlerDelegate {
 
     @Override
     public void connected(Channel channel) throws RemotingException {
+        // 添加 READ_TIMESTAMP 属性，值为当前时间戳
         channel.setAttribute(KEY_READ_TIMESTAMP, System.currentTimeMillis());
+        // 添加 WRITE_TIMESTAMP 属性，值为当前时间戳
         channel.setAttribute(KEY_WRITE_TIMESTAMP, System.currentTimeMillis());
+        // 获取 channel 中的 HeaderExchangeChannel，没有的话就新建一个
         ExchangeChannel exchangeChannel = HeaderExchangeChannel.getOrAddChannel(channel);
         try {
             handler.connected(exchangeChannel);

@@ -79,29 +79,44 @@ public class ExchangeCodec extends TelnetCodec {
 
     @Override
     public Object decode(Channel channel, ChannelBuffer buffer) throws IOException {
+        // 先获取 buffer 的可读字节数
         int readable = buffer.readableBytes();
+        // 可读字节数和 16 取较小的那个
         byte[] header = new byte[Math.min(readable, HEADER_LENGTH)];
+        // 读取 header 部分的数据
         buffer.readBytes(header);
+        // 解码剩余的其它内容
         return decode(channel, buffer, readable, header);
     }
 
     @Override
     protected Object decode(Channel channel, ChannelBuffer buffer, int readable, byte[] header) throws IOException {
         // check magic number.
+        // header.
+        // 共 16 个字节
+        // | magic | ContentTypeId | null | reqID | len |
+        // |   2   |       1       |   1  |   8   |  4  |
+        // magic header.
+        // protected static final short MAGIC = (short) 0xdabb;
         if (readable > 0 && header[0] != MAGIC_HIGH
                 || readable > 1 && header[1] != MAGIC_LOW) {
+            // 如果魔幻数字不对
             int length = header.length;
             if (header.length < readable) {
+                // 这里就说明，除了 header 的字节部分，还有真正的数据部分
                 header = Bytes.copyOf(header, readable);
+                // 这样就是将全部数据读到了 header 中，前 16 个为 header 部分，后边的为剩余数据
                 buffer.readBytes(header, length, readable - length);
             }
             for (int i = 1; i < header.length - 1; i++) {
                 if (header[i] == MAGIC_HIGH && header[i + 1] == MAGIC_LOW) {
+                    // 这里就说明又检测到了一个数据包，那么就将第一个数据包的内容放到 header 中
                     buffer.readerIndex(buffer.readerIndex() - header.length + i);
                     header = Bytes.copyOf(header, i);
                     break;
                 }
             }
+            // 一次只解析一个数据包
             return super.decode(channel, buffer, readable, header);
         }
         // check length.

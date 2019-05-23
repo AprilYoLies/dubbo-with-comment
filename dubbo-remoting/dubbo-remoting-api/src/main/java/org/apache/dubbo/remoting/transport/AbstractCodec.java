@@ -65,12 +65,15 @@ public abstract class AbstractCodec implements Codec2 {
     protected boolean isClientSide(Channel channel) {
         String side = (String) channel.getAttribute(SIDE_KEY);
         if (CLIENT_SIDE.equals(side)) {
+            // channel 的 side 属性为 client
             return true;
         } else if (SERVER_SIDE.equals(side)) {
+            // channel 的 side 属性为 server，返回 false
             return false;
         } else {
             InetSocketAddress address = channel.getRemoteAddress();
             URL url = channel.getUrl();
+            // 根据 url 和 address 判断 side 信息，然后缓存到 channel 中
             boolean isClient = url.getPort() == address.getPort()
                     && NetUtils.filterLocalHost(url.getIp()).equals(
                     NetUtils.filterLocalHost(address.getAddress()
