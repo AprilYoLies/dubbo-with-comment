@@ -107,7 +107,7 @@ public class DubboProtocol extends AbstractProtocol {
 
     private ExchangeHandler requestHandler = new ExchangeHandlerAdapter() {
 
-        @Override
+        @Override   // message 为已经完成解码的消息，用 DecodeableRpcInvocation 进行承载
         public CompletableFuture<Object> reply(ExchangeChannel channel, Object message) throws RemotingException {
             // 这里的 message 一定得是 Invocation 实例
             if (!(message instanceof Invocation)) {
@@ -121,7 +121,7 @@ public class DubboProtocol extends AbstractProtocol {
             Invoker<?> invoker = getInvoker(channel, inv);
             // need to consider backward-compatibility if it's a callback
             // 是 _isCallBackServiceInvoke 参数为 true
-            if (Boolean.TRUE.toString().equals(inv.getAttachments().get(IS_CALLBACK_SERVICE_INVOKE))) {
+            if (Boolean.TRUE.toString().equals(inv.getAttachments().get(IS_CALLBACK_SERVICE_INVOKE))) { // _isCallBackServiceInvoke
                 String methodsStr = invoker.getUrl().getParameters().get("methods");
                 boolean hasMethod = false;
                 // 查找 inv 中是否有 methods 参数值，如果找到了，需要将 hasMethod 设置为 true
@@ -147,7 +147,7 @@ public class DubboProtocol extends AbstractProtocol {
                 }
             }
             RpcContext rpcContext = RpcContext.getContext();
-            // 将 RemoteAddress 保存到 RpcContext 线程本地变量中
+            // 将 RemoteAddress 保存到 RpcContext 线程本地变量中，rpcContext 中实际保存的是 InetSocketAddress 实例
             rpcContext.setRemoteAddress(channel.getRemoteAddress());
             // 对 invoker 进行调用
             Result result = invoker.invoke(inv);
@@ -186,8 +186,9 @@ public class DubboProtocol extends AbstractProtocol {
             invoke(channel, ON_DISCONNECT_KEY);
         }
 
+        // channel 实际为 HeaderExchangeChannel，内部持有了 netty 的原生 channel，methodKey 这里是 oncconnect
         private void invoke(Channel channel, String methodKey) {
-            Invocation invocation = createInvocation(channel, channel.getUrl(), methodKey);
+            Invocation invocation = createInvocation(channel, channel.getUrl(), methodKey); // 创建的 Invocation 仅仅是保存了一些从 url 中获取的参数
             if (invocation != null) {
                 try {
                     received(channel, invocation);
@@ -197,6 +198,7 @@ public class DubboProtocol extends AbstractProtocol {
             }
         }
 
+        // channel 实际为 HeaderExchangeChannel，内部持有了 netty 的原生 channel，methodKey 这里是 oncconnect（这么看 Invocation 并没有什么实质性的作用，仅仅是保存一些变量）
         private Invocation createInvocation(Channel channel, URL url, String methodKey) {
             String method = url.getParameter(methodKey);
             if (method == null || method.length() == 0) {
@@ -204,6 +206,7 @@ public class DubboProtocol extends AbstractProtocol {
             }
             // 如果 url 的 methodKey 参数不为空，就构建一个 RpcInvocation，填充 path、group、interface、version、dubbo.stub.event 参数
             RpcInvocation invocation = new RpcInvocation(method, new Class<?>[0], new Object[0]);
+            // 分别填充 path、group、interface、version、dubbo.stub.event 值
             invocation.setAttachment(PATH_KEY, url.getPath());
             invocation.setAttachment(GROUP_KEY, url.getParameter(GROUP_KEY));
             invocation.setAttachment(INTERFACE_KEY, url.getParameter(INTERFACE_KEY));
@@ -243,8 +246,8 @@ public class DubboProtocol extends AbstractProtocol {
 
     private boolean isClientSide(Channel channel) {
         // 获取远端 InetSocketAddress
-        InetSocketAddress address = channel.getRemoteAddress();
-        URL url = channel.getUrl();
+        InetSocketAddress address = channel.getRemoteAddress(); // remote-host:port 192.168.1.104:50397（估计这是指客户端的 ip 和端口号）
+        URL url = channel.getUrl(); // dubbo://192.168.1.104:20880/org.apache.dubbo.demo.DemoService?anyhost=true&application=demo-provider&bean.name=org.apache.dubbo.demo.DemoService&bind.ip=192.168.1.104&bind.port=20880&channel.readonly.sent=true&codec=dubbo&deprecated=false&dubbo=2.0.2&dynamic=true&generic=false&heartbeat=60000&interface=org.apache.dubbo.demo.DemoService&methods=sayHello&pid=29285&register=true&release=&side=provider&timestamp=1558668993108
         // url 端口号和远端 port 一致且 url 的 ip 和远端 ip 经过 filterLocalHost 函数处理后一致，返回 true
         return url.getPort() == address.getPort() &&
                 NetUtils.filterLocalHost(channel.getUrl().getIp())
@@ -254,11 +257,11 @@ public class DubboProtocol extends AbstractProtocol {
     Invoker<?> getInvoker(Channel channel, Invocation inv) throws RemotingException {
         boolean isCallBackServiceInvoke = false;
         boolean isStubServiceInvoke = false;
-        int port = channel.getLocalAddress().getPort();
-        String path = inv.getAttachments().get(PATH_KEY);
+        int port = channel.getLocalAddress().getPort(); // 20880
+        String path = inv.getAttachments().get(PATH_KEY);   // org.apache.dubbo.demo.DemoService
 
         // if it's callback service on client side
-        isStubServiceInvoke = Boolean.TRUE.toString().equals(inv.getAttachments().get(STUB_EVENT_KEY));
+        isStubServiceInvoke = Boolean.TRUE.toString().equals(inv.getAttachments().get(STUB_EVENT_KEY)); // dubbo.stub.event
         if (isStubServiceInvoke) {
             // 如果 Invocation 是 StubServiceInvoke，使用远端端口作为端口号
             port = channel.getRemoteAddress().getPort();
@@ -268,11 +271,11 @@ public class DubboProtocol extends AbstractProtocol {
         isCallBackServiceInvoke = isClientSide(channel) && !isStubServiceInvoke;
         if (isCallBackServiceInvoke) {
             // 从 Invocation 中获取 callback.service.instid
-            path += "." + inv.getAttachments().get(CALLBACK_SERVICE_KEY);
+            path += "." + inv.getAttachments().get(CALLBACK_SERVICE_KEY);   // org.apache.dubbo.demo.DemoService.xxx
             // 添加 _isCallBackServiceInvoke 属性
             inv.getAttachments().put(IS_CALLBACK_SERVICE_INVOKE, Boolean.TRUE.toString());
         }
-        // 根据各项参数获取 serviceKey，模式 group/serviceName:serviceVersion:port
+        // 根据各项参数获取 serviceKey，模式 group/serviceName:serviceVersion:port，实际为 org.apache.dubbo.demo.DemoService:20880
         String serviceKey = serviceKey(port, path, inv.getAttachments().get(VERSION_KEY), inv.getAttachments().get(GROUP_KEY));
         // 从缓存中获取 exporter
         DubboExporter<?> exporter = (DubboExporter<?>) exporterMap.get(serviceKey);

@@ -77,13 +77,13 @@ public class HeaderExchangeHandler implements ChannelHandlerDelegate {
         }
     }
 
-    void handleRequest(final ExchangeChannel channel, Request req) throws RemotingException {
-        Response res = new Response(req.getId(), req.getVersion());
-        if (req.isBroken()) {
+    void handleRequest(final ExchangeChannel channel, Request req) throws RemotingException {   // 注意是在 req 的 twoWay 属性值为 true 才执行当前方法
+        Response res = new Response(req.getId(), req.getVersion()); // 构建 response
+        if (req.isBroken()) {   // 这里是 req 的解码出现异常的处理过程，收到的消息有误
             Object data = req.getData();
 
             String msg;
-            if (data == null) {
+            if (data == null) { // 根据不同的 data，构建 msg 信息
                 msg = null;
             } else if (data instanceof Throwable) {
                 msg = StringUtils.toString((Throwable) data);
@@ -93,12 +93,12 @@ public class HeaderExchangeHandler implements ChannelHandlerDelegate {
             res.setErrorMessage("Fail to decode request due to: " + msg);
             res.setStatus(Response.BAD_REQUEST);
 
-            channel.send(res);
+            channel.send(res);  // 将错误的响应发送给客户端
             return;
         }
         // find handler by message class.
         Object msg = req.getData();
-        try {
+        try {   // 执行到这里，就说明消息的解码是成功的
             // handle data.
             CompletableFuture<Object> future = handler.reply(channel, msg);
             if (future.isDone()) {
@@ -190,13 +190,13 @@ public class HeaderExchangeHandler implements ChannelHandlerDelegate {
 
     @Override
     public void received(Channel channel, Object message) throws RemotingException {
-        channel.setAttribute(KEY_READ_TIMESTAMP, System.currentTimeMillis());
-        final ExchangeChannel exchangeChannel = HeaderExchangeChannel.getOrAddChannel(channel);
+        channel.setAttribute(KEY_READ_TIMESTAMP, System.currentTimeMillis());   // 设置 READ_TIMESTAMP 属性
+        final ExchangeChannel exchangeChannel = HeaderExchangeChannel.getOrAddChannel(channel); // 尝试获取 channel 中的 HeaderExchangeChannel 属性值，没有的话就新建一个，然后保存到 channel 中
         try {
-            if (message instanceof Request) {
+            if (message instanceof Request) {   // 处理 request 消息
                 // handle request.
                 Request request = (Request) message;
-                if (request.isEvent()) {
+                if (request.isEvent()) {    // 如果是事件类型的消息
                     handlerEvent(channel, request);
                 } else {
                     if (request.isTwoWay()) {

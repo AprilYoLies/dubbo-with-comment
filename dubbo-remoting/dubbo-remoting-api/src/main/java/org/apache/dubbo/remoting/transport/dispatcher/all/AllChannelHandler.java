@@ -30,7 +30,7 @@ import org.apache.dubbo.remoting.transport.dispatcher.WrappedChannelHandler;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.RejectedExecutionException;
 
-public class AllChannelHandler extends WrappedChannelHandler {
+public class AllChannelHandler extends WrappedChannelHandler {  // 之所以被称为 AllChannelHandler，大概是因为不管什么事件，最后都将交由它来处理吧
 
     public AllChannelHandler(ChannelHandler handler, URL url) {
         super(handler, url);
@@ -66,14 +66,14 @@ public class AllChannelHandler extends WrappedChannelHandler {
         } catch (Throwable t) {
             //TODO A temporary solution to the problem that the exception information can not be sent to the opposite end after the thread pool is full. Need a refactoring
             //fix The thread pool is full, refuses to call, does not return, and causes the consumer to wait for time out
-            if (message instanceof Request && t instanceof RejectedExecutionException) {
+            if (message instanceof Request && t instanceof RejectedExecutionException) {    // 这里说明线程池所能容纳的任务已满
                 Request request = (Request) message;
                 if (request.isTwoWay()) {
                     String msg = "Server side(" + url.getIp() + "," + url.getPort() + ") threadpool is exhausted ,detail msg:" + t.getMessage();
-                    Response response = new Response(request.getId(), request.getVersion());
+                    Response response = new Response(request.getId(), request.getVersion());    // 构建 SERVER_THREADPOOL_EXHAUSTED_ERROR 响应消息
                     response.setStatus(Response.SERVER_THREADPOOL_EXHAUSTED_ERROR);
                     response.setErrorMessage(msg);
-                    channel.send(response);
+                    channel.send(response); // 将构建的 SERVER_THREADPOOL_EXHAUSTED_ERROR 响应消息发送给客户端
                     return;
                 }
             }

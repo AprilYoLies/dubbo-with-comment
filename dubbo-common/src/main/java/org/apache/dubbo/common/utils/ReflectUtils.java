@@ -853,31 +853,31 @@ public final class ReflectUtils {
      */
     public static Method findMethodByMethodSignature(Class<?> clazz, String methodName, String[] parameterTypes)
             throws NoSuchMethodException, ClassNotFoundException {
-        String signature = clazz.getName() + "." + methodName;
+        String signature = clazz.getName() + "." + methodName;  // 方法的全限定名
         if (parameterTypes != null && parameterTypes.length > 0) {
-            signature += StringUtils.join(parameterTypes);
+            signature += StringUtils.join(parameterTypes);  // 拼接方法参数相关内容
         }
-        Method method = Signature_METHODS_CACHE.get(signature);
+        Method method = Signature_METHODS_CACHE.get(signature); // 尝试从换从或获取对应的 Method
         if (method != null) {
             return method;
         }
-        if (parameterTypes == null) {
+        if (parameterTypes == null) {   // 方法无参数的的查找方式
             List<Method> finded = new ArrayList<Method>();
             for (Method m : clazz.getMethods()) {
-                if (m.getName().equals(methodName)) {
+                if (m.getName().equals(methodName)) {   // 直接根据方法名进行查找
                     finded.add(m);
                 }
             }
             if (finded.isEmpty()) {
                 throw new NoSuchMethodException("No such method " + methodName + " in class " + clazz);
             }
-            if (finded.size() > 1) {
+            if (finded.size() > 1) {    // 这种没有参数的方法应该是有且只有一个
                 String msg = String.format("Not unique method for method name(%s) in class(%s), find %d methods.",
                         methodName, clazz.getName(), finded.size());
                 throw new IllegalStateException(msg);
             }
             method = finded.get(0);
-        } else {
+        } else {    // 如果方法有参数，那么将会根据参数和方法名查找对应的 Method 对象
             Class<?>[] types = new Class<?>[parameterTypes.length];
             for (int i = 0; i < parameterTypes.length; i++) {
                 types[i] = ReflectUtils.name2class(parameterTypes[i]);

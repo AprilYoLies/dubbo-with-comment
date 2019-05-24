@@ -22,7 +22,6 @@ import org.apache.dubbo.remoting.RemotingException;
 import org.apache.dubbo.remoting.exchange.support.MultiMessage;
 
 /**
- *
  * @see MultiMessage
  */
 public class MultiMessageHandler extends AbstractChannelHandlerDelegate {
@@ -34,13 +33,13 @@ public class MultiMessageHandler extends AbstractChannelHandlerDelegate {
     @SuppressWarnings("unchecked")
     @Override
     public void received(Channel channel, Object message) throws RemotingException {
-        if (message instanceof MultiMessage) {
+        if (message instanceof MultiMessage) {  // 之所以被称为 MultiMessageHandler，就是因为它会对不同的消息的类型进行区分处理吧
             MultiMessage list = (MultiMessage) message;
-            for (Object obj : list) {
+            for (Object obj : list) {   // 整体处理
                 handler.received(channel, obj);
             }
         } else {
-            handler.received(channel, message);
+            handler.received(channel, message); // 逐个处理
         }
     }
 }

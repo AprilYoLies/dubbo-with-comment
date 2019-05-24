@@ -96,6 +96,7 @@ public class RpcInvocation implements Invocation, Serializable {
         this(method.getName(), method.getParameterTypes(), arguments, attachment, null);
     }
 
+    // methodName 为 url 中 oncconnect 对应的参数值，parameterTypes 和 arguments 这里都是长度为 0 数组
     public RpcInvocation(String methodName, Class<?>[] parameterTypes, Object[] arguments) {
         this(methodName, parameterTypes, arguments, null, null);
     }
@@ -103,7 +104,7 @@ public class RpcInvocation implements Invocation, Serializable {
     public RpcInvocation(String methodName, Class<?>[] parameterTypes, Object[] arguments, Map<String, String> attachments) {
         this(methodName, parameterTypes, arguments, attachments, null);
     }
-
+    // methodName 为 url 中 oncconnect 对应的参数值，parameterTypes 和 arguments 这里都是长度为 0 数组，attachments 和 invoker 这里都是 null
     public RpcInvocation(String methodName, Class<?>[] parameterTypes, Object[] arguments, Map<String, String> attachments, Invoker<?> invoker) {
         this.methodName = methodName;
         this.parameterTypes = parameterTypes == null ? new Class<?>[0] : parameterTypes;

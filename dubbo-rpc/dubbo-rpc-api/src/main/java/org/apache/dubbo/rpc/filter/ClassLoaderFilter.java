@@ -28,7 +28,7 @@ import org.apache.dubbo.rpc.RpcException;
  * Set the current execution thread class loader to service interface's class loader.
  */
 @Activate(group = CommonConstants.PROVIDER, order = -30000)
-public class ClassLoaderFilter implements Filter {
+public class ClassLoaderFilter implements Filter {  // 此 filter 会修改当前线程的 ContextClassLoader 为 invoker 的 ClassLoader
 
     @Override
     public Result invoke(Invoker<?> invoker, Invocation invocation) throws RpcException {

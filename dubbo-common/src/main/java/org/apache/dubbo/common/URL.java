@@ -492,7 +492,7 @@ class URL implements Serializable {
     }
 
     public String getParameterAndDecoded(String key, String defaultValue) {
-        return decode(getParameter(key, defaultValue));
+        return decode(getParameter(key, defaultValue)); // 获取 url 的 key 参数，并进行解码
     }
 
     // 从参数中获取 key 的值，没有的话就获取 default.key
@@ -505,7 +505,7 @@ class URL implements Serializable {
         return value;
     }
 
-    public String getParameter(String key, String defaultValue) {
+    public String getParameter(String key, String defaultValue) {   // 获取 url 中 key 参数
         String value = getParameter(key);
         if (StringUtils.isEmpty(value)) {
             return defaultValue;
@@ -544,17 +544,17 @@ class URL implements Serializable {
         return urls;
     }
 
-    public URL getUrlParameter(String key) {
-        URL u = getUrls().get(key);
+    public URL getUrlParameter(String key) {    // 从 url 的 key 参数对应的值获取 URL，并缓存（优先从缓存中查找）
+        URL u = getUrls().get(key); // 先尝试从 urls 缓存中获取 key 对应的 URL
         if (u != null) {
             return u;
         }
-        String value = getParameterAndDecoded(key);
+        String value = getParameterAndDecoded(key); // 获取 url 的 key 参数所对应的值，然后进行反解吗
         if (StringUtils.isEmpty(value)) {
             return null;
         }
         u = URL.valueOf(value);
-        getUrls().put(key, u);
+        getUrls().put(key, u);  // 缓存 URL 信息
         return u;
     }
 

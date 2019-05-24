@@ -67,13 +67,13 @@ public abstract class AbstractMonitorFactory implements MonitorFactory {
     }
 
     @Override
-    public Monitor getMonitor(URL url) {
+    public Monitor getMonitor(URL url) {    // path -> org.apache.dubbo.monitor.MonitorService，interface -> org.apache.dubbo.monitor.MonitorService
         url = url.setPath(MonitorService.class.getName()).addParameter(INTERFACE_KEY, MonitorService.class.getName());
-        String key = url.toServiceStringWithoutResolving();
+        String key = url.toServiceStringWithoutResolving(); // 根据 url 构建 ServiceString
         Monitor monitor = MONITORS.get(key);
         Future<Monitor> future = FUTURES.get(key);
         if (monitor != null || future != null) {
-            return monitor;
+            return monitor; // 从缓存中获取到了对应的 monitor 直接返回
         }
 
         LOCK.lock();
@@ -86,8 +86,8 @@ public abstract class AbstractMonitorFactory implements MonitorFactory {
 
             final URL monitorUrl = url;
             final CompletableFuture<Monitor> completableFuture = CompletableFuture.supplyAsync(() -> AbstractMonitorFactory.this.createMonitor(monitorUrl));
-            FUTURES.put(key, completableFuture);
-            completableFuture.thenRunAsync(new MonitorListener(key), executor);
+            FUTURES.put(key, completableFuture);    // 缓存 key 和 monitor
+            completableFuture.thenRunAsync(new MonitorListener(key), executor); // 完成缓存的清理与更新
 
             return null;
         } finally {
@@ -110,7 +110,7 @@ public abstract class AbstractMonitorFactory implements MonitorFactory {
         @Override
         public void run() {
             try {
-                CompletableFuture<Monitor> completableFuture = AbstractMonitorFactory.FUTURES.get(key);
+                CompletableFuture<Monitor> completableFuture = AbstractMonitorFactory.FUTURES.get(key); // 完成缓存的清理与更新
                 AbstractMonitorFactory.MONITORS.put(key, completableFuture.get());
                 AbstractMonitorFactory.FUTURES.remove(key);
             } catch (InterruptedException e) {

@@ -62,18 +62,18 @@ public class HeartbeatHandler extends AbstractChannelHandlerDelegate {
         handler.sent(channel, message);
     }
 
-    @Override
+    @Override   // 之所以被称为 HeartbeatHandler，大概是因为它分别对 HeartBeat 的 Request 和 Response 进行了相应的处理吧
     public void received(Channel channel, Object message) throws RemotingException {
-        setReadTimestamp(channel);
-        if (isHeartbeatRequest(message)) {
+        setReadTimestamp(channel);  // 为 channel 添加一个 READ_TIMESTAMP 属性，值为当前的时间戳
+        if (isHeartbeatRequest(message)) {  // 这里针对 HeartBeatRequest 进行处理
             Request req = (Request) message;
             if (req.isTwoWay()) {
-                Response res = new Response(req.getId(), req.getVersion());
-                res.setEvent(Response.HEARTBEAT_EVENT);
-                channel.send(res);
+                Response res = new Response(req.getId(), req.getVersion()); // 构建 HeartBeat 相应消息
+                res.setEvent(Response.HEARTBEAT_EVENT); // 设置响应消息为 HeartBeat 事件
+                channel.send(res);  // 收到的是心跳消息，直接发回一个心跳相应
                 if (logger.isInfoEnabled()) {
                     int heartbeat = channel.getUrl().getParameter(RemotingConstants.HEARTBEAT_KEY, 0);
-                    if (logger.isDebugEnabled()) {
+                    if (logger.isDebugEnabled()) {  // 日志记录当前心跳消息
                         logger.debug("Received heartbeat from remote channel " + channel.getRemoteAddress()
                                 + ", cause: The channel has no data-transmission exceeds a heartbeat period"
                                 + (heartbeat > 0 ? ": " + heartbeat + "ms" : ""));
@@ -83,7 +83,7 @@ public class HeartbeatHandler extends AbstractChannelHandlerDelegate {
             return;
         }
         if (isHeartbeatResponse(message)) {
-            if (logger.isDebugEnabled()) {
+            if (logger.isDebugEnabled()) {  // 这里负责处理 HeartBeat 相应消息
                 logger.debug("Receive heartbeat response in thread " + Thread.currentThread().getName());
             }
             return;

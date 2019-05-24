@@ -53,33 +53,33 @@ import static org.apache.dubbo.common.constants.RpcConstants.GENERIC_KEY;
  * GenericInvokerFilter.
  */
 @Activate(group = CommonConstants.PROVIDER, order = -20000)
-public class GenericFilter implements Filter {
+public class GenericFilter implements Filter {  // 此 filter 会对 $invoke 方法进行特殊处理，主要是依据 generic 参数值对方法参数和返回值进行不同的序列化操作
 
     @Override
     public Result invoke(Invoker<?> invoker, Invocation inv) throws RpcException {
         if (inv.getMethodName().equals($INVOKE)
                 && inv.getArguments() != null
-                && inv.getArguments().length == 3
+                && inv.getArguments().length == 3   // $invoke 方法要求有三个参数，且 invoker 不能是 GenericService 实例
                 && !GenericService.class.isAssignableFrom(invoker.getInterface())) {
             String name = ((String) inv.getArguments()[0]).trim();
             String[] types = (String[]) inv.getArguments()[1];
             Object[] args = (Object[]) inv.getArguments()[2];
-            try {
+            try {   // 根据方法签名从接口中查找对应的 Method 对象
                 Method method = ReflectUtils.findMethodByMethodSignature(invoker.getInterface(), name, types);
-                Class<?>[] params = method.getParameterTypes();
+                Class<?>[] params = method.getParameterTypes(); // 获取方法的参数类型数组
                 if (args == null) {
                     args = new Object[params.length];
                 }
-                String generic = inv.getAttachment(GENERIC_KEY);
+                String generic = inv.getAttachment(GENERIC_KEY);    // generic
 
                 if (StringUtils.isBlank(generic)) {
-                    generic = RpcContext.getContext().getAttachment(GENERIC_KEY);
+                    generic = RpcContext.getContext().getAttachment(GENERIC_KEY);   // 没有 generic，从 RpcContext 线程本地环境变量中获取
                 }
 
-                if (StringUtils.isEmpty(generic)
+                if (StringUtils.isEmpty(generic)    // generic -> true
                         || ProtocolUtils.isDefaultGenericSerialization(generic)) {
-                    args = PojoUtils.realize(args, params, method.getGenericParameterTypes());
-                } else if (ProtocolUtils.isJavaGenericSerialization(generic)) {
+                    args = PojoUtils.realize(args, params, method.getGenericParameterTypes()); // 泛型的实例化？？
+                } else if (ProtocolUtils.isJavaGenericSerialization(generic)) { // 根据不同类型的 generic 进行参数的反序列化处理
                     for (int i = 0; i < args.length; i++) {
                         if (byte[].class == args[i].getClass()) {
                             try (UnsafeByteArrayInputStream is = new UnsafeByteArrayInputStream((byte[]) args[i])) {
@@ -99,7 +99,7 @@ public class GenericFilter implements Filter {
                                             args[i].getClass());
                         }
                     }
-                } else if (ProtocolUtils.isBeanGenericSerialization(generic)) {
+                } else if (ProtocolUtils.isBeanGenericSerialization(generic)) { // 根据不同类型的 generic 进行参数的反序列化处理
                     for (int i = 0; i < args.length; i++) {
                         if (args[i] instanceof JavaBeanDescriptor) {
                             args[i] = JavaBeanSerializeUtil.deserialize((JavaBeanDescriptor) args[i]);
@@ -113,7 +113,7 @@ public class GenericFilter implements Filter {
                                             args[i].getClass().getName());
                         }
                     }
-                } else if (ProtocolUtils.isProtobufGenericSerialization(generic)) {
+                } else if (ProtocolUtils.isProtobufGenericSerialization(generic)) { // 根据不同类型的 generic 进行参数的反序列化处理
                     // as proto3 only accept one protobuf parameter
                     if (args.length == 1 && args[0] instanceof String) {
                         try (UnsafeByteArrayInputStream is =
@@ -134,12 +134,12 @@ public class GenericFilter implements Filter {
                                         args[0].getClass().getName());
                     }
                 }
-                Result result = invoker.invoke(new RpcInvocation(method, args, inv.getAttachments()));
-                if (result.hasException()
+                Result result = invoker.invoke(new RpcInvocation(method, args, inv.getAttachments()));  // 向下传递
+                if (result.hasException()   // 异常结果的处理
                         && !(result.getException() instanceof GenericException)) {
                     return new RpcResult(new GenericException(result.getException()));
                 }
-                if (ProtocolUtils.isJavaGenericSerialization(generic)) {
+                if (ProtocolUtils.isJavaGenericSerialization(generic)) {    // 根据 generic 对 result 进行不同的序列化操作
                     try {
                         UnsafeByteArrayOutputStream os = new UnsafeByteArrayOutputStream(512);
                         ExtensionLoader.getExtensionLoader(Serialization.class)
@@ -152,9 +152,9 @@ public class GenericFilter implements Filter {
                                         GENERIC_SERIALIZATION_NATIVE_JAVA +
                                         "] serialize result failed.", e);
                     }
-                } else if (ProtocolUtils.isBeanGenericSerialization(generic)) {
+                } else if (ProtocolUtils.isBeanGenericSerialization(generic)) { // 根据 generic 对 result 进行不同的序列化操作
                     return new RpcResult(JavaBeanSerializeUtil.serialize(result.getValue(), JavaBeanAccessor.METHOD));
-                } else if (ProtocolUtils.isProtobufGenericSerialization(generic)) {
+                } else if (ProtocolUtils.isProtobufGenericSerialization(generic)) { // 根据 generic 对 result 进行不同的序列化操作
                     try {
                         UnsafeByteArrayOutputStream os = new UnsafeByteArrayOutputStream(512);
                         ExtensionLoader.getExtensionLoader(Serialization.class)
@@ -175,7 +175,7 @@ public class GenericFilter implements Filter {
                 throw new RpcException(e.getMessage(), e);
             }
         }
-        return invoker.invoke(inv);
+        return invoker.invoke(inv); // 向下传递
     }
 
 }

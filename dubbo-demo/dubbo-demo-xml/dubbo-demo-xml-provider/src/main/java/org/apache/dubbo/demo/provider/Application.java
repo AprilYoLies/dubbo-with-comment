@@ -25,6 +25,7 @@ public class Application {
      */
     public static void main(String[] args) throws Exception {
         ClassPathXmlApplicationContext context = new ClassPathXmlApplicationContext("spring/dubbo-provider.xml");
+        StringBuilder stringBuilder = new StringBuilder();
         context.start();
         System.in.read();
     }

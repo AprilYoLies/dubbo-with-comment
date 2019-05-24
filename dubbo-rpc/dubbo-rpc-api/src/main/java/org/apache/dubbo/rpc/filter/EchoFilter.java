@@ -31,11 +31,11 @@ import static org.apache.dubbo.common.constants.RpcConstants.$ECHO;
  * Dubbo provided default Echo echo service, which is available for all dubbo provider service interface.
  */
 @Activate(group = CommonConstants.PROVIDER, order = -110000)
-public class EchoFilter implements Filter {
+public class EchoFilter implements Filter { // 此 filter 针对 $echo 方法会有特殊的处理方式
 
     @Override
     public Result invoke(Invoker<?> invoker, Invocation inv) throws RpcException {
-        if (inv.getMethodName().equals($ECHO) && inv.getArguments() != null && inv.getArguments().length == 1) {
+        if (inv.getMethodName().equals($ECHO) && inv.getArguments() != null && inv.getArguments().length == 1) {    // methodName -> sayHello
             return new RpcResult(inv.getArguments()[0]);
         }
         return invoker.invoke(inv);

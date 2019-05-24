@@ -51,20 +51,20 @@ public class DubboMonitorFactory extends AbstractMonitorFactory {
     @Override
     protected Monitor createMonitor(URL url) {
         URLBuilder urlBuilder = URLBuilder.from(url);
-        urlBuilder.setProtocol(url.getParameter(PROTOCOL_KEY, DUBBO_PROTOCOL));
+        urlBuilder.setProtocol(url.getParameter(PROTOCOL_KEY, DUBBO_PROTOCOL)); // 从 url 中获取 protocol，默认为 dubbo
         if (StringUtils.isEmpty(url.getPath())) {
-            urlBuilder.setPath(MonitorService.class.getName());
+            urlBuilder.setPath(MonitorService.class.getName()); // path -> org.apache.dubbo.monitor.MonitorService
         }
-        String filter = url.getParameter(REFERENCE_FILTER_KEY);
+        String filter = url.getParameter(REFERENCE_FILTER_KEY); // reference.filer
         if (StringUtils.isEmpty(filter)) {
             filter = "";
         } else {
             filter = filter + ",";
         }
-        urlBuilder.addParameters(CHECK_KEY, String.valueOf(false),
-                REFERENCE_FILTER_KEY, filter + "-monitor");
-        Invoker<MonitorService> monitorInvoker = protocol.refer(MonitorService.class, urlBuilder.build());
-        MonitorService monitorService = proxyFactory.getProxy(monitorInvoker);
+        urlBuilder.addParameters(CHECK_KEY, String.valueOf(false),  // check -> false
+                REFERENCE_FILTER_KEY, filter + "-monitor"); // reference.filter -> xxx-monitor
+        Invoker<MonitorService> monitorInvoker = protocol.refer(MonitorService.class, urlBuilder.build());  // protocol 引用 invoker
+        MonitorService monitorService = proxyFactory.getProxy(monitorInvoker);  // 根据 monitorInvoker 构建 MonitorService
         return new DubboMonitor(monitorInvoker, monitorService);
     }
 

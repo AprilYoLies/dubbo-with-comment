@@ -57,12 +57,13 @@ public class ProtocolUtils {
     public static boolean isGeneric(String generic) {
         return generic != null
                 && !"".equals(generic)
-                && (GENERIC_SERIALIZATION_DEFAULT.equalsIgnoreCase(generic)  /* Normal generalization cal */
-                || GENERIC_SERIALIZATION_NATIVE_JAVA.equalsIgnoreCase(generic) /* Streaming generalization call supporting jdk serialization */
-                || GENERIC_SERIALIZATION_BEAN.equalsIgnoreCase(generic)
-                || GENERIC_SERIALIZATION_PROTOBUF.equalsIgnoreCase(generic));
+                && (GENERIC_SERIALIZATION_DEFAULT.equalsIgnoreCase(generic)  /* Normal generalization cal */   // true
+                || GENERIC_SERIALIZATION_NATIVE_JAVA.equalsIgnoreCase(generic) /* Streaming generalization call supporting jdk serialization */ // nativejava
+                || GENERIC_SERIALIZATION_BEAN.equalsIgnoreCase(generic) // bean
+                || GENERIC_SERIALIZATION_PROTOBUF.equalsIgnoreCase(generic));   // protobuf-json
     }
 
+    // generic -> true 返回 true
     public static boolean isDefaultGenericSerialization(String generic) {
         return isGeneric(generic)
                 && GENERIC_SERIALIZATION_DEFAULT.equalsIgnoreCase(generic);

@@ -94,15 +94,15 @@ final public class NettyCodecAdapter {
                     // 这是真正的解码逻辑
                     Object msg = codec.decode(channel, message);
                     if (msg == Codec2.DecodeResult.NEED_MORE_INPUT) {
-                        message.readerIndex(saveReaderIndex);
+                        message.readerIndex(saveReaderIndex);   // 没能解析出结果，恢复备份的 readerIndex
                         break;
                     } else {
                         //is it possible to go here ?
-                        if (saveReaderIndex == message.readerIndex()) {
+                        if (saveReaderIndex == message.readerIndex()) { //执行到这里，说明从 message 中解析出了数据包，readerIndex 一定是修改过了，如果不是，则报错
                             throw new IOException("Decode without read data.");
                         }
                         if (msg != null) {
-                            out.add(msg);
+                            out.add(msg);   // 将解析出来的结果添加到 out 中，交由下游的处理器进行处理
                         }
                     }
                 } while (message.readable());

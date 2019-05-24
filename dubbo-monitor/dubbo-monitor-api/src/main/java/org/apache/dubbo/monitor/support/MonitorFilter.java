@@ -48,6 +48,7 @@ import static org.apache.dubbo.common.constants.MonitorConstants.COUNT_PROTOCOL;
 import static org.apache.dubbo.common.constants.MonitorConstants.MONITOR_KEY;
 import static org.apache.dubbo.common.constants.RpcConstants.INPUT_KEY;
 import static org.apache.dubbo.common.constants.RpcConstants.OUTPUT_KEY;
+
 /**
  * MonitorFilter. (SPI, Singleton, ThreadSafe)
  */
@@ -80,14 +81,14 @@ public class MonitorFilter implements Filter {
      */
     @Override
     public Result invoke(Invoker<?> invoker, Invocation invocation) throws RpcException {
-        if (invoker.getUrl().hasParameter(MONITOR_KEY)) {
+        if (invoker.getUrl().hasParameter(MONITOR_KEY)) {   // 如果 url 中有 monitor 参数
             RpcContext context = RpcContext.getContext(); // provider must fetch context before invoke() gets called
             String remoteHost = context.getRemoteHost();
             long start = System.currentTimeMillis(); // record start timestamp
-            getConcurrent(invoker, invocation).incrementAndGet(); // count up
+            getConcurrent(invoker, invocation).incrementAndGet(); // count up 获取指定方法的计数器，然后进行加一操作
             try {
-                Result result = invoker.invoke(invocation); // proceed invocation chain
-                collect(invoker, invocation, result, remoteHost, start, false);
+                Result result = invoker.invoke(invocation); // proceed invocation chain 向下传递
+                collect(invoker, invocation, result, remoteHost, start, false); // 根据 result 构建 statisticsURL，更新统计信息
                 return result;
             } catch (RpcException e) {
                 collect(invoker, invocation, null, remoteHost, start, true);
@@ -96,7 +97,7 @@ public class MonitorFilter implements Filter {
                 getConcurrent(invoker, invocation).decrementAndGet(); // count down
             }
         } else {
-            return invoker.invoke(invocation);
+            return invoker.invoke(invocation);  // 向下传递
         }
     }
 
@@ -112,20 +113,20 @@ public class MonitorFilter implements Filter {
      */
     private void collect(Invoker<?> invoker, Invocation invocation, Result result, String remoteHost, long start, boolean error) {
         try {
-            URL monitorUrl = invoker.getUrl().getUrlParameter(MONITOR_KEY);
-            Monitor monitor = monitorFactory.getMonitor(monitorUrl);
+            URL monitorUrl = invoker.getUrl().getUrlParameter(MONITOR_KEY); // 获取 monitor 的参数对应的 url 地址
+            Monitor monitor = monitorFactory.getMonitor(monitorUrl);    // 根据 monitorUrl 构建 monitor
             if (monitor == null) {
                 return;
-            }
+            }   // Create statistics url,主要包括 concurrent、input、output 三种统计信息
             URL statisticsURL = createStatisticsUrl(invoker, invocation, result, remoteHost, start, error);
-            monitor.collect(statisticsURL);
+            monitor.collect(statisticsURL); // 根据 URL 更新统计信息
         } catch (Throwable t) {
             logger.warn("Failed to monitor count service " + invoker.getUrl() + ", cause: " + t.getMessage(), t);
         }
     }
 
     /**
-     * Create statistics url
+     * Create statistics url,主要包括 concurrent、input、output 三种统计信息
      *
      * @param invoker
      * @param invocation
@@ -166,9 +167,9 @@ public class MonitorFilter implements Filter {
             output = result.getAttachment(OUTPUT_KEY);
         }
 
-        return new URL(COUNT_PROTOCOL,
-                NetUtils.getLocalHost(), localPort,
-                service + PATH_SEPARATOR + method,
+        return new URL(COUNT_PROTOCOL,  // protocol
+                NetUtils.getLocalHost(), localPort, // host:port
+                service + PATH_SEPARATOR + method,  // path
                 MonitorService.APPLICATION, application,
                 MonitorService.INTERFACE, service,
                 MonitorService.METHOD, method,
@@ -184,10 +185,10 @@ public class MonitorFilter implements Filter {
 
     // concurrent counter
     private AtomicInteger getConcurrent(Invoker<?> invoker, Invocation invocation) {
-        String key = invoker.getInterface().getName() + "." + invocation.getMethodName();
+        String key = invoker.getInterface().getName() + "." + invocation.getMethodName();   // org.apache.dubbo.rpc.Invoker.sayHello（如果没错的话就是这个）
         AtomicInteger concurrent = concurrents.get(key);
         if (concurrent == null) {
-            concurrents.putIfAbsent(key, new AtomicInteger());
+            concurrents.putIfAbsent(key, new AtomicInteger());  // 获取对应方法的计数器
             concurrent = concurrents.get(key);
         }
         return concurrent;

@@ -167,7 +167,7 @@ public class DubboMonitor implements Monitor {
         long[] update = new long[LENGTH];
         do {
             current = reference.get();
-            if (current == null) {
+            if (current == null) {  // 初始化
                 update[0] = success;
                 update[1] = failure;
                 update[2] = input;
@@ -178,7 +178,7 @@ public class DubboMonitor implements Monitor {
                 update[7] = output;
                 update[8] = elapsed;
                 update[9] = concurrent;
-            } else {
+            } else {    // 叠加
                 update[0] = current[0] + success;
                 update[1] = current[1] + failure;
                 update[2] = current[2] + input;
@@ -190,7 +190,7 @@ public class DubboMonitor implements Monitor {
                 update[8] = current[8] > elapsed ? current[8] : elapsed;
                 update[9] = current[9] > concurrent ? current[9] : concurrent;
             }
-        } while (!reference.compareAndSet(current, update));
+        } while (!reference.compareAndSet(current, update));    // 更新统计信息
     }
 
     @Override

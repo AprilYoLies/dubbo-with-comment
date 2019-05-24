@@ -43,7 +43,7 @@ public class NettyServerHandler extends ChannelDuplexHandler {
     private final Map<String, Channel> channels = new ConcurrentHashMap<String, Channel>(); // <ip:port, channel>
 
     private final URL url;
-    // 此 handler 实际为 org.apache.dubbo.remoting.transport.MultiMessageHandler，或者为 NettyServer，这种情况是在 NettyServer 类中构建 NettyServerHandler 时传入的
+    // NettyServer（间接实现 ChannelHandler）-> MultiMessageHandler -> HeartBeatHandler -> AllChannelHandler -> DecodeHandler -> HeaderExchangeHandler -> DubboProtocol$1（匿名内部类）
     private final ChannelHandler handler;
 
     public NettyServerHandler(URL url, ChannelHandler handler) {
@@ -96,7 +96,7 @@ public class NettyServerHandler extends ChannelDuplexHandler {
 
     @Override
     public void channelRead(ChannelHandlerContext ctx, Object msg) throws Exception {
-        NettyChannel channel = NettyChannel.getOrAddChannel(ctx.channel(), url, handler);
+        NettyChannel channel = NettyChannel.getOrAddChannel(ctx.channel(), url, handler);       // 尝试从 CHANNEL_MAP 中获取 netty 原生 channel 的装饰者 channel，如果没有获取到，那么就直接新建一个
         try {
             handler.received(channel, msg);
         } finally {

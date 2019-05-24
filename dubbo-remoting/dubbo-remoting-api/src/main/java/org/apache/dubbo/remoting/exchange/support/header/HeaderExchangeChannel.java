@@ -62,7 +62,7 @@ final class HeaderExchangeChannel implements ExchangeChannel {
         // 获取 org.apache.dubbo.remoting.exchange.support.header.HeaderExchangeChannel.CHANNEL 属性
         HeaderExchangeChannel ret = (HeaderExchangeChannel) ch.getAttribute(CHANNEL_KEY);
         if (ret == null) {
-            // 对 netty 原生 channel 进行封装
+            // 对 netty 原生 channel 进行封装，然后保存到 ch 的属性中
             ret = new HeaderExchangeChannel(ch);
             if (ch.isConnected()) {
                 // 没有就新建并填充

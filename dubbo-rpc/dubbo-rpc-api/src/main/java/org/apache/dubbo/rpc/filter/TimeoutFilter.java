@@ -33,7 +33,7 @@ import java.util.Arrays;
  * Log any invocation timeout, but don't stop server from running
  */
 @Activate(group = CommonConstants.PROVIDER)
-public class TimeoutFilter implements Filter {
+public class TimeoutFilter implements Filter {  // 此 filter 用于向 invocation 添加超时起始时间
 
     private static final Logger logger = LoggerFactory.getLogger(TimeoutFilter.class);
 
@@ -43,12 +43,12 @@ public class TimeoutFilter implements Filter {
     public Result invoke(Invoker<?> invoker, Invocation invocation) throws RpcException {
         if (invocation.getAttachments() != null) {
             long start = System.currentTimeMillis();
-            invocation.getAttachments().put(TIMEOUT_FILTER_START_TIME, String.valueOf(start));
+            invocation.getAttachments().put(TIMEOUT_FILTER_START_TIME, String.valueOf(start));  // 向 invocation 添加超时起始时间
         } else {
             if (invocation instanceof RpcInvocation) {
                 RpcInvocation invc = (RpcInvocation) invocation;
                 long start = System.currentTimeMillis();
-                invc.setAttachment(TIMEOUT_FILTER_START_TIME, String.valueOf(start));
+                invc.setAttachment(TIMEOUT_FILTER_START_TIME, String.valueOf(start));   // 向 invocation 添加超时起始时间
             }
         }
         return invoker.invoke(invocation);
