@@ -62,7 +62,7 @@ public interface Filter {
     Result invoke(Invoker<?> invoker, Invocation invocation) throws RpcException;
 
     /**
-     * Return processing result
+     * Return processing result，如果返回的结果是 AsyncRpcResult 类型的，那么就会调用这个 onResponse 方法进行处理
      *
      * @param result     result
      * @param invoker    invoker

@@ -24,10 +24,9 @@ import org.apache.dubbo.rpc.Result;
 import org.apache.dubbo.rpc.RpcException;
 
 /**
- *
  * A Invoker wrapper that wrap the invoker and all the metadata (ServiceConfig)
  */
-public class DelegateProviderMetaDataInvoker<T> implements Invoker {
+public class DelegateProviderMetaDataInvoker<T> implements Invoker {    // 此 Invoker 主要是多了一个 metadata 属性（ServiceConfig）
     protected final Invoker<T> invoker;
     private ServiceConfig metadata;
 
@@ -52,7 +51,7 @@ public class DelegateProviderMetaDataInvoker<T> implements Invoker {
     }
 
     @Override
-    public Result invoke(Invocation invocation) throws RpcException {
+    public Result invoke(Invocation invocation) throws RpcException {   // 这里封装的是 JavassistProxyFactory 中 new 出来的匿名内部类 AbstractProxyInvoker
         return invoker.invoke(invocation);
     }
 

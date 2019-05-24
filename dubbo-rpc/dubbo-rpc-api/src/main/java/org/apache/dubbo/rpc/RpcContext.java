@@ -760,11 +760,12 @@ public class RpcContext {
         return currentContext.asyncContext;
     }
 
+    // 就是判定 asyncContext 属性的 started 属性是否已经是 true 状态
     public boolean isAsyncStarted() {
         if (this.asyncContext == null) {
             return false;
         }
-        return asyncContext.isAsyncStarted();
+        return asyncContext.isAsyncStarted();   // asyncContext 的 started 参数是否已经启动
     }
 
     public boolean stopAsync() {

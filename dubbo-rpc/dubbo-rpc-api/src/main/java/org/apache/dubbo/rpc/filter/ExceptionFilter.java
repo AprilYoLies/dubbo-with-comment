@@ -45,7 +45,7 @@ import java.lang.reflect.Method;
  * </ol>
  */
 @Activate(group = CommonConstants.PROVIDER)
-public class ExceptionFilter implements Filter {
+public class ExceptionFilter implements Filter {    // 此 filter 会捕获后续 invoker 调用 invoke 方法抛出的异常信息，记录日志后继续抛出
 
     private final Logger logger;
 
@@ -60,8 +60,8 @@ public class ExceptionFilter implements Filter {
     @Override
     public Result invoke(Invoker<?> invoker, Invocation invocation) throws RpcException {
         try {
-            return invoker.invoke(invocation);
-        } catch (RuntimeException e) {
+            return invoker.invoke(invocation);  // 向下传递
+        } catch (RuntimeException e) {  // 记录异常日志信息，继续抛出
             logger.error("Got unchecked and undeclared exception which called by " + RpcContext.getContext().getRemoteHost()
                     + ". service: " + invoker.getInterface().getName() + ", method: " + invocation.getMethodName()
                     + ", exception: " + e.getClass().getName() + ": " + e.getMessage(), e);
@@ -71,20 +71,20 @@ public class ExceptionFilter implements Filter {
 
     @Override
     public Result onResponse(Result result, Invoker<?> invoker, Invocation invocation) {
-        if (result.hasException() && GenericService.class != invoker.getInterface()) {
+        if (result.hasException() && GenericService.class != invoker.getInterface()) {  // result 有异常信息
             try {
-                Throwable exception = result.getException();
+                Throwable exception = result.getException();    // 获取异常信息
 
                 // directly throw if it's checked exception
                 if (!(exception instanceof RuntimeException) && (exception instanceof Exception)) {
                     return result;
                 }
                 // directly throw if the exception appears in the signature
-                try {
+                try {   // 根据 invocation 中的参数获取接口中对应的 Method
                     Method method = invoker.getInterface().getMethod(invocation.getMethodName(), invocation.getParameterTypes());
                     Class<?>[] exceptionClassses = method.getExceptionTypes();
                     for (Class<?> exceptionClass : exceptionClassses) {
-                        if (exception.getClass().equals(exceptionClass)) {
+                        if (exception.getClass().equals(exceptionClass)) {  // 如果 Method 能够抛出 result 中包含的异常类型，直接返回这个结果
                             return result;
                         }
                     }
@@ -97,23 +97,23 @@ public class ExceptionFilter implements Filter {
                         + ". service: " + invoker.getInterface().getName() + ", method: " + invocation.getMethodName()
                         + ", exception: " + exception.getClass().getName() + ": " + exception.getMessage(), exception);
 
-                // directly throw if exception class and interface class are in the same jar file.
+                // directly throw if exception class and interface class are in the same jar file.异常和接口在同一个 jar 包
                 String serviceFile = ReflectUtils.getCodeBase(invoker.getInterface());
                 String exceptionFile = ReflectUtils.getCodeBase(exception.getClass());
                 if (serviceFile == null || exceptionFile == null || serviceFile.equals(exceptionFile)) {
                     return result;
                 }
-                // directly throw if it's JDK exception
+                // directly throw if it's JDK exception，是 JDK 异常
                 String className = exception.getClass().getName();
                 if (className.startsWith("java.") || className.startsWith("javax.")) {
                     return result;
                 }
-                // directly throw if it's dubbo exception
+                // directly throw if it's dubbo exception，是 RpcException
                 if (exception instanceof RpcException) {
                     return result;
                 }
 
-                // otherwise, wrap with RuntimeException and throw back to the client
+                // otherwise, wrap with RuntimeException and throw back to the client，其他类型异常进行封装
                 return new RpcResult(new RuntimeException(StringUtils.toString(exception)));
             } catch (Throwable e) {
                 logger.warn("Fail to ExceptionFilter when called by " + RpcContext.getContext().getRemoteHost()

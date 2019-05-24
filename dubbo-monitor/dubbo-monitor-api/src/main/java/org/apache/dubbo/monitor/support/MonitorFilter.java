@@ -53,7 +53,7 @@ import static org.apache.dubbo.common.constants.RpcConstants.OUTPUT_KEY;
  * MonitorFilter. (SPI, Singleton, ThreadSafe)
  */
 @Activate(group = {PROVIDER, CONSUMER})
-public class MonitorFilter implements Filter {
+public class MonitorFilter implements Filter {  // 此 filter 应该是用于监测某些信息的，它会根据 result 构建 statisticsURL，更新统计信息
 
     private static final Logger logger = LoggerFactory.getLogger(MonitorFilter.class);
 
@@ -91,7 +91,7 @@ public class MonitorFilter implements Filter {
                 collect(invoker, invocation, result, remoteHost, start, false); // 根据 result 构建 statisticsURL，更新统计信息
                 return result;
             } catch (RpcException e) {
-                collect(invoker, invocation, null, remoteHost, start, true);
+                collect(invoker, invocation, null, remoteHost, start, true);    // 根据 result 构建 statisticsURL，更新统计信息
                 throw e;
             } finally {
                 getConcurrent(invoker, invocation).decrementAndGet(); // count down

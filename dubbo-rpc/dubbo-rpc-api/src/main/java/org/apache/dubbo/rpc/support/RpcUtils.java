@@ -40,6 +40,7 @@ import static org.apache.dubbo.common.constants.RpcConstants.ASYNC_KEY;
 import static org.apache.dubbo.common.constants.RpcConstants.FUTURE_GENERATED_KEY;
 import static org.apache.dubbo.common.constants.RpcConstants.FUTURE_RETURNTYPE_KEY;
 import static org.apache.dubbo.common.constants.RpcConstants.RETURN_KEY;
+
 /**
  * RpcUtils
  */
@@ -189,6 +190,7 @@ public class RpcUtils {
         return isAsync;
     }
 
+    // 如果 inv 中的 future_returntype 参数指定为 true
     public static boolean isReturnTypeFuture(Invocation inv) {
         return Boolean.TRUE.toString().equals(inv.getAttachment(FUTURE_RETURNTYPE_KEY));
     }

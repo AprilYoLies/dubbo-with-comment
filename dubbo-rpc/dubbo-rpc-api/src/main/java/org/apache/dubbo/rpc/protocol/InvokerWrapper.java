@@ -52,7 +52,7 @@ public class InvokerWrapper<T> implements Invoker<T> {
     }
 
     @Override
-    public Result invoke(Invocation invocation) throws RpcException {
+    public Result invoke(Invocation invocation) throws RpcException {   // 之前都是 FilterWrapper，到这里就是 InvokerWrapper（这里封装的是 DelegateProviderMetaDataInvoker）
         return invoker.invoke(invocation);
     }
 

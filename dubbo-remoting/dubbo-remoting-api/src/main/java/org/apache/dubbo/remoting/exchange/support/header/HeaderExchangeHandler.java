@@ -100,10 +100,10 @@ public class HeaderExchangeHandler implements ChannelHandlerDelegate {
         Object msg = req.getData();
         try {   // 执行到这里，就说明消息的解码是成功的
             // handle data.
-            CompletableFuture<Object> future = handler.reply(channel, msg);
+            CompletableFuture<Object> future = handler.reply(channel, msg); // 这里返回的是 Service 实现类调用对应方法后的结果
             if (future.isDone()) {
-                res.setStatus(Response.OK);
-                res.setResult(future.get());
+                res.setStatus(Response.OK); // 设置响应消息的状态
+                res.setResult(future.get());    // 设置响应的结果
                 channel.send(res);
                 return;
             }
@@ -200,18 +200,18 @@ public class HeaderExchangeHandler implements ChannelHandlerDelegate {
                     handlerEvent(channel, request);
                 } else {
                     if (request.isTwoWay()) {
-                        handleRequest(exchangeChannel, request);
+                        handleRequest(exchangeChannel, request);    // 调用服务方法，将返回结果通过 channel 写回
                     } else {
                         handler.received(exchangeChannel, request.getData());
                     }
                 }
-            } else if (message instanceof Response) {
+            } else if (message instanceof Response) {   // 处理响应
                 handleResponse(channel, (Response) message);
-            } else if (message instanceof String) {
-                if (isClientSide(channel)) {
+            } else if (message instanceof String) { // 处理字符串
+                if (isClientSide(channel)) {    // 客户端处理方式
                     Exception e = new Exception("Dubbo client can not supported string message: " + message + " in channel: " + channel + ", url: " + channel.getUrl());
                     logger.error(e.getMessage(), e);
-                } else {
+                } else {    // 服务端处理方式，当做 telnet 来处理
                     String echo = handler.telnet(channel, (String) message);
                     if (echo != null && echo.length() > 0) {
                         channel.send(echo);

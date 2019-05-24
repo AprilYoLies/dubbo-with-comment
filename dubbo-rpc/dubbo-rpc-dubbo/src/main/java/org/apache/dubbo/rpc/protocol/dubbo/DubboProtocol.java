@@ -149,9 +149,11 @@ public class DubboProtocol extends AbstractProtocol {
             RpcContext rpcContext = RpcContext.getContext();
             // 将 RemoteAddress 保存到 RpcContext 线程本地变量中，rpcContext 中实际保存的是 InetSocketAddress 实例
             rpcContext.setRemoteAddress(channel.getRemoteAddress());
-            // 对 invoker 进行调用
+            // 对 invoker 进行调用，调用链如下
+            // Invoker（封装 EchoFilter）-> Invoker（封装 ClassLoaderFilter）-> Invoker（封装 GenericFilter）-> Invoker（封装 ContextFilter）->
+            // Invoker（封装 TraceFilter）-> Invoker（封装 TimeoutFilter）-> Invoker（封装 MonitorFilter）-> Invoker（封装 ExceptionFilter）->
+            // InvokerWrapper（封装）-> DelegateProviderMetaDataInvoker（封装）-> AbstractProxyInvoker
             Result result = invoker.invoke(inv);
-
             // 针对两种不同的结果进行处理，就是将结果包装成为 jkd 的 CompletableFuture
             if (result instanceof AsyncRpcResult) {
                 return ((AsyncRpcResult) result).getResultFuture().thenApply(r -> (Object) r);

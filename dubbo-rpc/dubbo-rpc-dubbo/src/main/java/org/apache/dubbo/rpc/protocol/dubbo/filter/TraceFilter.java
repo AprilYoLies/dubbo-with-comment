@@ -54,13 +54,13 @@ public class TraceFilter implements Filter {
     private static final ConcurrentMap<String, Set<Channel>> tracers = new ConcurrentHashMap<>();
 
     public static void addTracer(Class<?> type, String method, Channel channel, int max) {
-        channel.setAttribute(TRACE_MAX, max);
-        channel.setAttribute(TRACE_COUNT, new AtomicInteger());
-        String key = method != null && method.length() > 0 ? type.getName() + "." + method : type.getName();
+        channel.setAttribute(TRACE_MAX, max);   // trace.max
+        channel.setAttribute(TRACE_COUNT, new AtomicInteger()); // trace.count
+        String key = method != null && method.length() > 0 ? type.getName() + "." + method : type.getName(); // class-name.method-name
         Set<Channel> channels = tracers.get(key);
         if (channels == null) {
             tracers.putIfAbsent(key, new ConcurrentHashSet<>());
-            channels = tracers.get(key);
+            channels = tracers.get(key);    // key -> set（存储着 Channel）
         }
         channels.add(channel);
     }
@@ -77,13 +77,13 @@ public class TraceFilter implements Filter {
 
     @Override
     public Result invoke(Invoker<?> invoker, Invocation invocation) throws RpcException {
-        long start = System.currentTimeMillis();
+        long start = System.currentTimeMillis();    // 记录开始时间
         Result result = invoker.invoke(invocation); // 传递
-        long end = System.currentTimeMillis();
+        long end = System.currentTimeMillis();      // 记录结束时间
         if (tracers.size() > 0) {
             String key = invoker.getInterface().getName() + "." + invocation.getMethodName();
             Set<Channel> channels = tracers.get(key);
-            if (channels == null || channels.isEmpty()) {
+            if (channels == null || channels.isEmpty()) {   // key 可能是 class-name.method-name 或者 class-name，分两种情况查找
                 key = invoker.getInterface().getName();
                 channels = tracers.get(key);
             }
@@ -92,19 +92,20 @@ public class TraceFilter implements Filter {
                     if (channel.isConnected()) {
                         try {
                             int max = 1;
-                            Integer m = (Integer) channel.getAttribute(TRACE_MAX);
+                            Integer m = (Integer) channel.getAttribute(TRACE_MAX);  // 获取 trace.max
                             if (m != null) {
                                 max = m;
                             }
                             int count = 0;
-                            AtomicInteger c = (AtomicInteger) channel.getAttribute(TRACE_COUNT);
+                            AtomicInteger c = (AtomicInteger) channel.getAttribute(TRACE_COUNT);    // 获取 trace.count
                             if (c == null) {
                                 c = new AtomicInteger();
                                 channel.setAttribute(TRACE_COUNT, c);
                             }
-                            count = c.getAndIncrement();
+                            count = c.getAndIncrement();    // 对 trace.count 自增
                             if (count < max) {
-                                String prompt = channel.getUrl().getParameter(RemotingConstants.PROMPT_KEY, RemotingConstants.DEFAULT_PROMPT);
+                                String prompt = channel.getUrl().getParameter(RemotingConstants.PROMPT_KEY, RemotingConstants.DEFAULT_PROMPT);  // prompt
+                                // \r\n 127.0.0.1:50038 -> org.apache.dubbo.demo.provider.DemoServiceImpl.sayHello({参数对}) -> hello \r\n elapsed:num ms.\r\n\r\n prompt
                                 channel.send("\r\n" + RpcContext.getContext().getRemoteAddress() + " -> "
                                         + invoker.getInterface().getName()
                                         + "." + invocation.getMethodName()
@@ -113,10 +114,10 @@ public class TraceFilter implements Filter {
                                         + "\r\n\r\n" + prompt);
                             }
                             if (count >= max - 1) {
-                                channels.remove(channel);
+                                channels.remove(channel);   // 超出后移除
                             }
                         } catch (Throwable e) {
-                            channels.remove(channel);
+                            channels.remove(channel);   // 捕获到异常也进行移除
                             logger.warn(e.getMessage(), e);
                         }
                     } else {

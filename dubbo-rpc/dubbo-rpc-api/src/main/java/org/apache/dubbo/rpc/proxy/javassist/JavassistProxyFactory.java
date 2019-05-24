@@ -95,6 +95,7 @@ public class JavassistProxyFactory extends AbstractProxyFactory {
         //     public Object invokeMethod(Object o, String n, Class[] p, Object[] v) throws java.lang.reflect.InvocationTargetException {
         //         org.apache.dubbo.demo.provider.DemoServiceImpl w;
         //         try {
+        // 将第一个参数转换为 DemoServiceImpl
         //             w = ((org.apache.dubbo.demo.provider.DemoServiceImpl) $1);
         //         } catch (Throwable e) {
         //             throw new IllegalArgumentException(e);

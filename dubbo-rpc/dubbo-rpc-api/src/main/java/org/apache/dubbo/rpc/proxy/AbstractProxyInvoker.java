@@ -98,14 +98,14 @@ public abstract class AbstractProxyInvoker<T> implements Invoker<T> {
     @Override
     public Result invoke(Invocation invocation) throws RpcException {
         RpcContext rpcContext = RpcContext.getContext();
-        try {
+        try {   // 此时 proxy 为 DemoServiceImpl，methodName 为 sayHello
             Object obj = doInvoke(proxy, invocation.getMethodName(), invocation.getParameterTypes(), invocation.getArguments());
-            if (RpcUtils.isReturnTypeFuture(invocation)) {
-                return new AsyncRpcResult((CompletableFuture<Object>) obj);
+            if (RpcUtils.isReturnTypeFuture(invocation)) {  // 如果 invocation 的 future_returntype 指定为 true
+                return new AsyncRpcResult((CompletableFuture<Object>) obj); // 将结果包装成为 AsyncRpcResult
             } else if (rpcContext.isAsyncStarted()) { // ignore obj in case of RpcContext.startAsync()? always rely on user to write back.
                 return new AsyncRpcResult(((AsyncContextImpl) (rpcContext.getAsyncContext())).getInternalFuture());
             } else {
-                return new RpcResult(obj);
+                return new RpcResult(obj);  // 就是正常的 sync 结果，直接将其封装成为 RpcResult
             }
         } catch (InvocationTargetException e) {
             // TODO async throw exception before async thread write back, should stop asyncContext

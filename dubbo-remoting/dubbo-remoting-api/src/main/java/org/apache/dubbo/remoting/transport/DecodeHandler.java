@@ -48,7 +48,7 @@ public class DecodeHandler extends AbstractChannelHandlerDelegate {
             decode(((Response) message).getResult());   // 对 response 中的 data 进行解码（只是尝试，因为 data 可能是已解码状态）
         }
 
-        handler.received(channel, message);
+        handler.received(channel, message); // 调用服务方法，将返回结果通过 channel 写回
     }
 
     private void decode(Object message) {
