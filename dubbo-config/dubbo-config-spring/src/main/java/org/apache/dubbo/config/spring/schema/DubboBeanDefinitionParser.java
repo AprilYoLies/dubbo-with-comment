@@ -294,13 +294,13 @@ public class DubboBeanDefinitionParser implements BeanDefinitionParser {
                 }
             }
         }
-        // 获取 element 标签的全部属性
+        // 获取 element 标签的全部属性，需要注意标签的默认属性
         NamedNodeMap attributes = element.getAttributes();
         int len = attributes.getLength();
         for (int i = 0; i < len; i++) {
             Node node = attributes.item(i);
             String name = node.getLocalName();
-            // 如果这个属性还没有被处理过的话
+            // 如果这个属性还没有被处理过的话（因为上边的属性处理方式是通过 class 的属性来查找标签的属性，可能会漏掉标签中的部分属性）
             if (!props.contains(name)) {
                 if (parameters == null) {
                     parameters = new ManagedMap();
@@ -311,7 +311,7 @@ public class DubboBeanDefinitionParser implements BeanDefinitionParser {
             }
         }
         if (parameters != null) {
-            // 将上边代码解析出来的 parameters 全部添加到 beanDefinition 中去
+            // 将上边代码解析出来的 parameters 全部添加到 beanDefinition 中去，从这里可以看出来，对于标签中不存在于 class 中的属性，就将其当做 parameter 添加到 parameters 属性中
             beanDefinition.getPropertyValues().addPropertyValue("parameters", parameters);
         }
         // 返回标签被解析出来的 beanDefinition
@@ -385,7 +385,8 @@ public class DubboBeanDefinitionParser implements BeanDefinitionParser {
 
     /**
      * 解析子 property 标签
-     * @param nodeList 子标签
+     *
+     * @param nodeList       子标签
      * @param beanDefinition 带解析的标签所对应的 beanDefinition
      */
     private static void parseProperties(NodeList nodeList, RootBeanDefinition beanDefinition) {

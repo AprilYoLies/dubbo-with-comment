@@ -373,7 +373,7 @@ public class ReferenceConfig<T> extends AbstractReferenceConfig {
                 }
             } else { // assemble URL from register center's configuration
                 // if protocols not injvm checkRegistry
-                if (!LOCAL_PROTOCOL.equalsIgnoreCase(getProtocol())){
+                if (!LOCAL_PROTOCOL.equalsIgnoreCase(getProtocol())) {
                     checkRegistry();
                     List<URL> us = loadRegistries(false);
                     if (CollectionUtils.isNotEmpty(us)) {
@@ -472,8 +472,8 @@ public class ReferenceConfig<T> extends AbstractReferenceConfig {
     }
 
     protected boolean shouldInit() {
-        Boolean shouldInit = isInit();
-        if (shouldInit == null && getConsumer() != null) {
+        Boolean shouldInit = isInit();  // 获取 init 标志位
+        if (shouldInit == null && getConsumer() != null) {  // 没有的话，那么就从 consumer 属性中获取 init 信息
             shouldInit = getConsumer().isInit();
         }
         if (shouldInit == null) {

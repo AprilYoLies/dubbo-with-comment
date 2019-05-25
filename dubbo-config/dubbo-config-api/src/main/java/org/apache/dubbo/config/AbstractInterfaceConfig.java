@@ -899,7 +899,7 @@ public abstract class AbstractInterfaceConfig extends AbstractMethodConfig {
     public void setRegistries(List<? extends RegistryConfig> registries) {
         // 单例模式获取 ConfigManager 实例，将 registries 添加到其中
         ConfigManager.getInstance().addRegistries((List<RegistryConfig>) registries);
-        // 在 ServiceBean 中也保留一份
+        // 在 ServiceBean（当前 bean） 中也保留一份
         this.registries = (List<RegistryConfig>) registries;
     }
 

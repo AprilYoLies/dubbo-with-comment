@@ -283,7 +283,7 @@ public class ConfigManager {
             return;
         }
 
-        // 确定被管理的 config 实例的 key，如果 providerConfig 的 id 不为空，就直接使用，
+        // 确定被管理的 config 实例的 key，如果 registryConfig 的 id 不为空，就直接使用，
         // 否则就根据其是否是 default config 来决定是使用 default 还是 null
         String key = StringUtils.isNotEmpty(registryConfig.getId())
                 ? registryConfig.getId()

@@ -58,7 +58,7 @@ public class SpringExtensionFactory implements ExtensionFactory {
             // 因为关闭任务已经由 spring 向 jvm 进行注册了，所以取消 dubbo 自身的关闭钩子函数的注册
             DubboShutdownHook.getDubboShutdownHook().unregister();
         }
-        // 通过反射的方式为 context 添加监听器
+        // 通过反射的方式为 context 添加监听器，此监听器会关注 ContextClosedEvent 事件，如果发生了对应的事件，就会销毁对应的 registry 和 protocol
         BeanFactoryUtils.addApplicationListener(context, SHUTDOWN_HOOK_LISTENER);
     }
 
