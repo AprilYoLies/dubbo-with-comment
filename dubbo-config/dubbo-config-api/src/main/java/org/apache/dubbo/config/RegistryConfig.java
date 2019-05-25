@@ -420,7 +420,7 @@ public class RegistryConfig extends AbstractConfig {
     public void refresh() {
         super.refresh();
         if (StringUtils.isNotEmpty(this.getId())) {
-            this.setPrefix(REGISTRIES_SUFFIX);
+            this.setPrefix(REGISTRIES_SUFFIX);  // dubbo.registries.
             super.refresh();
         }
     }

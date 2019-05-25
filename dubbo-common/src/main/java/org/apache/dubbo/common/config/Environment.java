@@ -29,7 +29,7 @@ import java.util.concurrent.ConcurrentHashMap;
  */
 public class Environment {
     private static final Environment INSTANCE = new Environment();
-
+    //  此四种 map 都是起缓存作用，用于
     private Map<String, PropertiesConfiguration> propertiesConfigs = new ConcurrentHashMap<>();
     private Map<String, SystemConfiguration> systemConfigs = new ConcurrentHashMap<>();
     private Map<String, EnvironmentConfiguration> environmentConfigs = new ConcurrentHashMap<>();
@@ -108,7 +108,7 @@ public class Environment {
      * Create new instance for each call, since it will be called only at startup, I think there's no big deal of the potential cost.
      * Otherwise, if use cache, we should make sure each Config has a unique id which is difficult to guarantee because is on the user's side,
      * especially when it comes to ServiceConfig and ReferenceConfig.
-     *
+     * <p>
      * 通过 prefix 和 id 获取几种配置
      * getSystemConfig
      * getAppExternalConfig
@@ -120,7 +120,7 @@ public class Environment {
      * @return
      */
     public CompositeConfiguration getConfiguration(String prefix, String id) {
-        CompositeConfiguration compositeConfiguration = new CompositeConfiguration();
+        CompositeConfiguration compositeConfiguration = new CompositeConfiguration();   // compositeConfiguration 封装了如下四种类型的 Config
         // Config center has the highest priority
         // 将返回的 SystemConfiguration 添加到 compositeConfiguration
         compositeConfiguration.addConfiguration(this.getSystemConfig(prefix, id));

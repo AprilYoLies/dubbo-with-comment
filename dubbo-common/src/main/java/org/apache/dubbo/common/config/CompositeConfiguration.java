@@ -62,10 +62,10 @@ public class CompositeConfiguration implements Configuration {
     @Override
     public Object getInternalProperty(String key) {
         Configuration firstMatchingConfiguration = null;
-        for (Configuration config : configList) {
+        for (Configuration config : configList) {   // 从 CompositeConfiguration 维护的 configList 中逐个进行查找
             try {
                 if (config.containsKey(key)) {
-                    firstMatchingConfiguration = config;
+                    firstMatchingConfiguration = config;    // 这里采用优先匹配原则，找到后即立刻停止查找
                     break;
                 }
             } catch (Exception e) {
@@ -73,7 +73,7 @@ public class CompositeConfiguration implements Configuration {
             }
         }
         if (firstMatchingConfiguration != null) {
-            return firstMatchingConfiguration.getProperty(key);
+            return firstMatchingConfiguration.getProperty(key); // 从最先匹配的 Configuration 中获取 key 对应的属性值
         } else {
             return null;
         }

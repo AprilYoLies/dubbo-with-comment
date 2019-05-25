@@ -543,11 +543,11 @@ public class ProtocolConfig extends AbstractConfig {
     @Override
     public void refresh() {
         if (StringUtils.isEmpty(this.getName())) {
-            this.setName(DUBBO_VERSION_KEY);
+            this.setName(DUBBO_VERSION_KEY);    // 设置 name
         }
         super.refresh();
         if (StringUtils.isNotEmpty(this.getId())) {
-            this.setPrefix(PROTOCOLS_SUFFIX);
+            this.setPrefix(PROTOCOLS_SUFFIX);   // dubbo.protocols.
             super.refresh();
         }
     }

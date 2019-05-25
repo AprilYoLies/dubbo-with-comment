@@ -212,15 +212,15 @@ public class ReferenceConfig<T> extends AbstractReferenceConfig {
      * This method should be called right after the creation of this class's instance, before any property in other config modules is used.
      * Check each config modules are created properly and override their properties if necessary.
      */
-    public void checkAndUpdateSubConfigs() {
+    public void checkAndUpdateSubConfigs() {    // 检查和更新存根配置
         if (StringUtils.isEmpty(interfaceName)) {
             throw new IllegalStateException("<dubbo:reference interface=\"\" /> interface not allow null!");
         }
-        completeCompoundConfigs();
-        startConfigCenter();
+        completeCompoundConfigs();  // 根据 consumer、module、application 属性来完成其它属性的填充，非覆盖
+        startConfigCenter();    // 检查并填充 configCenter，对 ConfigManager 持有的各项信息进行刷新
         // get consumer's global configuration
-        checkDefault();
-        this.refresh();
+        checkDefault(); // 检查 consumer 是否存在，没有的话就是从 ConfigManager 持有的 consumers 中获取默认的那一项，如果还是没有，那就新建一个
+        this.refresh(); // 刷新当前实例
         if (getGeneric() == null && getConsumer() != null) {
             setGeneric(getConsumer().getGeneric());
         }
@@ -232,12 +232,12 @@ public class ReferenceConfig<T> extends AbstractReferenceConfig {
                         .getContextClassLoader());
             } catch (ClassNotFoundException e) {
                 throw new IllegalStateException(e.getMessage(), e);
-            }
+            }   // 通过 interfaceClass 对 methods 的相关属性进行设置，同时检查 methods 是否在 interfaceClass 存在相应的方法
             checkInterfaceAndMethods(interfaceClass, methods);
         }
-        resolveFile();
-        checkApplication();
-        checkMetadataReport();
+        resolveFile();  // 尝试从系统属性中或者文件中获取 interfaceName 对应的属性值，并赋值给 url
+        checkApplication(); // 检查 application 属性是否存在，并对 shutdown.wait 相关的属性进行处理
+        checkMetadataReport();  // 对 metadataReportConfig 相关内容进行检查
     }
 
     public synchronized T get() {
@@ -274,15 +274,15 @@ public class ReferenceConfig<T> extends AbstractReferenceConfig {
             return;
         }
         initialized = true;
-        checkStubAndLocal(interfaceClass);
+        checkStubAndLocal(interfaceClass);  // 如果 stub 和 local 函数不为空，那么检查他是否有 interfaceClass 为参数的构造函数
         checkMock(interfaceClass);
         Map<String, String> map = new HashMap<String, String>();
 
         map.put(SIDE_KEY, CONSUMER_SIDE);
 
-        appendRuntimeParameters(map);
+        appendRuntimeParameters(map);   // 添加一些运行时的信息如 version、release、timestamp
         if (!isGeneric()) {
-            String revision = Version.getVersion(interfaceClass, version);
+            String revision = Version.getVersion(interfaceClass, version);  // 尝试从 MANIFEST.MF、jar 文件名获取版本信息，没有的话就使用 version 默认参数
             if (revision != null && revision.length() > 0) {
                 map.put(REVISION_KEY, revision);
             }
@@ -486,7 +486,7 @@ public class ReferenceConfig<T> extends AbstractReferenceConfig {
     private void checkDefault() {
         if (consumer != null) {
             return;
-        }
+        }   // 从 ConfigManager 持有的 consumers 中获取默认的那一项
         setConsumer(ConfigManager.getInstance().getDefaultConsumer().orElseGet(() -> {
             ConsumerConfig consumerConfig = new ConsumerConfig();
             consumerConfig.refresh();
@@ -494,8 +494,8 @@ public class ReferenceConfig<T> extends AbstractReferenceConfig {
         }));
     }
 
-    private void completeCompoundConfigs() {
-        if (consumer != null) {
+    private void completeCompoundConfigs() {    // 根据 consumer、module、application 属性来完成其它属性的填充
+        if (consumer != null) { // 根据 consumer 填充 application、module、registries、monitor，非覆盖，非覆盖
             if (application == null) {
                 setApplication(consumer.getApplication());
             }
@@ -509,7 +509,7 @@ public class ReferenceConfig<T> extends AbstractReferenceConfig {
                 setMonitor(consumer.getMonitor());
             }
         }
-        if (module != null) {
+        if (module != null) {   // 根据 module 填充 registries、monitor，非覆盖
             if (registries == null) {
                 setRegistries(module.getRegistries());
             }
@@ -517,7 +517,7 @@ public class ReferenceConfig<T> extends AbstractReferenceConfig {
                 setMonitor(module.getMonitor());
             }
         }
-        if (application != null) {
+        if (application != null) {  // 根据 application 填充 registries、monitor，非覆盖
             if (registries == null) {
                 setRegistries(application.getRegistries());
             }
@@ -527,16 +527,16 @@ public class ReferenceConfig<T> extends AbstractReferenceConfig {
         }
     }
 
-    public Class<?> getInterfaceClass() {
+    public Class<?> getInterfaceClass() {   // 优先由 interfaceClass 决定
         if (interfaceClass != null) {
             return interfaceClass;
         }
         if (isGeneric()
                 || (getConsumer() != null && getConsumer().isGeneric())) {
-            return GenericService.class;
+            return GenericService.class;    // 如果 generic 属性是 true 或 nativejava 或 bean 或 probobuf-json，返回 GenericService.class
         }
         try {
-            if (interfaceName != null && interfaceName.length() > 0) {
+            if (interfaceName != null && interfaceName.length() > 0) {  // 将 interfaceClass 赋值为 interfaceName 对应的 class
                 this.interfaceClass = Class.forName(interfaceName, true, ClassUtils.getClassLoader());
             }
         } catch (ClassNotFoundException t) {
@@ -630,29 +630,29 @@ public class ReferenceConfig<T> extends AbstractReferenceConfig {
     }
 
     private void resolveFile() {
-        String resolve = System.getProperty(interfaceName);
+        String resolve = System.getProperty(interfaceName); // 优先获取接口名对应的系统属性作为 resolve 结果
         String resolveFile = null;
         if (StringUtils.isEmpty(resolve)) {
-            resolveFile = System.getProperty("dubbo.resolve.file");
-            if (StringUtils.isEmpty(resolveFile)) {
+            resolveFile = System.getProperty("dubbo.resolve.file"); // 尝试获取 dubbo.resolve.file 系统属性作为 resolveFile
+            if (StringUtils.isEmpty(resolveFile)) { // resolveFile 为空的话，再 user.home 系统属性/dubbo-resolve.properties 的绝对路径作为 resolveFile
                 File userResolveFile = new File(new File(System.getProperty("user.home")), "dubbo-resolve.properties");
                 if (userResolveFile.exists()) {
-                    resolveFile = userResolveFile.getAbsolutePath();
+                    resolveFile = userResolveFile.getAbsolutePath();    // 如果存在的话，就使用这个 AbsolutePath 作为 resolveFile
                 }
             }
             if (resolveFile != null && resolveFile.length() > 0) {
                 Properties properties = new Properties();
                 try (FileInputStream fis = new FileInputStream(new File(resolveFile))) {
-                    properties.load(fis);
+                    properties.load(fis);   // 用 Properties 加载 resolveFile 对应的文件属性
                 } catch (IOException e) {
                     throw new IllegalStateException("Failed to load " + resolveFile + ", cause: " + e.getMessage(), e);
                 }
 
-                resolve = properties.getProperty(interfaceName);
+                resolve = properties.getProperty(interfaceName);    // 从加载的属性中获取 interfaceName 对应的属性值
             }
         }
         if (resolve != null && resolve.length() > 0) {
-            url = resolve;
+            url = resolve;  // 将 resolve 赋值给 url
             if (logger.isWarnEnabled()) {
                 if (resolveFile != null) {
                     logger.warn("Using default dubbo resolve file " + resolveFile + " replace " + interfaceName + "" + resolve + " to p2p invoke remote service.");

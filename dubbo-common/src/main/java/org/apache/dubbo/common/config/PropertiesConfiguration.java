@@ -36,6 +36,6 @@ public class PropertiesConfiguration extends AbstractPrefixConfiguration {
 
     @Override
     public Object getInternalProperty(String key) {
-        return ConfigUtils.getProperty(key);
+        return ConfigUtils.getProperty(key);    // 通过 ConfigUtils 获取 property
     }
 }

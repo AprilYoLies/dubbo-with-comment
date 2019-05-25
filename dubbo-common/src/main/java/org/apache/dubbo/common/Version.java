@@ -153,12 +153,12 @@ public final class Version {
             Package pkg = cls.getPackage();
             String version = null;
             if (pkg != null) {
-                version = pkg.getImplementationVersion();
+                version = pkg.getImplementationVersion();   // 此为获取 MANIFEST.MF 文件中版本信息的函数，比如 Implementation-Version:
                 if (!StringUtils.isEmpty(version)) {
                     return version;
                 }
 
-                version = pkg.getSpecificationVersion();
+                version = pkg.getSpecificationVersion();    // 此为获取 MANIFEST.MF 文件中版本信息的函数，比如 Specification-Version
                 if (!StringUtils.isEmpty(version)) {
                     return version;
                 }

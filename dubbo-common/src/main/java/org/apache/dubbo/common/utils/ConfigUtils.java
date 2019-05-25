@@ -123,17 +123,17 @@ public class ConfigUtils {
         return names;
     }
 
-    public static String replaceProperty(String expression, Map<String, String> params) {
-        if (expression == null || expression.length() == 0 || expression.indexOf('$') < 0) {
+    public static String replaceProperty(String expression, Map<String, String> params) {   // expression 为资源路径中的属性值
+        if (expression == null || expression.length() == 0 || expression.indexOf('$') < 0) {// expresion 要有 $
             return expression;
         }
         Matcher matcher = VARIABLE_PATTERN.matcher(expression);
         StringBuffer sb = new StringBuffer();
         while (matcher.find()) {
             String key = matcher.group(1);
-            String value = System.getProperty(key);
+            String value = System.getProperty(key); // 获取 system 中 key 对应的属性
             if (value == null && params != null) {
-                value = params.get(key);
+                value = params.get(key);    // 系统属性中没有，就尝试从 params 中获取
             }
             if (value == null) {
                 value = "";
@@ -144,18 +144,18 @@ public class ConfigUtils {
         return sb.toString();
     }
 
-    public static Properties getProperties() {
+    public static Properties getProperties() {  // 根据指定的路径获取 properties，path 信息按优先级从三个地方获取
         if (PROPERTIES == null) {
             synchronized (ConfigUtils.class) {
                 if (PROPERTIES == null) {
-                    String path = System.getProperty(CommonConstants.DUBBO_PROPERTIES_KEY);
+                    String path = System.getProperty(CommonConstants.DUBBO_PROPERTIES_KEY); // dubbo.properties.file
                     if (path == null || path.length() == 0) {
-                        path = System.getenv(CommonConstants.DUBBO_PROPERTIES_KEY);
+                        path = System.getenv(CommonConstants.DUBBO_PROPERTIES_KEY); // dubbo.properties.file
                         if (path == null || path.length() == 0) {
-                            path = CommonConstants.DEFAULT_DUBBO_PROPERTIES;
+                            path = CommonConstants.DEFAULT_DUBBO_PROPERTIES;    // dubbo.properties
                         }
                     }
-                    PROPERTIES = ConfigUtils.loadProperties(path, false, true);
+                    PROPERTIES = ConfigUtils.loadProperties(path, false, true); // 从对应的 path 中加载 properties
                 }
             }
         }
@@ -178,9 +178,9 @@ public class ConfigUtils {
 
     @SuppressWarnings({"unchecked", "rawtypes"})
     public static String getProperty(String key, String defaultValue) {
-        String value = System.getProperty(key);
+        String value = System.getProperty(key); // 获取的优先级别还是 System.getProperty
         if (value != null && value.length() > 0) {
-            return value;
+            return value;   // 从系统 property 中获取到了，就直接返回
         }
         Properties properties = getProperties();
         return replaceProperty(properties.getProperty(key, defaultValue), (Map) properties);
@@ -223,28 +223,28 @@ public class ConfigUtils {
      * @throws IllegalStateException not allow multi-file, but multi-file exist on class path.
      */
     public static Properties loadProperties(String fileName, boolean allowMultiFile, boolean optional) {
-        Properties properties = new Properties();
+        Properties properties = new Properties();   // 从指定的路径下加载 Properties 信息
         // add scene judgement in windows environment Fix 2557
-        if (checkFileNameExist(fileName)) {
+        if (checkFileNameExist(fileName)) { // 指定路径存在情况下，获取 Properties 的方式
             try {
-                FileInputStream input = new FileInputStream(fileName);
+                FileInputStream input = new FileInputStream(fileName);  // 用于读取文件内容
                 try {
-                    properties.load(input);
+                    properties.load(input); // 将文件内容转换为 Properties
                 } finally {
                     input.close();
                 }
             } catch (Throwable e) {
                 logger.warn("Failed to load " + fileName + " file from " + fileName + "(ignore this file): " + e.getMessage(), e);
             }
-            return properties;
+            return properties;  // 返回加载的 Properties
         }
 
         List<java.net.URL> list = new ArrayList<java.net.URL>();
-        try {
+        try {   // 获取指定路径下的全部 Resources
             Enumeration<java.net.URL> urls = ClassUtils.getClassLoader().getResources(fileName);
             list = new ArrayList<java.net.URL>();
             while (urls.hasMoreElements()) {
-                list.add(urls.nextElement());
+                list.add(urls.nextElement());   // 获取每一条资源路径添加到 list
             }
         } catch (Throwable t) {
             logger.warn("Fail to load " + fileName + " file: " + t.getMessage(), t);
@@ -254,11 +254,11 @@ public class ConfigUtils {
             if (!optional) {
                 logger.warn("No " + fileName + " found on the class path.");
             }
-            return properties;
+            return properties;  // 实在是没有找到，那就返回空的 properties
         }
 
         if (!allowMultiFile) {
-            if (list.size() > 1) {
+            if (list.size() > 1) {  // 找到的资源多于一个，打印警告日志信息
                 String errMsg = String.format("only 1 %s file is expected, but %d dubbo.properties files found on class path: %s",
                         fileName, list.size(), list.toString());
                 logger.warn(errMsg);
@@ -276,14 +276,14 @@ public class ConfigUtils {
 
         logger.info("load " + fileName + " properties file from " + list);
 
-        for (java.net.URL url : list) {
+        for (java.net.URL url : list) { // 针对多个 URL 获取 properties
             try {
                 Properties p = new Properties();
-                InputStream input = url.openStream();
+                InputStream input = url.openStream();   // 先获取 stream
                 if (input != null) {
                     try {
-                        p.load(input);
-                        properties.putAll(p);
+                        p.load(input);  // Properties 将流转换为属性
+                        properties.putAll(p);   // 统一添加到 properties
                     } finally {
                         try {
                             input.close();

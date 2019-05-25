@@ -27,7 +27,7 @@ public interface Configuration {
      * @return The associated string.
      */
     default String getString(String key) {
-        return convert(String.class, key, null);
+        return convert(String.class, key, null);    // 将根据 key 获取的属性值转换为 cls 类型的值返回
     }
 
     /**
@@ -68,7 +68,7 @@ public interface Configuration {
      * Gets a property from the configuration. The default value will return if the configuration doesn't contain
      * the mapping for the specified key.
      *
-     * @param key property to retrieve
+     * @param key          property to retrieve
      * @param defaultValue default value
      * @return the value to which this configuration maps the specified key, or default value if the configuration
      * contains no mapping for this key.
@@ -91,10 +91,10 @@ public interface Configuration {
         return getProperty(key) != null;
     }
 
-
+    // 将根据 key 获取的属性值转换为 cls 类型的值返回
     default <T> T convert(Class<T> cls, String key, T defaultValue) {
         // we only process String properties for now
-        String value = (String) getProperty(key);
+        String value = (String) getProperty(key);   // 获取属性值
 
         if (value == null) {
             return defaultValue;
@@ -102,11 +102,11 @@ public interface Configuration {
 
         Object obj = value;
         if (cls.isInstance(value)) {
-            return cls.cast(value);
+            return cls.cast(value); // 这里是将 value 强转为 cls 类型后返回
         }
 
         if (String.class.equals(cls)) {
-            return cls.cast(value);
+            return cls.cast(value); // 调用 value 的 toString 方法
         }
 
         if (Boolean.class.equals(cls) || Boolean.TYPE.equals(cls)) {

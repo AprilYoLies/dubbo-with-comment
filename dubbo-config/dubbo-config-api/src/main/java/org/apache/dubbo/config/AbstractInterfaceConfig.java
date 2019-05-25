@@ -295,11 +295,11 @@ public abstract class AbstractInterfaceConfig extends AbstractMethodConfig {
         // 初次调用时，如果没有配置 config-center 标签，则这里是为 null 的
         if (this.configCenter != null) {
             // TODO there may have duplicate refresh
-            this.configCenter.refresh();
+            this.configCenter.refresh();    // 刷新 configCenter 的属性信息
             // 准备运行环境
             prepareEnvironment();
         }
-        // 单例获取 ConfigManager，依据具体的配置信息对相应的 config 进行属性的更新
+        // 单例获取 ConfigManager，依据具体的配置信息对相应的 config 进行属性的更新（这里 ConfigManager 持有了全部的配置信息）
         ConfigManager.getInstance().refreshAll();
     }
 
