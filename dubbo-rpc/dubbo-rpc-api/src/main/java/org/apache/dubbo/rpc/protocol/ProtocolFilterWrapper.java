@@ -38,7 +38,7 @@ import static org.apache.dubbo.common.constants.RpcConstants.SERVICE_FILTER_KEY;
 /**
  * ListenerProtocol
  */
-public class ProtocolFilterWrapper implements Protocol {
+public class ProtocolFilterWrapper implements Protocol {    // ProtocolFilterWrapper 会根据情况将 Invoker 包装成为 InvokerChain
 
     private final Protocol protocol;
 

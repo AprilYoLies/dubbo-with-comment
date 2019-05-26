@@ -412,7 +412,7 @@ public abstract class Wrapper {
         cc.addField("public static " + Map.class.getName() + " pts;"); // property type map.
         cc.addField("public static String[] mns;"); // all method name array.
         cc.addField("public static String[] dmns;"); // declared method name array.
-        for (int i = 0, len = ms.size(); i < len; i++) {
+        for (int i = 0, len = ms.size(); i < len; i++) {    // 方法的参数类型数组，有几个函数就会有几个数组
             cc.addField("public static Class[] mts" + i + ";");
         }
 
@@ -432,7 +432,7 @@ public abstract class Wrapper {
             // 根据上边获取的信息对 Class 对象的某些属性进行填充
             // 字段的 name 和 type
             wc.getField("pts").set(null, pts);
-            // mns 集合专门用来保存字段的名字
+            // pns 集合专门用来保存字段的名字
             wc.getField("pns").set(null, pts.keySet().toArray(new String[0]));
             // mns 集合专门用来保存方法名
             wc.getField("mns").set(null, mns.toArray(new String[0]));

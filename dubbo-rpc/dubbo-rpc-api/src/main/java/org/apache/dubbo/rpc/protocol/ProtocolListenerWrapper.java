@@ -37,7 +37,7 @@ import static org.apache.dubbo.common.constants.RpcConstants.EXPORTER_LISTENER_K
 /**
  * ListenerProtocol
  */
-public class ProtocolListenerWrapper implements Protocol {
+public class ProtocolListenerWrapper implements Protocol {  // 之所以被称为 ProtocolListenerWrapper，大概是因为它会根据协议将结果包装成为 ListenerInvokerWrapper 吧
     // 被包装的 protocol，类型为 ProtocolFilterWrapper
     private final Protocol protocol;
 
@@ -70,10 +70,10 @@ public class ProtocolListenerWrapper implements Protocol {
 
     @Override
     public <T> Invoker<T> refer(Class<T> type, URL url) throws RpcException {
-        if (REGISTRY_PROTOCOL.equals(url.getProtocol())) {
+        if (REGISTRY_PROTOCOL.equals(url.getProtocol())) {  // 如果 url 是 registry 协议，直接向下传递
             return protocol.refer(type, url);
         }
-        return new ListenerInvokerWrapper<T>(protocol.refer(type, url),
+        return new ListenerInvokerWrapper<T>(protocol.refer(type, url), // 否则会将 refer 结果包装成为 ListenerInvokerWrapper
                 Collections.unmodifiableList(
                         ExtensionLoader.getExtensionLoader(InvokerListener.class)
                                 .getActivateExtension(url, INVOKER_LISTENER_KEY)));

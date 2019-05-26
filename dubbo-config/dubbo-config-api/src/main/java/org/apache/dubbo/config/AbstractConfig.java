@@ -172,7 +172,7 @@ public abstract class AbstractConfig implements Serializable {
                     String key;
                     // 获取 key，要不就是通过 Parameter 注解获取，要不就是通过方法名得到
                     if (parameter != null && parameter.key().length() > 0) {
-                        key = parameter.key();
+                        key = parameter.key();  // 优先使用 Parameter 的 key 作为属性名
                     } else {
                         // 通过方法名得到 key
                         key = calculatePropertyFromGetter(name);
@@ -181,11 +181,11 @@ public abstract class AbstractConfig implements Serializable {
                     Object value = method.invoke(config);
                     String str = String.valueOf(value).trim();
                     if (value != null && str.length() > 0) {
-                        if (parameter != null && parameter.escaped()) {
+                        if (parameter != null && parameter.escaped()) { // Parameter 注解的 escaped 表示要要进行 URL 编码
                             // 对获取到的属性值进行编码
                             str = URL.encode(str);
                         }
-                        if (parameter != null && parameter.append()) {
+                        if (parameter != null && parameter.append()) {  // Parameter 注解的 append 表示要要进行属性内容的追加，属性的 key 为 default.key 或者 key 本省
                             // parameter 注解的 append 属性为 true
                             String pre = parameters.get(DEFAULT_KEY + "." + key);
                             // default.key 追加属性
@@ -203,7 +203,7 @@ public abstract class AbstractConfig implements Serializable {
                             key = prefix + "." + key;
                         }
                         parameters.put(key, str);
-                    } else if (parameter != null && parameter.required()) {
+                    } else if (parameter != null && parameter.required()) { // Parameter 注解的 required 表示该属性值必须存在
                         // 在 parameter 注解的 required 属性为 true 时，相应的 ServiceBean 的属性值不能为空
                         throw new IllegalStateException(config.getClass().getSimpleName() + "." + key + " == null");
                     }
@@ -266,33 +266,33 @@ public abstract class AbstractConfig implements Serializable {
 
     protected static ConsumerMethodModel.AsyncMethodInfo convertMethodConfig2AyncInfo(MethodConfig methodConfig) {
         if (methodConfig == null || (methodConfig.getOninvoke() == null && methodConfig.getOnreturn() == null && methodConfig.getOnthrow() == null)) {
-            return null;
+            return null;    // methodConfig 或者 onInvoke、onReturn、onThrow 都为空就直接返回 null
         }
 
-        //check config conflict
+        //check config conflict，即 isReturn 为 false 且 onReturn 不为空或者 onThrow 不为空，这种情况就是属于冲突的情况
         if (Boolean.FALSE.equals(methodConfig.isReturn()) && (methodConfig.getOnreturn() != null || methodConfig.getOnthrow() != null)) {
             throw new IllegalStateException("method config error : return attribute must be set true when onreturn or onthrow has been set.");
         }
 
         ConsumerMethodModel.AsyncMethodInfo asyncMethodInfo = new ConsumerMethodModel.AsyncMethodInfo();
 
-        asyncMethodInfo.setOninvokeInstance(methodConfig.getOninvoke());
+        asyncMethodInfo.setOninvokeInstance(methodConfig.getOninvoke());    // 设置三种 Instance
         asyncMethodInfo.setOnreturnInstance(methodConfig.getOnreturn());
         asyncMethodInfo.setOnthrowInstance(methodConfig.getOnthrow());
 
         try {
             String oninvokeMethod = methodConfig.getOninvokeMethod();
-            if (StringUtils.isNotEmpty(oninvokeMethod)) {
+            if (StringUtils.isNotEmpty(oninvokeMethod)) {   // 将 methodConfig 中的 onXXX 对象的 onXXXMethod 添加到 asyncMethodInfo 中
                 asyncMethodInfo.setOninvokeMethod(getMethodByName(methodConfig.getOninvoke().getClass(), oninvokeMethod));
             }
 
             String onreturnMethod = methodConfig.getOnreturnMethod();
-            if (StringUtils.isNotEmpty(onreturnMethod)) {
+            if (StringUtils.isNotEmpty(onreturnMethod)) {   // 将 methodConfig 中的 onXXX 对象的 onXXXMethod 添加到 asyncMethodInfo 中
                 asyncMethodInfo.setOnreturnMethod(getMethodByName(methodConfig.getOnreturn().getClass(), onreturnMethod));
             }
 
             String onthrowMethod = methodConfig.getOnthrowMethod();
-            if (StringUtils.isNotEmpty(onthrowMethod)) {
+            if (StringUtils.isNotEmpty(onthrowMethod)) {    // 将 methodConfig 中的 onXXX 对象的 onXXXMethod 添加到 asyncMethodInfo 中
                 asyncMethodInfo.setOnthrowMethod(getMethodByName(methodConfig.getOnthrow().getClass(), onthrowMethod));
             }
         } catch (Exception e) {

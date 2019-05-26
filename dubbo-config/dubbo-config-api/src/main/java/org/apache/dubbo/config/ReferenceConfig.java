@@ -284,19 +284,77 @@ public class ReferenceConfig<T> extends AbstractReferenceConfig {
         if (!isGeneric()) {
             String revision = Version.getVersion(interfaceClass, version);  // 尝试从 MANIFEST.MF、jar 文件名获取版本信息，没有的话就使用 version 默认参数
             if (revision != null && revision.length() > 0) {
-                map.put(REVISION_KEY, revision);
+                map.put(REVISION_KEY, revision);    // revision -> revision
             }
 
-            String[] methods = Wrapper.getWrapper(interfaceClass).getMethodNames();
+            // 获得的 Wrapper 实例的源代码
+            // public class Wrapper0 extends org.apache.dubbo.common.bytecode.Wrapper {
+            //     public static String[] pns;
+            //     public static java.util.Map pts;
+            //     public static String[] mns;
+            //     public static String[] dmns;
+            //     public static Class[] mts0;
+            //     public static Class
+            //     public String[] getPropertyNames() {
+            //         return pns;
+            //
+            //     public boolean hasProperty(String n) {
+            //         return pts.containsKey($1);
+            //
+            //     public Class getPropertyType(String n) {
+            //         return (Class) pts.get($1);
+            //
+            //     public String[] getMethodNames() {
+            //         return mns;
+            //
+            //     public String[] getDeclaredMethodNames() {
+            //         return dmns;
+            //
+            //     public void setPropertyValue(Object o, String n, Object v) {
+            //         org.apache.dubbo.demo.DemoService w;
+            //         try {
+            //             w = ((org.apache.dubbo.demo.DemoService) $1);
+            //         } catch (Throwable e) {
+            //             throw new IllegalArgumentException(e);
+            //         }
+            //         throw new org.apache.dubbo.common.bytecode.NoSuchPropertyException("Not found property \"" + $2 + "\" field or setter method in class org.apache.dubbo.demo.DemoService.");
+            //
+            //     public Object getPropertyValue(Object o, String n) {
+            //         org.apache.dubbo.demo.DemoService w;
+            //         try {
+            //             w = ((org.apache.dubbo.demo.DemoService) $1);
+            //         } catch (Throwable e) {
+            //             throw new IllegalArgumentException(e);
+            //         }
+            //         throw new org.apache.dubbo.common.bytecode.NoSuchPropertyException("Not found property \"" + $2 + "\" field or setter method in class org.apache.dubbo.demo.DemoService.");
+            //
+            //     public Object invokeMethod(Object o, String n, Class[] p, Object[] v) throws java.lang.reflect.InvocationTargetException {
+            //         org.apache.dubbo.demo.DemoService w;
+            //         try {
+            //             w = ((org.apache.dubbo.demo.DemoService) $1);
+            //         } catch (Throwable e) {
+            //             throw new IllegalArgumentException(e);
+            //         }
+            //         try {
+            //             if ("sayHello".equals($2) && $3.length == 1) {
+            //                 return ($w) w.sayHello((java.lang.String) $4[0]);
+            //             }
+            //         } catch (Throwable e) {
+            //             throw new java.lang.reflect.InvocationTargetException(e);
+            //         }
+            //         throw new org.apache.dubbo.common.bytecode.NoSuchMethodException("Not found method \"" + $2 + "\" in class org.apache.dubbo.demo.DemoService.");
+            //     }
+            // }
+            String[] methods = Wrapper.getWrapper(interfaceClass).getMethodNames();  // Wrapper 实例中的方法名
             if (methods.length == 0) {
                 logger.warn("No method found in service interface " + interfaceClass.getName());
                 map.put(METHODS_KEY, ANY_VALUE);
             } else {
-                map.put(METHODS_KEY, StringUtils.join(new HashSet<String>(Arrays.asList(methods)), COMMA_SEPARATOR));
+                map.put(METHODS_KEY, StringUtils.join(new HashSet<String>(Arrays.asList(methods)), COMMA_SEPARATOR));   // methods
             }
         }
-        map.put(INTERFACE_KEY, interfaceName);
-        appendParameters(map, metrics);
+        map.put(INTERFACE_KEY, interfaceName);  // interface
+        appendParameters(map, metrics); // 将 metrics、application、module、consumer、reference 中的配置信息添加到 map 中，属性获取的方式是 getter 方法反射调用
         appendParameters(map, application);
         appendParameters(map, module);
         // remove 'default.' prefix for configs from ConsumerConfig
@@ -306,26 +364,26 @@ public class ReferenceConfig<T> extends AbstractReferenceConfig {
         Map<String, Object> attributes = null;
         if (CollectionUtils.isNotEmpty(methods)) {
             attributes = new HashMap<String, Object>();
-            for (MethodConfig methodConfig : methods) {
-                appendParameters(map, methodConfig, methodConfig.getName());
+            for (MethodConfig methodConfig : methods) { // 针对 methods 属性，有三点要做
+                appendParameters(map, methodConfig, methodConfig.getName());    // 1、追加 methods 的属性到 map 中
                 String retryKey = methodConfig.getName() + ".retry";
                 if (map.containsKey(retryKey)) {
-                    String retryValue = map.remove(retryKey);
+                    String retryValue = map.remove(retryKey);   // 2、需要将 map 中 methodName.retry 对应的 false 属性值替换为 0
                     if ("false".equals(retryValue)) {
                         map.put(methodConfig.getName() + ".retries", "0");
                     }
-                }
+                }   // 3、将 methodConfig 转换为 AyncInfo，然后添加到 attributes 中
                 attributes.put(methodConfig.getName(), convertMethodConfig2AyncInfo(methodConfig));
             }
         }
 
-        String hostToRegistry = ConfigUtils.getSystemProperty(DUBBO_IP_TO_REGISTRY);
+        String hostToRegistry = ConfigUtils.getSystemProperty(DUBBO_IP_TO_REGISTRY);    // 优先获取系统的 DUBBO_IP_TO_REGISTRY 属性作为 hostToRegistry
         if (StringUtils.isEmpty(hostToRegistry)) {
-            hostToRegistry = NetUtils.getLocalHost();
+            hostToRegistry = NetUtils.getLocalHost();   // 使用本机 ip 作为 hostToRegistry
         } else if (isInvalidLocalHost(hostToRegistry)) {
             throw new IllegalArgumentException("Specified invalid registry ip from property:" + DUBBO_IP_TO_REGISTRY + ", value:" + hostToRegistry);
         }
-        map.put(REGISTER_IP_KEY, hostToRegistry);
+        map.put(REGISTER_IP_KEY, hostToRegistry);   // register.ip
 
         ref = createProxy(map);
 
@@ -349,7 +407,7 @@ public class ReferenceConfig<T> extends AbstractReferenceConfig {
 
     @SuppressWarnings({"unchecked", "rawtypes", "deprecation"})
     private T createProxy(Map<String, String> map) {
-        if (shouldJvmRefer(map)) {
+        if (shouldJvmRefer(map)) {  // if 判断是否应该进行 JvmRefer
             URL url = new URL(LOCAL_PROTOCOL, LOCALHOST_VALUE, 0, interfaceClass.getName()).addParameters(map);
             invoker = REF_PROTOCOL.refer(interfaceClass, url);
             if (logger.isInfoEnabled()) {
@@ -362,27 +420,27 @@ public class ReferenceConfig<T> extends AbstractReferenceConfig {
                     for (String u : us) {
                         URL url = URL.valueOf(u);
                         if (StringUtils.isEmpty(url.getPath())) {
-                            url = url.setPath(interfaceName);
+                            url = url.setPath(interfaceName);   // 对 url 的每一项修改 path 为 interfaceName
                         }
-                        if (REGISTRY_PROTOCOL.equals(url.getProtocol())) {
+                        if (REGISTRY_PROTOCOL.equals(url.getProtocol())) {  // 如果 url 的协议是 registry，那么为 url 添加 refer 参数并编码后添加到 urls 中
                             urls.add(url.addParameterAndEncoded(REFER_KEY, StringUtils.toQueryString(map)));
                         } else {
-                            urls.add(ClusterUtils.mergeUrl(url, map));
+                            urls.add(ClusterUtils.mergeUrl(url, map));  // 否则将 map 的参数添加到 url 中，再将 url 添加到 urls 中
                         }
                     }
                 }
             } else { // assemble URL from register center's configuration
                 // if protocols not injvm checkRegistry
-                if (!LOCAL_PROTOCOL.equalsIgnoreCase(getProtocol())) {
+                if (!LOCAL_PROTOCOL.equalsIgnoreCase(getProtocol())) {  // 如果 protocol 不是使用的 injvm
                     checkRegistry();
-                    List<URL> us = loadRegistries(false);
+                    List<URL> us = loadRegistries(false);   // 获取 registries URL 信息
                     if (CollectionUtils.isNotEmpty(us)) {
                         for (URL u : us) {
                             URL monitorUrl = loadMonitor(u);
                             if (monitorUrl != null) {
                                 map.put(MONITOR_KEY, URL.encode(monitorUrl.toFullString()));
                             }
-                            urls.add(u.addParameterAndEncoded(REFER_KEY, StringUtils.toQueryString(map)));
+                            urls.add(u.addParameterAndEncoded(REFER_KEY, StringUtils.toQueryString(map)));  // 将每一个 registries URL 地址添加 refer 属性并编码后添加到 urls 中
                         }
                     }
                     if (urls.isEmpty()) {
@@ -392,6 +450,37 @@ public class ReferenceConfig<T> extends AbstractReferenceConfig {
             }
 
             if (urls.size() == 1) {
+                // 这是静态字段，在加载 ServiceBean 的 class 对象时，就会对静态字段进行初始化工作
+                // package org.apache.dubbo.rpc;
+                // import org.apache.dubbo.common.extension.ExtensionLoader;
+                // public class Protocol$Adaptive implements org.apache.dubbo.rpc.Protocol {
+                //     public void destroy() {
+                //         throw new UnsupportedOperationException("The method public abstract void org.apache.dubbo.rpc.Protocol.destroy() of interface org.apache.dubbo.rpc.Protocol is not adaptive method!");
+                //
+                //     public int getDefaultPort() {
+                //         throw new UnsupportedOperationException("The method public abstract int org.apache.dubbo.rpc.Protocol.getDefaultPort() of interface org.apache.dubbo.rpc.Protocol is not adaptive method!");
+                //
+                //     public org.apache.dubbo.rpc.Exporter export(org.apache.dubbo.rpc.Invoker arg0) throws org.apache.dubbo.rpc.RpcException {
+                //         if (arg0 == null) throw new IllegalArgumentException("org.apache.dubbo.rpc.Invoker argument == null");
+                //         if (arg0.getUrl() == null)
+                //             throw new IllegalArgumentException("org.apache.dubbo.rpc.Invoker argument getUrl() == null");
+                //         org.apache.dubbo.common.URL url = arg0.getUrl();
+                //         String extName = (url.getProtocol() == null ? "dubbo" : url.getProtocol());
+                //         if (extName == null)
+                //             throw new IllegalStateException("Failed to get extension (org.apache.dubbo.rpc.Protocol) name from url (" + url.toString() + ") use keys([protocol])");
+                //         org.apache.dubbo.rpc.Protocol extension = (org.apache.dubbo.rpc.Protocol) ExtensionLoader.getExtensionLoader(org.apache.dubbo.rpc.Protocol.class).getExtension(extName);
+                //         return extension.export(arg0);
+                //
+                //     public org.apache.dubbo.rpc.Invoker refer(java.lang.Class arg0, org.apache.dubbo.common.URL arg1) throws org.apache.dubbo.rpc.RpcException {
+                //         if (arg1 == null) throw new IllegalArgumentException("url == null");
+                //         org.apache.dubbo.common.URL url = arg1;
+                //         String extName = (url.getProtocol() == null ? "dubbo" : url.getProtocol());
+                //         if (extName == null)
+                //             throw new IllegalStateException("Failed to get extension (org.apache.dubbo.rpc.Protocol) name from url (" + url.toString() + ") use keys([protocol])");
+                //         org.apache.dubbo.rpc.Protocol extension = (org.apache.dubbo.rpc.Protocol) ExtensionLoader.getExtensionLoader(org.apache.dubbo.rpc.Protocol.class).getExtension(extName);
+                //         return extension.refer(arg0, arg1);
+                //     }
+                // }
                 invoker = REF_PROTOCOL.refer(interfaceClass, urls.get(0));
             } else {
                 List<Invoker<?>> invokers = new ArrayList<Invoker<?>>();
@@ -448,10 +537,10 @@ public class ReferenceConfig<T> extends AbstractReferenceConfig {
         if (isInjvm() == null) {
             // if a url is specified, don't do local reference
             if (url != null && url.length() > 0) {
-                isJvmRefer = false;
+                isJvmRefer = false; // 如果指定了 url 参数，那么就不是 JvmRefer
             } else {
-                // by default, reference local service if there is
-                isJvmRefer = InjvmProtocol.getInjvmProtocol().isInjvmRefer(tmpUrl);
+                // by default, reference local service if there is  此 tmpUrl 是通过 map 构造出来的
+                isJvmRefer = InjvmProtocol.getInjvmProtocol().isInjvmRefer(tmpUrl); // InjvmProtocol
             }
         } else {
             isJvmRefer = isInjvm();

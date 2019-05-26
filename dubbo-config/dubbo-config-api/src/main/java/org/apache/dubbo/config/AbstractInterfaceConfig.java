@@ -406,7 +406,7 @@ public abstract class AbstractInterfaceConfig extends AbstractMethodConfig {
                                 .addParameter(REGISTRY_KEY, url.getProtocol())
                                 .setProtocol(REGISTRY_PROTOCOL)
                                 .build();
-                        registry:
+
                         // registry://127.0.0.1:2181/org.apache.dubbo.registry.RegistryService?application=demo-provider&dubbo=2.0.2&pid=56922&registry=zookeeper&timestamp=1558065143107
                         if ((provider && url.getParameter(REGISTER_KEY, true))
                                 || (!provider && url.getParameter(SUBSCRIBE_KEY, true))) {
@@ -461,7 +461,7 @@ public abstract class AbstractInterfaceConfig extends AbstractMethodConfig {
             // dubbo.monitor.address 系统属性优先
             address = sysaddress;
         }
-        if (ConfigUtils.isNotEmpty(address)) {
+        if (ConfigUtils.isNotEmpty(address)) {  // 如果有系统属性指定 address，那就通过这个 address 和 map 构建 url
             // map 中没有 protocol 属性
             if (!map.containsKey(PROTOCOL_KEY)) {
                 // 有别名为 logstat 的 MonitorFactory SPI 接口的

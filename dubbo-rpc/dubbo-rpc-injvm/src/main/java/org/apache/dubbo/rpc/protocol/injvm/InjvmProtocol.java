@@ -50,7 +50,7 @@ public class InjvmProtocol extends AbstractProtocol implements Protocol {
     }
 
     public static InjvmProtocol getInjvmProtocol() {
-        if (INSTANCE == null) {
+        if (INSTANCE == null) { // 加载的过程会调用对应 class 的 newInstance 方法，就会对 INSTANCE 进行初始化
             ExtensionLoader.getExtensionLoader(Protocol.class).getExtension(InjvmProtocol.NAME); // load
         }
         return INSTANCE;
@@ -59,12 +59,12 @@ public class InjvmProtocol extends AbstractProtocol implements Protocol {
     static Exporter<?> getExporter(Map<String, Exporter<?>> map, URL key) {
         Exporter<?> result = null;
 
-        if (!key.getServiceKey().contains("*")) {
-            result = map.get(key.getServiceKey());
+        if (!key.getServiceKey().contains("*")) {   // 如果 url 的 interface 属性有 *
+            result = map.get(key.getServiceKey());  // 直接从 map 中获取 interface 属性值对应的属性
         } else {
             if (CollectionUtils.isNotEmptyMap(map)) {
                 for (Exporter<?> exporter : map.values()) {
-                    if (UrlUtils.isServiceKeyMatch(key, exporter.getInvoker().getUrl())) {
+                    if (UrlUtils.isServiceKeyMatch(key, exporter.getInvoker().getUrl())) {  // 尝试从 map 中获取 key 对应的 export
                         result = exporter;
                         break;
                     }
@@ -74,7 +74,7 @@ public class InjvmProtocol extends AbstractProtocol implements Protocol {
 
         if (result == null) {
             return null;
-        } else if (ProtocolUtils.isGeneric(
+        } else if (ProtocolUtils.isGeneric( // invoker 的 url 的 generic 属性不能为 true 或 nativejava 或 bean 或 probobuf-json
                 result.getInvoker().getUrl().getParameter(GENERIC_KEY))) {
             return null;
         } else {
@@ -99,19 +99,19 @@ public class InjvmProtocol extends AbstractProtocol implements Protocol {
     }
 
     public boolean isInjvmRefer(URL url) {
-        String scope = url.getParameter(SCOPE_KEY);
+        String scope = url.getParameter(SCOPE_KEY); // scope
         // Since injvm protocol is configured explicitly, we don't need to set any extra flag, use normal refer process.
-        if (SCOPE_LOCAL.equals(scope) || (url.getParameter(LOCAL_PROTOCOL, false))) {
+        if (SCOPE_LOCAL.equals(scope) || (url.getParameter(LOCAL_PROTOCOL, false))) {   // 如果由 map 构造出来的 url 的 scope 属性为 local 或者 injvm 属性为 true，就是 InjvmRefer
             // if it's declared as local reference
             // 'scope=local' is equivalent to 'injvm=true', injvm will be deprecated in the future release
             return true;
-        } else if (SCOPE_REMOTE.equals(scope)) {
+        } else if (SCOPE_REMOTE.equals(scope)) {    // 如果由 map 构造出来的 url 的 scope 属性为 remote，就不是 InjvmRefer
             // it's declared as remote reference
             return false;
-        } else if (url.getParameter(GENERIC_KEY, false)) {
+        } else if (url.getParameter(GENERIC_KEY, false)) {  // 如果由 map 构造出来的 url 的 generic 属性为 true，就不是 InjvmRefer
             // generic invocation is not local reference
             return false;
-        } else if (getExporter(exporterMap, url) != null) {
+        } else if (getExporter(exporterMap, url) != null) { // 如果能够 exporterMap 中获取到 url 对应的 export，就是 InjvmRefer
             // by default, go through local reference if there's the service exposed locally
             return true;
         } else {
