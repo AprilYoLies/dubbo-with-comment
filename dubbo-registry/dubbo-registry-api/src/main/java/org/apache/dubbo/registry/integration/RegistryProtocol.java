@@ -128,6 +128,37 @@ public class RegistryProtocol implements Protocol {
     //providerurl <--> exporter
     private final ConcurrentMap<String, ExporterChangeableWrapper<?>> bounds = new ConcurrentHashMap<>();
     private Cluster cluster;
+    // protocol 实例的源代码
+    // package org.apache.dubbo.rpc;
+    // import org.apache.dubbo.common.extension.ExtensionLoader;
+    // public class Protocol$Adaptive implements org.apache.dubbo.rpc.Protocol {
+    //     public void destroy() {
+    //         throw new UnsupportedOperationException("The method public abstract void org.apache.dubbo.rpc.Protocol.destroy() of interface org.apache.dubbo.rpc.Protocol is not adaptive method!");
+    //
+    //     public int getDefaultPort() {
+    //         throw new UnsupportedOperationException("The method public abstract int org.apache.dubbo.rpc.Protocol.getDefaultPort() of interface org.apache.dubbo.rpc.Protocol is not adaptive method!");
+    //
+    //     public org.apache.dubbo.rpc.Exporter export(org.apache.dubbo.rpc.Invoker arg0) throws org.apache.dubbo.rpc.RpcException {
+    //         if (arg0 == null) throw new IllegalArgumentException("org.apache.dubbo.rpc.Invoker argument == null");
+    //         if (arg0.getUrl() == null)
+    //             throw new IllegalArgumentException("org.apache.dubbo.rpc.Invoker argument getUrl() == null");
+    //         org.apache.dubbo.common.URL url = arg0.getUrl();
+    //         String extName = (url.getProtocol() == null ? "dubbo" : url.getProtocol());
+    //         if (extName == null)
+    //             throw new IllegalStateException("Failed to get extension (org.apache.dubbo.rpc.Protocol) name from url (" + url.toString() + ") use keys([protocol])");
+    //         org.apache.dubbo.rpc.Protocol extension = (org.apache.dubbo.rpc.Protocol) ExtensionLoader.getExtensionLoader(org.apache.dubbo.rpc.Protocol.class).getExtension(extName);
+    //         return extension.export(arg0);
+    //
+    //     public org.apache.dubbo.rpc.Invoker refer(java.lang.Class arg0, org.apache.dubbo.common.URL arg1) throws org.apache.dubbo.rpc.RpcException {
+    //         if (arg1 == null) throw new IllegalArgumentException("url == null");
+    //         org.apache.dubbo.common.URL url = arg1;
+    //         String extName = (url.getProtocol() == null ? "dubbo" : url.getProtocol());
+    //         if (extName == null)
+    //             throw new IllegalStateException("Failed to get extension (org.apache.dubbo.rpc.Protocol) name from url (" + url.toString() + ") use keys([protocol])");
+    //         org.apache.dubbo.rpc.Protocol extension = (org.apache.dubbo.rpc.Protocol) ExtensionLoader.getExtensionLoader(org.apache.dubbo.rpc.Protocol.class).getExtension(extName);
+    //         return extension.refer(arg0, arg1);
+    //     }
+    // }
     private Protocol protocol;
     // package org.apache.dubbo.registry;
     // import org.apache.dubbo.common.extension.ExtensionLoader;
@@ -553,6 +584,7 @@ public class RegistryProtocol implements Protocol {
                 return doRefer(getMergeableCluster(), registry, type, url);
             }
         }
+        // 得到的是 MockClusterInvoker
         return doRefer(cluster, registry, type, url);
     }
 
@@ -561,29 +593,72 @@ public class RegistryProtocol implements Protocol {
     }
 
     private <T> Invoker<T> doRefer(Cluster cluster, Registry registry, Class<T> type, URL url) {
-        RegistryDirectory<T> directory = new RegistryDirectory<T>(type, url);   // refer 操作需要依赖于 RegistryDirectory
-        directory.setRegistry(registry);
+        RegistryDirectory<T> directory = new RegistryDirectory<T>(type, url);   // refer 操作需要依赖于 RegistryDirectory，新建 RegistryDirectory，并完成了相关属性的赋值
+        directory.setRegistry(registry);    // ZookeeperRegistry 也保存到 directory 中
+        // protocol 实例的源代码
+        // package org.apache.dubbo.rpc;
+        // import org.apache.dubbo.common.extension.ExtensionLoader;
+        // public class Protocol$Adaptive implements org.apache.dubbo.rpc.Protocol {
+        //     public void destroy() {
+        //         throw new UnsupportedOperationException("The method public abstract void org.apache.dubbo.rpc.Protocol.destroy() of interface org.apache.dubbo.rpc.Protocol is not adaptive method!");
+        //
+        //     public int getDefaultPort() {
+        //         throw new UnsupportedOperationException("The method public abstract int org.apache.dubbo.rpc.Protocol.getDefaultPort() of interface org.apache.dubbo.rpc.Protocol is not adaptive method!");
+        //
+        //     public org.apache.dubbo.rpc.Exporter export(org.apache.dubbo.rpc.Invoker arg0) throws org.apache.dubbo.rpc.RpcException {
+        //         if (arg0 == null) throw new IllegalArgumentException("org.apache.dubbo.rpc.Invoker argument == null");
+        //         if (arg0.getUrl() == null)
+        //             throw new IllegalArgumentException("org.apache.dubbo.rpc.Invoker argument getUrl() == null");
+        //         org.apache.dubbo.common.URL url = arg0.getUrl();
+        //         String extName = (url.getProtocol() == null ? "dubbo" : url.getProtocol());
+        //         if (extName == null)
+        //             throw new IllegalStateException("Failed to get extension (org.apache.dubbo.rpc.Protocol) name from url (" + url.toString() + ") use keys([protocol])");
+        //         org.apache.dubbo.rpc.Protocol extension = (org.apache.dubbo.rpc.Protocol) ExtensionLoader.getExtensionLoader(org.apache.dubbo.rpc.Protocol.class).getExtension(extName);
+        //         return extension.export(arg0);
+        //
+        //     public org.apache.dubbo.rpc.Invoker refer(java.lang.Class arg0, org.apache.dubbo.common.URL arg1) throws org.apache.dubbo.rpc.RpcException {
+        //         if (arg1 == null) throw new IllegalArgumentException("url == null");
+        //         org.apache.dubbo.common.URL url = arg1;
+        //         String extName = (url.getProtocol() == null ? "dubbo" : url.getProtocol());
+        //         if (extName == null)
+        //             throw new IllegalStateException("Failed to get extension (org.apache.dubbo.rpc.Protocol) name from url (" + url.toString() + ") use keys([protocol])");
+        //         org.apache.dubbo.rpc.Protocol extension = (org.apache.dubbo.rpc.Protocol) ExtensionLoader.getExtensionLoader(org.apache.dubbo.rpc.Protocol.class).getExtension(extName);
+        //         return extension.refer(arg0, arg1);
+        //     }
+        // }
         directory.setProtocol(protocol);
-        // all attributes of REFER_KEY
+        // all attributes of REFER_KEY，存储的是 directory 的 overrideDirectoryUrl 的参数，在构造函数中进行初始化
         Map<String, String> parameters = new HashMap<String, String>(directory.getUrl().getParameters());
+        // consumer://192.168.1.104/org.apache.dubbo.demo.DemoService?
+        // application=demo-consumer&
+        // check=false&
+        // dubbo=2.0.2&
+        // interface=org.apache.dubbo.demo.DemoService&
+        // lazy=false&
+        // methods=sayHello&
+        // pid=50763&
+        // side=consumer&
+        // sticky=false&
+        // timestamp=1558925222997
         URL subscribeUrl = new URL(CONSUMER_PROTOCOL, parameters.remove(REGISTER_IP_KEY), 0, type.getName(), parameters);
         if (!ANY_VALUE.equals(url.getServiceInterface()) && url.getParameter(REGISTER_KEY, true)) {
             directory.setRegisteredConsumerUrl(getRegisteredConsumerUrl(subscribeUrl, url));    // 在其中设置
             registry.register(directory.getRegisteredConsumerUrl());
         }
-        directory.buildRouterChain(subscribeUrl);
-        directory.subscribe(subscribeUrl.addParameter(CATEGORY_KEY,
-                PROVIDERS_CATEGORY + "," + CONFIGURATORS_CATEGORY + "," + ROUTERS_CATEGORY));
-
-        Invoker invoker = cluster.join(directory);
+        directory.buildRouterChain(subscribeUrl);   // 构建了 routerChain 并填充了属性
+        directory.subscribe(subscribeUrl.addParameter(CATEGORY_KEY, // category -> providers
+                PROVIDERS_CATEGORY + "," + CONFIGURATORS_CATEGORY + "," + ROUTERS_CATEGORY));   // configurators -> routers
+        // 此 cluster.adaptive 获得的 extension 为 MockClusterWrapper 包含了 FailoverCluster，然后调用它的 join 方法得到 MockClusterInvoker
+        Invoker invoker = cluster.join(directory);  // 得到 MockClusterInvoker
+        // 根本就是将参数包装成为 ConsumerInvokerWrapper，然后保存到 consumerInvokers 的 serviceUniqueName key 对应的 set 集合中
         ProviderConsumerRegTable.registerConsumer(invoker, url, subscribeUrl, directory);
         return invoker;
     }
 
     public URL getRegisteredConsumerUrl(final URL consumerUrl, URL registryUrl) {
-        if (!registryUrl.getParameter(SIMPLIFIED_KEY, false)) {
-            return consumerUrl.addParameters(CATEGORY_KEY, CONSUMERS_CATEGORY,
-                    CHECK_KEY, String.valueOf(false));
+        if (!registryUrl.getParameter(SIMPLIFIED_KEY, false)) { // registryUrl 的 simplified 属性为 false
+            return consumerUrl.addParameters(CATEGORY_KEY, CONSUMERS_CATEGORY,  // category -> consumers
+                    CHECK_KEY, String.valueOf(false));  // check -> false
         } else {
             return URL.valueOf(consumerUrl, DEFAULT_REGISTER_CONSUMER_KEYS, null).addParameters(
                     CATEGORY_KEY, CONSUMERS_CATEGORY, CHECK_KEY, String.valueOf(false));

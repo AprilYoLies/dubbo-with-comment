@@ -156,28 +156,28 @@ public class RegistryDirectory<T> extends AbstractDirectory<T> implements Notify
 
 
     public RegistryDirectory(Class<T> serviceType, URL url) {
-        super(url);
+        super(url); // 主要是保存了 url、consumerUrl 和 routerChain
         if (serviceType == null) {
             throw new IllegalArgumentException("service type is null.");
         }
         if (url.getServiceKey() == null || url.getServiceKey().length() == 0) {
             throw new IllegalArgumentException("registry serviceKey is null.");
         }
-        this.serviceType = serviceType;
-        this.serviceKey = url.getServiceKey();
-        this.queryMap = StringUtils.parseQueryString(url.getParameterAndDecoded(REFER_KEY));
-        this.overrideDirectoryUrl = this.directoryUrl = turnRegistryUrlToConsumerUrl(url);
+        this.serviceType = serviceType; // org.apache.dubbo.demo.DemoService
+        this.serviceKey = url.getServiceKey();  // org.apache.dubbo.registry.RegistryService
+        this.queryMap = StringUtils.parseQueryString(url.getParameterAndDecoded(REFER_KEY));    // 将 refer 属性值映射为 map
+        this.overrideDirectoryUrl = this.directoryUrl = turnRegistryUrlToConsumerUrl(url);  // overrideDirectoryUrl 和 directoryUrl 都使用 consumerUrl
         String group = directoryUrl.getParameter(GROUP_KEY, "");
-        this.multiGroup = group != null && (ANY_VALUE.equals(group) || group.contains(","));
+        this.multiGroup = group != null && (ANY_VALUE.equals(group) || group.contains(","));    // group 为 * 或包含 ，
     }
-
+    // 入参 url 为 registryUrl
     private URL turnRegistryUrlToConsumerUrl(URL url) {
         // save any parameter in registry that will be useful to the new url.
         String isDefault = url.getParameter(DEFAULT_KEY);
-        if (StringUtils.isNotEmpty(isDefault)) {
-            queryMap.put(REGISTRY_KEY + "." + DEFAULT_KEY, isDefault);
+        if (StringUtils.isNotEmpty(isDefault)) {     // 如果 url 的 default 属性值不为空
+            queryMap.put(REGISTRY_KEY + "." + DEFAULT_KEY, isDefault);  // registry.default -> default 属性值
         }
-        return URLBuilder.from(url)
+        return URLBuilder.from(url) // 就是将 registryUrl 路径修改为 interface 参数，清除全部参数，只要 refer 对应的参数，移除 monitor 属性
                 .setPath(url.getServiceInterface())
                 .clearParameters()
                 .addParameters(queryMap)
@@ -195,8 +195,8 @@ public class RegistryDirectory<T> extends AbstractDirectory<T> implements Notify
 
     public void subscribe(URL url) {
         setConsumerUrl(url);
-        CONSUMER_CONFIGURATION_LISTENER.addNotifyListener(this);
-        serviceConfigurationListener = new ReferenceConfigurationListener(this, url);
+        CONSUMER_CONFIGURATION_LISTENER.addNotifyListener(this);    // 以 listener 身份添加 RegistryDirectory 到 CONSUMER_CONFIGURATION_LISTENER
+        serviceConfigurationListener = new ReferenceConfigurationListener(this, url);   // 将 RegistryDirectory 包装为 ReferenceConfigurationListener，填充到属性中
         registry.subscribe(url, this);
     }
 
@@ -235,7 +235,7 @@ public class RegistryDirectory<T> extends AbstractDirectory<T> implements Notify
 
     @Override
     public synchronized void notify(List<URL> urls) {
-        Map<String, List<URL>> categoryUrls = urls.stream()
+        Map<String, List<URL>> categoryUrls = urls.stream() // 这里是分组的结果，如 routers -> url 的 list
                 .filter(Objects::nonNull)
                 .filter(this::isValidCategory)
                 .filter(this::isNotCompatibleFor26x)
@@ -640,7 +640,7 @@ public class RegistryDirectory<T> extends AbstractDirectory<T> implements Notify
     public URL getRegisteredConsumerUrl() {
         return registeredConsumerUrl;
     }
-
+    // consumer://192.168.1.104/org.apache.dubbo.demo.DemoService?application=demo-consumer&category=consumers&check=false&dubbo=2.0.2&interface=org.apache.dubbo.demo.DemoService&lazy=false&methods=sayHello&pid=50859&side=consumer&sticky=false&timestamp=1558925435531
     public void setRegisteredConsumerUrl(URL registeredConsumerUrl) {
         this.registeredConsumerUrl = registeredConsumerUrl;
     }
@@ -662,7 +662,7 @@ public class RegistryDirectory<T> extends AbstractDirectory<T> implements Notify
     }
 
     public void buildRouterChain(URL url) {
-        this.setRouterChain(RouterChain.buildChain(url));
+        this.setRouterChain(RouterChain.buildChain(url));   // 构建 RouterChain 并填充属性
     }
 
     /**

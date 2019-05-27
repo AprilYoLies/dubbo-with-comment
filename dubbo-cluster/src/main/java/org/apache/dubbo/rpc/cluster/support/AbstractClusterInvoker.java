@@ -70,9 +70,9 @@ public abstract class AbstractClusterInvoker<T> implements Invoker<T> {
             throw new IllegalArgumentException("service directory == null");
         }
 
-        this.directory = directory;
+        this.directory = directory; // 将 directory 信息保存到父类中
         //sticky: invoker.isAvailable() should always be checked before using when availablecheck is true.
-        this.availablecheck = url.getParameter(CLUSTER_AVAILABLE_CHECK_KEY, DEFAULT_CLUSTER_AVAILABLE_CHECK);
+        this.availablecheck = url.getParameter(CLUSTER_AVAILABLE_CHECK_KEY, DEFAULT_CLUSTER_AVAILABLE_CHECK);   // cluster.availablecheck 默认 true
     }
 
     @Override

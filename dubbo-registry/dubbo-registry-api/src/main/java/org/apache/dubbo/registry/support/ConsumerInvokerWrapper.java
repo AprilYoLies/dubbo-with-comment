@@ -34,9 +34,9 @@ public class ConsumerInvokerWrapper<T> implements Invoker {
     private RegistryDirectory registryDirectory;
 
     public ConsumerInvokerWrapper(Invoker<T> invoker, URL registryUrl, URL consumerUrl, RegistryDirectory registryDirectory) {
-        this.invoker = invoker;
-        this.originUrl = URL.valueOf(invoker.getUrl().toFullString());
-        this.registryUrl = URL.valueOf(registryUrl.toFullString());
+        this.invoker = invoker; // invoker 直接保存
+        this.originUrl = URL.valueOf(invoker.getUrl().toFullString());  // invoker 中保存的是原始 url
+        this.registryUrl = URL.valueOf(registryUrl.toFullString()); // 其他参数直接保存
         this.consumerUrl = consumerUrl;
         this.registryDirectory = registryDirectory;
     }

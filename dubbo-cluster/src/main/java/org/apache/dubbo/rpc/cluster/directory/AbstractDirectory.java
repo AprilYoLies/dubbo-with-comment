@@ -37,7 +37,6 @@ import static org.apache.dubbo.common.constants.RegistryConstants.REGISTRY_PROTO
 
 /**
  * Abstract implementation of Directory: Invoker list returned from this Directory's list method have been filtered by Routers
- *
  */
 public abstract class AbstractDirectory<T> implements Directory<T> {
 
@@ -60,18 +59,19 @@ public abstract class AbstractDirectory<T> implements Directory<T> {
         this(url, url, routerChain);
     }
 
+    // 此处 url 和 consumerUrl 一致，routerChain 为 null
     public AbstractDirectory(URL url, URL consumerUrl, RouterChain<T> routerChain) {
         if (url == null) {
             throw new IllegalArgumentException("url == null");
         }
-
-        if (url.getProtocol().equals(REGISTRY_PROTOCOL)) {
+        // zookeeper://127.0.0.1:2181/org.apache.dubbo.registry.RegistryService?application=demo-consumer&dubbo=2.0.2&pid=49981&refer=application=demo-consumer&check=false&dubbo=2.0.2&interface=org.apache.dubbo.demo.DemoService&lazy=false&methods=sayHello&pid=49981&register.ip=192.168.1.104&side=consumer&sticky=false&timestamp=1558923518075&timestamp=1558923518469
+        if (url.getProtocol().equals(REGISTRY_PROTOCOL)) {  // 如果 url 是 registry 协议，那么就将 refer 参数值解析出来重新添加到 url 中
             Map<String, String> queryMap = StringUtils.parseQueryString(url.getParameterAndDecoded(REFER_KEY));
-            this.url = url.addParameters(queryMap).removeParameter(MONITOR_KEY);
+            this.url = url.addParameters(queryMap).removeParameter(MONITOR_KEY);    // 移除 monitor
         } else {
             this.url = url;
         }
-
+        // 保存 consumerUrl 和 routerChain
         this.consumerUrl = consumerUrl;
         setRouterChain(routerChain);
     }

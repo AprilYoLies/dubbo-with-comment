@@ -481,6 +481,7 @@ public class ReferenceConfig<T> extends AbstractReferenceConfig {
                 //         return extension.refer(arg0, arg1);
                 //     }
                 // }
+                // 得到的是 MockClusterInvoker
                 invoker = REF_PROTOCOL.refer(interfaceClass, urls.get(0));
             } else {
                 List<Invoker<?>> invokers = new ArrayList<Invoker<?>>();
@@ -517,9 +518,10 @@ public class ReferenceConfig<T> extends AbstractReferenceConfig {
         MetadataReportService metadataReportService = null;
         if ((metadataReportService = getMetadataReportService()) != null) {
             URL consumerURL = new URL(CONSUMER_PROTOCOL, map.remove(REGISTER_IP_KEY), 0, map.get(INTERFACE_KEY), map);
-            metadataReportService.publishConsumer(consumerURL);
+            metadataReportService.publishConsumer(consumerURL); // 如果 metadataReportService 不为空，通过它发布 consumer 信息
         }
         // create service proxy
+        // 此处获得的 extension 为 StubProxyFactoryWrapper
         return (T) PROXY_FACTORY.getProxy(invoker);
     }
 

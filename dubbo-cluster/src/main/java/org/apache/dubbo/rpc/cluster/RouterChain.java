@@ -49,12 +49,12 @@ public class RouterChain<T> {
     private RouterChain(URL url) {
         List<RouterFactory> extensionFactories = ExtensionLoader.getExtensionLoader(RouterFactory.class)
                 .getActivateExtension(url, (String[]) null);
-
+        // 根据获取的 extensionFactories 来得到 routers
         List<Router> routers = extensionFactories.stream()
                 .map(factory -> factory.getRouter(url))
                 .collect(Collectors.toList());
 
-        initWithRouters(routers);
+        initWithRouters(routers);   // 填充 builtinRouters 和 routers 属性
     }
 
     /**
@@ -88,7 +88,6 @@ public class RouterChain<T> {
     }
 
     /**
-     *
      * @param url
      * @param invocation
      * @return

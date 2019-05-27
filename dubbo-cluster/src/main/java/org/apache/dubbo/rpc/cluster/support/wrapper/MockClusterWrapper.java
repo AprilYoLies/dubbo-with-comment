@@ -23,10 +23,9 @@ import org.apache.dubbo.rpc.cluster.Directory;
 
 /**
  * mock impl
- *
  */
 public class MockClusterWrapper implements Cluster {
-
+    // 实际为 FailoverCluster
     private Cluster cluster;
 
     public MockClusterWrapper(Cluster cluster) {
@@ -36,7 +35,7 @@ public class MockClusterWrapper implements Cluster {
     @Override
     public <T> Invoker<T> join(Directory<T> directory) throws RpcException {
         return new MockClusterInvoker<T>(directory,
-                this.cluster.join(directory));
+                this.cluster.join(directory));  // 此 FailoverCluster 的 join 方法返回的是 FailoverClusterInvoker
     }
 
 }

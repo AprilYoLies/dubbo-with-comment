@@ -356,7 +356,7 @@ public abstract class FailbackRegistry extends AbstractRegistry {
         if (listener == null) {
             throw new IllegalArgumentException("notify listener == null");
         }
-        try {
+        try {   // 进行完参数验证后执行真正的 notify
             doNotify(url, listener, urls);
         } catch (Exception t) {
             // Record a failed registration request to a failed list, retry regularly

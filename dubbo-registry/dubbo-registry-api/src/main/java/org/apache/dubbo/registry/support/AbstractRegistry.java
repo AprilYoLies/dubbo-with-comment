@@ -402,19 +402,19 @@ public abstract class AbstractRegistry implements Registry {
         Map<String, List<URL>> result = new HashMap<>();
         for (URL u : urls) {
             if (UrlUtils.isMatch(url, u)) {
-                String category = u.getParameter(CATEGORY_KEY, DEFAULT_CATEGORY);
+                String category = u.getParameter(CATEGORY_KEY, DEFAULT_CATEGORY);   // category 默认 providers
                 List<URL> categoryList = result.computeIfAbsent(category, k -> new ArrayList<>());
-                categoryList.add(u);
+                categoryList.add(u);    // result -> (category -> list(url))，即根据 url 的 category 参数值为 key，当前 url 构成为 list 为 value，添加到 result 中
             }
         }
         if (result.size() == 0) {
             return;
-        }
+        } // notified -> (url -> (category -> url 的 list))
         Map<String, List<URL>> categoryNotified = notified.computeIfAbsent(url, u -> new ConcurrentHashMap<>());
         for (Map.Entry<String, List<URL>> entry : result.entrySet()) {
             String category = entry.getKey();
             List<URL> categoryList = entry.getValue();
-            categoryNotified.put(category, categoryList);
+            categoryNotified.put(category, categoryList);   // 将上边得到的 result 也添加到 notified 的 url-key 所对应的 map 中
             listener.notify(categoryList);
             // We will update our cache file after each notification.
             // When our Registry has a subscribe failure due to network jitter, we can return at least the existing cache URL.
@@ -434,15 +434,15 @@ public abstract class AbstractRegistry implements Registry {
                 for (List<URL> us : categoryNotified.values()) {
                     for (URL u : us) {
                         if (buf.length() > 0) {
-                            buf.append(URL_SEPARATOR);
+                            buf.append(URL_SEPARATOR);  // 这里是根据 notified 中 url 对应的 url 的 list 拼接
                         }
                         buf.append(u.toFullString());
                     }
                 }
             }
-            properties.setProperty(url.getServiceKey(), buf.toString());
+            properties.setProperty(url.getServiceKey(), buf.toString());    // 这里是将 url 的 interface 作为 key，拼接结果作为 value 保存到 properties 中
             long version = lastCacheChanged.incrementAndGet();
-            if (syncSaveFile) {
+            if (syncSaveFile) { // 采用同步或者异步的方式进行 properties 的保存
                 doSaveProperties(version);
             } else {
                 registryCacheExecutor.execute(new SaveProperties(version));

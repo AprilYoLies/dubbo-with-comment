@@ -86,15 +86,19 @@ public abstract class AbstractZookeeperClient<TargetDataListener, TargetChildLis
         return stateListeners;
     }
 
-    @Override
+    // path 的值
+    // /dubbo/org.apache.dubbo.demo.DemoService/providers
+    // /dubbo/org.apache.dubbo.demo.DemoService/configurators
+    // /dubbo/org.apache.dubbo.demo.DemoService/routers
+    @Override   // 此函数主要是将 path 和 listener 构建成为 TargetChildListener，然后添加到 childListeners 属性 path 所对应的集合中
     public List<String> addChildListener(String path, final ChildListener listener) {
         ConcurrentMap<ChildListener, TargetChildListener> listeners = childListeners.get(path);
         if (listeners == null) {
             childListeners.putIfAbsent(path, new ConcurrentHashMap<ChildListener, TargetChildListener>());
             listeners = childListeners.get(path);
-        }
+        }   // 此函数主要是将 path 和 listener 构建成为 TargetChildListener，然后添加到 childListeners 属性 path 所对应的集合中
         TargetChildListener targetListener = listeners.get(listener);
-        if (targetListener == null) {
+        if (targetListener == null) {           // 将 path 和 listener 构建成为 TargetChildListener
             listeners.putIfAbsent(listener, createTargetChildListener(path, listener));
             targetListener = listeners.get(listener);
         }

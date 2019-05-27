@@ -174,24 +174,24 @@ public class ZookeeperRegistry extends FailbackRegistry {
                         subscribe(url.setPath(service).addParameters(INTERFACE_KEY, service,
                                 RemotingConstants.CHECK_KEY, String.valueOf(false)), listener);
                     }
-                }
-            } else {
-                List<URL> urls = new ArrayList<>();
-                for (String path : toCategoriesPath(url)) {
+                }                                               // toCategoriesPath 函数的结果
+            } else {                                            // /dubbo/org.apache.dubbo.demo.DemoService/providers
+                List<URL> urls = new ArrayList<>();             // /dubbo/org.apache.dubbo.demo.DemoService/configurators
+                for (String path : toCategoriesPath(url)) {     // /dubbo/org.apache.dubbo.demo.DemoService/routers
                     ConcurrentMap<NotifyListener, ChildListener> listeners = zkListeners.get(url);
                     if (listeners == null) {
-                        zkListeners.putIfAbsent(url, new ConcurrentHashMap<>());
+                        zkListeners.putIfAbsent(url, new ConcurrentHashMap<>());    // 没有则新建
                         listeners = zkListeners.get(url);
                     }
                     ChildListener zkListener = listeners.get(listener);
-                    if (zkListener == null) {
+                    if (zkListener == null) {                   // 没有则新建
                         listeners.putIfAbsent(listener, (parentPath, currentChilds) -> ZookeeperRegistry.this.notify(url, listener, toUrlsWithEmpty(url, parentPath, currentChilds)));
                         zkListener = listeners.get(listener);
                     }
                     zkClient.create(path, false);
-                    List<String> children = zkClient.addChildListener(path, zkListener);
+                    List<String> children = zkClient.addChildListener(path, zkListener);    // 为指定路径添加一个 ChildListener 监听器
                     if (children != null) {
-                        urls.addAll(toUrlsWithEmpty(url, path, children));
+                        urls.addAll(toUrlsWithEmpty(url, path, children));  // 尝试将 children 转换为 URL 返回
                     }
                 }
                 notify(url, listener, urls);
@@ -261,15 +261,15 @@ public class ZookeeperRegistry extends FailbackRegistry {
         String[] categories;
         if (ANY_VALUE.equals(url.getParameter(CATEGORY_KEY))) {
             categories = new String[]{PROVIDERS_CATEGORY, CONSUMERS_CATEGORY, ROUTERS_CATEGORY, CONFIGURATORS_CATEGORY};
-        } else {
+        } else {    // 获取 category 属性的数组形式
             categories = url.getParameter(CATEGORY_KEY, new String[]{DEFAULT_CATEGORY});
         }
         String[] paths = new String[categories.length];
         for (int i = 0; i < categories.length; i++) {
-            paths[i] = toServicePath(url) + PATH_SEPARATOR + categories[i];
-        }
-        return paths;
-    }
+            paths[i] = toServicePath(url) + PATH_SEPARATOR + categories[i]; // 将数组形式的 categories 用 / 拼接起来
+        }                   // /dubbo/org.apache.dubbo.demo.DemoService/providers
+        return paths;       // /dubbo/org.apache.dubbo.demo.DemoService/configurators
+    }                       // /dubbo/org.apache.dubbo.demo.DemoService/routers
 
     private String toCategoryPath(URL url) {
         return toServicePath(url) + PATH_SEPARATOR + url.getParameter(CATEGORY_KEY, DEFAULT_CATEGORY);
@@ -279,7 +279,7 @@ public class ZookeeperRegistry extends FailbackRegistry {
         return toCategoryPath(url) + PATH_SEPARATOR + URL.encode(url.toFullString());
     }
 
-    private List<URL> toUrlsWithoutEmpty(URL consumer, List<String> providers) {
+    private List<URL> toUrlsWithoutEmpty(URL consumer, List<String> providers) {    // 就是将 providers 转换为 URL 后返回
         List<URL> urls = new ArrayList<>();
         if (CollectionUtils.isNotEmpty(providers)) {
             for (String provider : providers) {
@@ -287,7 +287,7 @@ public class ZookeeperRegistry extends FailbackRegistry {
                 if (provider.contains(PROTOCOL_SEPARATOR)) {
                     URL url = URL.valueOf(provider);
                     if (UrlUtils.isMatch(consumer, url)) {
-                        urls.add(url);
+                        urls.add(url);  // 就是将 providers 转换为 URL 后返回
                     }
                 }
             }
@@ -295,12 +295,13 @@ public class ZookeeperRegistry extends FailbackRegistry {
         return urls;
     }
 
+    // consumer://192.168.1.104/org.apache.dubbo.demo.DemoService?application=demo-consumer&category=providers,configurators,routers&check=false&dubbo=2.0.2&interface=org.apache.dubbo.demo.DemoService&lazy=false&methods=sayHello&pid=51672&side=consumer&sticky=false&timestamp=1558927288895
     private List<URL> toUrlsWithEmpty(URL consumer, String path, List<String> providers) {
-        List<URL> urls = toUrlsWithoutEmpty(consumer, providers);
+        List<URL> urls = toUrlsWithoutEmpty(consumer, providers);   // 就是将 providers 转换为 URL 后返回
         if (urls == null || urls.isEmpty()) {
             int i = path.lastIndexOf(PATH_SEPARATOR);
             String category = i < 0 ? path : path.substring(i + 1);
-            URL empty = URLBuilder.from(consumer)
+            URL empty = URLBuilder.from(consumer)   // 如果 providers 转换为 URL 为空，那么就直接通过 consumer 进行构造
                     .setProtocol(EMPTY_PROTOCOL)
                     .addParameter(CATEGORY_KEY, category)
                     .build();

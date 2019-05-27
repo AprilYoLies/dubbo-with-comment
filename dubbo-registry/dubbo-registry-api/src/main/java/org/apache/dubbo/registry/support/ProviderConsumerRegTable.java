@@ -81,6 +81,7 @@ public class ProviderConsumerRegTable {
         return null;
     }
 
+    // 根本就是将参数包装成为 ConsumerInvokerWrapper，然后保存到 consumerInvokers 的 serviceUniqueName key 对应的 set 集合中
     public static void registerConsumer(Invoker invoker, URL registryUrl, URL consumerUrl, RegistryDirectory registryDirectory) {
         ConsumerInvokerWrapper wrapperInvoker = new ConsumerInvokerWrapper(invoker, registryUrl, consumerUrl, registryDirectory);
         String serviceUniqueName = consumerUrl.getServiceKey();
@@ -89,7 +90,7 @@ public class ProviderConsumerRegTable {
             consumerInvokers.putIfAbsent(serviceUniqueName, new ConcurrentHashSet<ConsumerInvokerWrapper>());
             invokers = consumerInvokers.get(serviceUniqueName);
         }
-        invokers.add(wrapperInvoker);
+        invokers.add(wrapperInvoker);   // ProviderConsumerRegTable 类的 consumerInvokers 用来保存 serviceUniqueName 和 ConsumerInvokerWrapper
     }
 
     public static Set<ConsumerInvokerWrapper> getConsumerInvoker(String serviceUniqueName) {

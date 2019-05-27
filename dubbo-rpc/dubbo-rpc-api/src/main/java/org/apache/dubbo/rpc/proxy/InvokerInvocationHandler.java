@@ -44,7 +44,7 @@ public class InvokerInvocationHandler implements InvocationHandler {
         String methodName = method.getName();
         Class<?>[] parameterTypes = method.getParameterTypes();
         if (method.getDeclaringClass() == Object.class) {
-            return method.invoke(invoker, args);
+            return method.invoke(invoker, args);    // 如果是调用的 Object 类的方法，那么直接调用 invoker 的此方法
         }
         if ("toString".equals(methodName) && parameterTypes.length == 0) {
             return invoker.toString();
@@ -55,15 +55,15 @@ public class InvokerInvocationHandler implements InvocationHandler {
         if ("equals".equals(methodName) && parameterTypes.length == 1) {
             return invoker.equals(args[0]);
         }
-
+        // 除开上述几种方法，那么就直接调用 invoker 的 invoke 方法，reCreate 是对返回结果的再处理
         return invoker.invoke(createInvocation(method, args)).recreate();
     }
 
     private RpcInvocation createInvocation(Method method, Object[] args) {
-        RpcInvocation invocation = new RpcInvocation(method, args);
-        if (RpcUtils.hasFutureReturnType(method)) {
-            invocation.setAttachment(FUTURE_RETURNTYPE_KEY, "true");
-            invocation.setAttachment(ASYNC_KEY, "true");
+        RpcInvocation invocation = new RpcInvocation(method, args); // 根据方法名和参数创建 RpcInvocation
+        if (RpcUtils.hasFutureReturnType(method)) { // 如果方法的返回值是异步类型
+            invocation.setAttachment(FUTURE_RETURNTYPE_KEY, "true");    // future_returntype -> true
+            invocation.setAttachment(ASYNC_KEY, "true");    // async -> true
         }
         return invocation;
     }

@@ -108,6 +108,7 @@ public class MetadataReportService {
         }
     }
 
+    // 就是将 url 中的部分参数移除，然后封装成为 MetadataIdentifier，然后和 url 的参数一起添加到 metadataReport 中
     public void publishConsumer(URL consumerURL) throws RpcException {
         consumerURL = consumerURL.removeParameters(PID_KEY, TIMESTAMP_KEY, RemotingConstants.BIND_IP_KEY, RemotingConstants.BIND_PORT_KEY, TIMESTAMP_KEY);
         metadataReport.storeConsumerMetadata(new MetadataIdentifier(consumerURL.getServiceInterface(),

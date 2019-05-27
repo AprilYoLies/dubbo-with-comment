@@ -70,7 +70,7 @@ public class StubProxyFactoryWrapper implements ProxyFactory {
     @Override
     @SuppressWarnings({"unchecked", "rawtypes"})
     public <T> T getProxy(Invoker<T> invoker) throws RpcException {
-        T proxy = proxyFactory.getProxy(invoker);
+        T proxy = proxyFactory.getProxy(invoker);   // 实际是 JavassistProxyFactory，invoker 的是 MockClusterInvoker
         if (GenericService.class != invoker.getInterface()) {
             URL url = invoker.getUrl();
             String stub = url.getParameter(STUB_KEY, url.getParameter(LOCAL_KEY));

@@ -31,10 +31,41 @@ public class JavassistProxyFactory extends AbstractProxyFactory {
 
     @Override
     @SuppressWarnings("unchecked")
-    public <T> T getProxy(Invoker<T> invoker, Class<?>[] interfaces) {
-        return (T) Proxy.getProxy(interfaces).newInstance(new InvokerInvocationHandler(invoker));
+    public <T> T getProxy(Invoker<T> invoker, Class<?>[] interfaces) {  // invoker 是 MockClusterInvoker
+        return (T) Proxy.getProxy(interfaces).newInstance(new InvokerInvocationHandler(invoker));   // 参数InvokerInvocationHandler 主要目的还是调用 invoker 的 invoke 方法
     }
+    // 这个类是上述 getProxy 方法得到的实例的源码
+    // public class org.apache.dubbo.common.bytecode.Proxy0 extends org.apache.dubbo.common.bytecode.Proxy {
+    //     public Object newInstance(java.lang.reflect.InvocationHandler h) {
+    //         return new org.apache.dubbo.common.bytecode.proxy0($1);
+    //     }
+    // }
 
+    // 上述的 newInstance 方法得到的实例的源代码
+    // public class org.apache.dubbo.common.bytecode.proxy0 implements com.alibaba.dubbo.rpc.service.EchoService, org.apache.dubbo.demo.DemoService {
+    //     public static java.lang.reflect.Method[] methods;
+    //     private java.lang.reflect.InvocationHandler handler;
+    //     public <init>(
+    //     java.lang.reflect.InvocationHandler arg0)
+    //
+    //     {
+    //         handler = $1;
+    //     }
+    //
+    //     public java.lang.String sayHello(java.lang.String arg0) {
+    //         Object[] args = new Object[1];
+    //         args[0] = ($w) $1;
+    //         Object ret = handler.invoke(this, methods[0], args);
+    //         return (java.lang.String) ret;
+    //     }
+    //
+    //     public java.lang.Object $echo(java.lang.Object arg0) {
+    //         Object[] args = new Object[1];
+    //         args[0] = ($w) $1;
+    //         Object ret = handler.invoke(this, methods[1], args);
+    //         return (java.lang.Object) ret;
+    //     }
+    // }
     @Override
     public <T> Invoker<T> getInvoker(T proxy, Class<T> type, URL url) {
         // TODO Wrapper cannot handle this scenario correctly: the classname contains '$'

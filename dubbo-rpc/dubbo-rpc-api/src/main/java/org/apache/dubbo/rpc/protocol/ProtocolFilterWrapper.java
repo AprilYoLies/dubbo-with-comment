@@ -148,6 +148,7 @@ public class ProtocolFilterWrapper implements Protocol {    // ProtocolFilterWra
     @Override
     public <T> Invoker<T> refer(Class<T> type, URL url) throws RpcException {
         if (REGISTRY_PROTOCOL.equals(url.getProtocol())) {
+            // 得到的是 MockClusterInvoker
             return protocol.refer(type, url);
         }
         return buildInvokerChain(protocol.refer(type, url), REFERENCE_FILTER_KEY, CommonConstants.CONSUMER);

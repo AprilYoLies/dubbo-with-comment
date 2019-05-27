@@ -40,25 +40,25 @@ public abstract class AbstractProxyFactory implements ProxyFactory {
     @Override
     public <T> T getProxy(Invoker<T> invoker, boolean generic) throws RpcException {
         Class<?>[] interfaces = null;
-        String config = invoker.getUrl().getParameter(INTERFACES);
+        String config = invoker.getUrl().getParameter(INTERFACES);  // interfaces
         if (config != null && config.length() > 0) {
             String[] types = COMMA_SPLIT_PATTERN.split(config);
             if (types != null && types.length > 0) {
                 interfaces = new Class<?>[types.length + 2];
-                interfaces[0] = invoker.getInterface();
+                interfaces[0] = invoker.getInterface();  // 这里也就是说将 invoker 和 EchoService 的 class 保存到 interfaces
                 interfaces[1] = EchoService.class;
-                for (int i = 0; i < types.length; i++) {
+                for (int i = 0; i < types.length; i++) {    // 将 config 所代表的 class 也添加到 interfaces 中去
                     // TODO can we load successfully for a different classloader?.
                     interfaces[i + 2] = ReflectUtils.forName(types[i]);
                 }
             }
         }
         if (interfaces == null) {
-            interfaces = new Class<?>[]{invoker.getInterface(), EchoService.class};
+            interfaces = new Class<?>[]{invoker.getInterface(), EchoService.class}; // 没有其他的，那就只填充这两个
         }
 
         if (!GenericService.class.isAssignableFrom(invoker.getInterface()) && generic) {
-            int len = interfaces.length;
+            int len = interfaces.length;    // 这种情况下，还补填一个 GenericService.class
             Class<?>[] temp = interfaces;
             interfaces = new Class<?>[len + 1];
             System.arraycopy(temp, 0, interfaces, 0, len);
