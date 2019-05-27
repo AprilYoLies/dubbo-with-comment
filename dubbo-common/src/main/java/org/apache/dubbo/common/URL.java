@@ -444,7 +444,7 @@ class URL implements Serializable {
         return address.toString();
     }
 
-    public List<URL> getBackupUrls() {
+    public List<URL> getBackupUrls() {  // 即获取 backup 参数
         List<URL> urls = new ArrayList<>();
         urls.add(this);
         String[] backups = getParameter(RemotingConstants.BACKUP_KEY, new String[0]);
@@ -954,7 +954,7 @@ class URL implements Serializable {
         return NetUtils.isLocalHost(host) || getParameter(LOCALHOST_KEY, false);
     }
 
-    public boolean isAnyHost() {
+    public boolean isAnyHost() {    // host 为 0.0.0.0 或者 anyhost 参数为 true
         return ANYHOST_VALUE.equals(host) || getParameter(ANYHOST_KEY, false);
     }
 

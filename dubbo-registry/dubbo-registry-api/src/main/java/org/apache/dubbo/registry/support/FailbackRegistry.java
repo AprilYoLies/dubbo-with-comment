@@ -69,7 +69,7 @@ public abstract class FailbackRegistry extends AbstractRegistry {
 
     public FailbackRegistry(URL url) {
         super(url);
-        this.retryPeriod = url.getParameter(REGISTRY_RETRY_PERIOD_KEY, DEFAULT_REGISTRY_RETRY_PERIOD);
+        this.retryPeriod = url.getParameter(REGISTRY_RETRY_PERIOD_KEY, DEFAULT_REGISTRY_RETRY_PERIOD);  // retry.period 默认 5000
 
         // since the retry task will not be very much. 128 ticks is enough.
         retryTimer = new HashedWheelTimer(new NamedThreadFactory("DubboRegistryRetryTimer", true), retryPeriod, TimeUnit.MILLISECONDS, 128);
@@ -100,14 +100,14 @@ public abstract class FailbackRegistry extends AbstractRegistry {
 
     private void addFailedRegistered(URL url) {
         FailedRegisteredTask oldOne = failedRegistered.get(url);
-        if (oldOne != null) {
+        if (oldOne != null) {   // 已在的情况下不处理
             return;
         }
-        FailedRegisteredTask newTask = new FailedRegisteredTask(url, this);
+        FailedRegisteredTask newTask = new FailedRegisteredTask(url, this); // 将 url 和当前 registry 封装成为 FailedRegisteredTask
         oldOne = failedRegistered.putIfAbsent(url, newTask);
         if (oldOne == null) {
             // never has a retry task. then start a new task for retry.
-            retryTimer.newTimeout(newTask, retryPeriod, TimeUnit.MILLISECONDS);
+            retryTimer.newTimeout(newTask, retryPeriod, TimeUnit.MILLISECONDS); // 交由 HashedWheelTimer 进行重连（需要深入了解下其实现原理）
         }
     }
 
@@ -148,7 +148,7 @@ public abstract class FailbackRegistry extends AbstractRegistry {
         oldOne = failedSubscribed.putIfAbsent(h, newTask);
         if (oldOne == null) {
             // never has a retry task. then start a new task for retry.
-            retryTimer.newTimeout(newTask, retryPeriod, TimeUnit.MILLISECONDS);
+            retryTimer.newTimeout(newTask, retryPeriod, TimeUnit.MILLISECONDS); // 提交任务到 HashedWheelTimer 进行重新订阅
         }
     }
 
@@ -288,7 +288,7 @@ public abstract class FailbackRegistry extends AbstractRegistry {
 
     @Override
     public void subscribe(URL url, NotifyListener listener) {
-        super.subscribe(url, listener);
+        super.subscribe(url, listener); // 在 subscribed 中是 url -> NotifyListener 集合
         removeFailedSubscribed(url, listener);
         try {
             // Sending a subscription request to the server side
@@ -298,7 +298,7 @@ public abstract class FailbackRegistry extends AbstractRegistry {
 
             List<URL> urls = getCacheUrls(url);
             if (CollectionUtils.isNotEmpty(urls)) {
-                notify(url, listener, urls);
+                notify(url, listener, urls);    // 通知这些 urls
                 logger.error("Failed to subscribe " + url + ", Using cached list: " + urls + " from cache file: " + getUrl().getParameter(FILE_KEY, System.getProperty("user.home") + "/dubbo-registry-" + url.getHost() + ".cache") + ", cause: " + t.getMessage(), t);
             } else {
                 // If the startup detection is opened, the Exception is thrown directly.
@@ -372,16 +372,16 @@ public abstract class FailbackRegistry extends AbstractRegistry {
     @Override
     protected void recover() throws Exception {
         // register
-        Set<URL> recoverRegistered = new HashSet<URL>(getRegistered());
+        Set<URL> recoverRegistered = new HashSet<URL>(getRegistered()); // 获取全部的已经注册的 url
         if (!recoverRegistered.isEmpty()) {
             if (logger.isInfoEnabled()) {
                 logger.info("Recover register url " + recoverRegistered);
             }
             for (URL url : recoverRegistered) {
-                addFailedRegistered(url);
+                addFailedRegistered(url);   // 重连失效的 url
             }
         }
-        // subscribe
+        // subscribe 映射关系为 url 对应很多的 listener
         Map<URL, Set<NotifyListener>> recoverSubscribed = new HashMap<URL, Set<NotifyListener>>(getSubscribed());
         if (!recoverSubscribed.isEmpty()) {
             if (logger.isInfoEnabled()) {
@@ -390,7 +390,7 @@ public abstract class FailbackRegistry extends AbstractRegistry {
             for (Map.Entry<URL, Set<NotifyListener>> entry : recoverSubscribed.entrySet()) {
                 URL url = entry.getKey();
                 for (NotifyListener listener : entry.getValue()) {
-                    addFailedSubscribed(url, listener);
+                    addFailedSubscribed(url, listener); // 为订阅 url 的所有 listener 进行重新订阅
                 }
             }
         }

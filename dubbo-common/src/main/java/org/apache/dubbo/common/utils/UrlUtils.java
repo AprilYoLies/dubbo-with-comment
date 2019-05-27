@@ -414,7 +414,7 @@ public class UrlUtils {
         //FIXME accept providerUrl with '*' as interface name, after carefully thought about all possible scenarios I think it's ok to add this condition.
         if (!(ANY_VALUE.equals(consumerInterface)
                 || ANY_VALUE.equals(providerInterface)
-                || StringUtils.isEquals(consumerInterface, providerInterface))) {
+                || StringUtils.isEquals(consumerInterface, providerInterface))) {   // 两个 serviceInterface 非 * 下的不相等，直接返回 false
             return false;
         }
 

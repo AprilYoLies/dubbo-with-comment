@@ -89,15 +89,15 @@ public abstract class AbstractRegistry implements Registry {
     private File file;
 
     public AbstractRegistry(URL url) {
-        setUrl(url);
+        setUrl(url);    // 保存 url 到父类中
         // Start file save timer
-        syncSaveFile = url.getParameter(REGISTRY_FILESAVE_SYNC_KEY, false);
-        String filename = url.getParameter(FILE_KEY, System.getProperty("user.home") + "/.dubbo/dubbo-registry-" + url.getParameter(APPLICATION_KEY) + "-" + url.getAddress() + ".cache");
+        syncSaveFile = url.getParameter(REGISTRY_FILESAVE_SYNC_KEY, false); // save.file    url 的 file 或者 /Users/eva/.dubbo/dubbo-registry-demo-consumer-127.0.0.1:2181.cache
+        String filename = url.getParameter(FILE_KEY, System.getProperty("user.home") + "/.dubbo/dubbo-registry-" + url.getParameter(APPLICATION_KEY) + "-" + url.getAddress() + ".cache");  // /Users/eva/.dubbo/dubbo-registry-demo-consumer-127.0.0.1:2181.cache
         File file = null;
-        if (ConfigUtils.isNotEmpty(filename)) {
+        if (ConfigUtils.isNotEmpty(filename)) { // 文件属性值不为空
             file = new File(filename);
             if (!file.exists() && file.getParentFile() != null && !file.getParentFile().exists()) {
-                if (!file.getParentFile().mkdirs()) {
+                if (!file.getParentFile().mkdirs()) {   // 路径不存在且新建不成功
                     throw new IllegalArgumentException("Invalid registry cache file " + file + ", cause: Failed to create directory " + file.getParentFile() + "!");
                 }
             }
@@ -105,7 +105,7 @@ public abstract class AbstractRegistry implements Registry {
         this.file = file;
         // When starting the subscription center,
         // we need to read the local cache file for future Registry fault tolerance processing.
-        loadProperties();
+        loadProperties();   // 将 this.file 中的属性添加到 this.properties 中
         notify(url.getBackupUrls());
     }
 
@@ -127,7 +127,7 @@ public abstract class AbstractRegistry implements Registry {
         if (url == null) {
             throw new IllegalArgumentException("registry url == null");
         }
-        this.registryUrl = url;
+        this.registryUrl = url; // 将 url 保存到父类中
     }
 
     public Set<URL> getRegistered() {
@@ -229,7 +229,7 @@ public abstract class AbstractRegistry implements Registry {
         for (Map.Entry<Object, Object> entry : properties.entrySet()) {
             String key = (String) entry.getKey();
             String value = (String) entry.getValue();
-            if (key != null && key.length() > 0 && key.equals(url.getServiceKey())
+            if (key != null && key.length() > 0 && key.equals(url.getServiceKey())  // 从 properties 中获取键为 url 的 interface 属性值的键且 value 不为空的属性对的键
                     && (Character.isLetter(key.charAt(0)) || key.charAt(0) == '_')
                     && value != null && value.length() > 0) {
                 String[] arr = value.trim().split(URL_SPLIT);
@@ -303,7 +303,7 @@ public abstract class AbstractRegistry implements Registry {
         }
         if (logger.isInfoEnabled()) {
             logger.info("Subscribe: " + url);
-        }
+        }   // 在 subscribed 中是 url -> NotifyListener 集合
         Set<NotifyListener> listeners = subscribed.computeIfAbsent(url, n -> new ConcurrentHashSet<>());
         listeners.add(listener);
     }
@@ -356,16 +356,16 @@ public abstract class AbstractRegistry implements Registry {
             return;
         }
 
-        for (Map.Entry<URL, Set<NotifyListener>> entry : getSubscribed().entrySet()) {
+        for (Map.Entry<URL, Set<NotifyListener>> entry : getSubscribed().entrySet()) {  // 遍历 subscribed，即订阅者
             URL url = entry.getKey();
 
-            if (!UrlUtils.isMatch(url, urls.get(0))) {
+            if (!UrlUtils.isMatch(url, urls.get(0))) { // 找到和 urls[0] 匹配的 url
                 continue;
             }
 
-            Set<NotifyListener> listeners = entry.getValue();
+            Set<NotifyListener> listeners = entry.getValue();   // 通知 url 对应的全部 listener
             if (listeners != null) {
-                for (NotifyListener listener : listeners) {
+                for (NotifyListener listener : listeners) { // 遍历监听器，逐个进行通知
                     try {
                         notify(url, listener, filterEmpty(url, urls));
                     } catch (Throwable t) {

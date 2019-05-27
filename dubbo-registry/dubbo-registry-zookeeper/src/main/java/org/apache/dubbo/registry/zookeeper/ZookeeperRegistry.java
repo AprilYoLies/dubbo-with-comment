@@ -54,7 +54,6 @@ import static org.apache.dubbo.common.constants.RegistryConstants.ROUTERS_CATEGO
 
 /**
  * ZookeeperRegistry
- *
  */
 public class ZookeeperRegistry extends FailbackRegistry {
 
@@ -74,19 +73,34 @@ public class ZookeeperRegistry extends FailbackRegistry {
 
     public ZookeeperRegistry(URL url, ZookeeperTransporter zookeeperTransporter) {
         super(url);
-        if (url.isAnyHost()) {
+        if (url.isAnyHost()) {  // host 为 0.0.0.0 或者 anyhost 参数为 true
             throw new IllegalStateException("registry address == null");
         }
-        String group = url.getParameter(GROUP_KEY, DEFAULT_ROOT);
+        String group = url.getParameter(GROUP_KEY, DEFAULT_ROOT);   // 优先使用 url 的 group 属性，默认为 dubbo
         if (!group.startsWith(PATH_SEPARATOR)) {
             group = PATH_SEPARATOR + group;
         }
-        this.root = group;
+        this.root = group;  // 用 group 做 root
+        // zookeeperTransporter 实例的源代码
+        // package org.apache.dubbo.remoting.zookeeper;
+        // import org.apache.dubbo.common.extension.ExtensionLoader;
+        // public class ZookeeperTransporter$Adaptive implements org.apache.dubbo.remoting.zookeeper.ZookeeperTransporter {
+        //     public org.apache.dubbo.remoting.zookeeper.ZookeeperClient connect(org.apache.dubbo.common.URL arg0)  {
+        //         if (arg0 == null) throw new IllegalArgumentException("url == null");
+        //         org.apache.dubbo.common.URL url = arg0;
+        // extName 实际为 curator
+        //         String extName = url.getParameter("client", url.getParameter("transporter", "curator"));
+        //         if(extName == null) throw new IllegalStateException("Failed to get extension (org.apache.dubbo.remoting.zookeeper.ZookeeperTransporter) name from url (" + url.toString() + ") use keys([client, transporter])");
+        // 此处获得 extension 实际为 CuratorZookeeperTransporter
+        //         org.apache.dubbo.remoting.zookeeper.ZookeeperTransporter extension = (org.apache.dubbo.remoting.zookeeper.ZookeeperTransporter)ExtensionLoader.getExtensionLoader(org.apache.dubbo.remoting.zookeeper.ZookeeperTransporter.class).getExtension(extName);
+        //         return extension.connect(arg0);
+        //     }
+        // }
         zkClient = zookeeperTransporter.connect(url);
         zkClient.addStateListener(state -> {
             if (state == StateListener.RECONNECTED) {
                 try {
-                    recover();
+                    recover();  // 如果 zkClient 监听到重连消息后，需要对失效的 url 进行重新注册
                 } catch (Exception e) {
                     logger.error(e.getMessage(), e);
                 }
@@ -130,9 +144,9 @@ public class ZookeeperRegistry extends FailbackRegistry {
     @Override
     public void doSubscribe(final URL url, final NotifyListener listener) {
         try {
-            if (ANY_VALUE.equals(url.getServiceInterface())) {
+            if (ANY_VALUE.equals(url.getServiceInterface())) {  // url 的 interface 属性为 *
                 String root = toRootPath();
-                ConcurrentMap<NotifyListener, ChildListener> listeners = zkListeners.get(url);
+                ConcurrentMap<NotifyListener, ChildListener> listeners = zkListeners.get(url); // url -> (notifyListener, childListener)
                 if (listeners == null) {
                     zkListeners.putIfAbsent(url, new ConcurrentHashMap<>());
                     listeners = zkListeners.get(url);
@@ -143,9 +157,9 @@ public class ZookeeperRegistry extends FailbackRegistry {
                         for (String child : currentChilds) {
                             child = URL.decode(child);
                             if (!anyServices.contains(child)) {
-                                anyServices.add(child);
-                                subscribe(url.setPath(child).addParameters(INTERFACE_KEY, child,
-                                        RemotingConstants.CHECK_KEY, String.valueOf(false)), listener);
+                                anyServices.add(child); // 这里就是说 NotifyListener 和 url 一起存储到 subscribed 中，而 ChildListener 被添做了 url 参数
+                                subscribe(url.setPath(child).addParameters(INTERFACE_KEY, child,    // interface -> child
+                                        RemotingConstants.CHECK_KEY, String.valueOf(false)), listener); // check -> false
                             }
                         }
                     });

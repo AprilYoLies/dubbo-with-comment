@@ -491,6 +491,23 @@ public class RegistryProtocol implements Protocol {
     @Override
     @SuppressWarnings("unchecked")
     public <T> Invoker<T> refer(Class<T> type, URL url) throws RpcException {
+        // registry://127.0.0.1:2181/org.apache.dubbo.registry.RegistryService?
+        // application=demo-consumer&
+        // dubbo=2.0.2&
+        // pid=49041&
+        // refer=application=demo-consumer&
+        // check=false&
+        // dubbo=2.0.2&
+        // interface=org.apache.dubbo.demo.DemoService&
+        // lazy=false&
+        // methods=sayHello&
+        // pid=49041&
+        // register.ip=192.168.1.104&
+        // side=consumer&
+        // sticky=false&
+        // timestamp=1558921508381&
+        // registry=zookeeper&
+        // timestamp=1558921508775
         url = URLBuilder.from(url)
                 .setProtocol(url.getParameter(REGISTRY_KEY, DEFAULT_REGISTRY))
                 .removeParameter(REGISTRY_KEY)
@@ -503,9 +520,11 @@ public class RegistryProtocol implements Protocol {
         //     public org.apache.dubbo.registry.Registry getRegistry(org.apache.dubbo.common.URL arg0) {
         //         if (arg0 == null) throw new IllegalArgumentException("url == null");
         //         org.apache.dubbo.common.URL url = arg0;
+        // 这里的 extName 实际是 zookeeper
         //         String extName = (url.getProtocol() == null ? "dubbo" : url.getProtocol());
         //         if (extName == null)
         //             throw new IllegalStateException("Failed to get extension (org.apache.dubbo.registry.RegistryFactory) name from url (" + url.toString() + ") use keys([protocol])");
+        // 获取到的 RegistryFactory 实际是 ZookeeperRegistryFactory
         //         org.apache.dubbo.registry.RegistryFactory extension = (org.apache.dubbo.registry.RegistryFactory) ExtensionLoader.getExtensionLoader(org.apache.dubbo.registry.RegistryFactory.class).getExtension(extName);
         //         return extension.getRegistry(arg0);
         //     }
@@ -516,7 +535,18 @@ public class RegistryProtocol implements Protocol {
         }
 
         // group="a,b" or group="*"
-        Map<String, String> qs = StringUtils.parseQueryString(url.getParameterAndDecoded(REFER_KEY));
+        // application=demo-consumer&
+        // check=false&
+        // dubbo=2.0.2&
+        // interface=org.apache.dubbo.demo.DemoService&
+        // lazy=false&
+        // methods=sayHello&
+        // pid=49134&
+        // register.ip=192.168.1.104&
+        // side=consumer&
+        // sticky=false&
+        // timestamp=1558921722520
+        Map<String, String> qs = StringUtils.parseQueryString(url.getParameterAndDecoded(REFER_KEY));   // 将
         String group = qs.get(GROUP_KEY);
         if (group != null && group.length() > 0) {
             if ((COMMA_SPLIT_PATTERN.split(group)).length > 1 || "*".equals(group)) {
@@ -531,14 +561,14 @@ public class RegistryProtocol implements Protocol {
     }
 
     private <T> Invoker<T> doRefer(Cluster cluster, Registry registry, Class<T> type, URL url) {
-        RegistryDirectory<T> directory = new RegistryDirectory<T>(type, url);
+        RegistryDirectory<T> directory = new RegistryDirectory<T>(type, url);   // refer 操作需要依赖于 RegistryDirectory
         directory.setRegistry(registry);
         directory.setProtocol(protocol);
         // all attributes of REFER_KEY
         Map<String, String> parameters = new HashMap<String, String>(directory.getUrl().getParameters());
         URL subscribeUrl = new URL(CONSUMER_PROTOCOL, parameters.remove(REGISTER_IP_KEY), 0, type.getName(), parameters);
         if (!ANY_VALUE.equals(url.getServiceInterface()) && url.getParameter(REGISTER_KEY, true)) {
-            directory.setRegisteredConsumerUrl(getRegisteredConsumerUrl(subscribeUrl, url));
+            directory.setRegisteredConsumerUrl(getRegisteredConsumerUrl(subscribeUrl, url));    // 在其中设置
             registry.register(directory.getRegisteredConsumerUrl());
         }
         directory.buildRouterChain(subscribeUrl);
