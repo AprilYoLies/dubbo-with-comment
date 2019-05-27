@@ -283,6 +283,9 @@ public class RegistryDirectory<T> extends AbstractDirectory<T> implements Notify
     private void refreshOverrideAndInvoker(List<URL> urls) {
         // mock zookeeper://xxx?mock=return null
         overrideDirectoryUrl();  // 这个方法即通过各个配置项的 Configurator 来对 overrideDirectoryUrl 进行配置
+        // 如果 invokerUrls 大小为 1 且协议为 empty，进行一些禁止访问的属性的设置
+        // 如果 invokerUrls 为空，尝试获取 cachedInvokerUrls，还是为空直接返回
+        // 其他情况，将通过 invokerUrls 获取 urls 和 invokers 关系的 map，完成分组，并进行一些允许访问相关的属性设置
         refreshInvoker(urls);
     }
 
@@ -628,7 +631,7 @@ public class RegistryDirectory<T> extends AbstractDirectory<T> implements Notify
         List<Invoker<T>> invokers = null;
         try {
             // Get invokers from cache, only runtime routers will be executed.
-            invokers = routerChain.route(getConsumerUrl(), invocation);
+            invokers = routerChain.route(getConsumerUrl(), invocation); // 这个过程就是根据 invocation 的相关信息由不同的 router 对 invoker 进行筛选
         } catch (Throwable t) {
             logger.error("Failed to execute router: " + getUrl() + ", cause: " + t.getMessage(), t);
         }

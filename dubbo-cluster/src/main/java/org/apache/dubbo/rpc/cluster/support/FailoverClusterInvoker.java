@@ -42,7 +42,6 @@ import static org.apache.dubbo.common.constants.ClusterConstants.RETRIES_KEY;
  * Note that retry causes latency.
  * <p>
  * <a href="http://en.wikipedia.org/wiki/Failover">Failover</a>
- *
  */
 public class FailoverClusterInvoker<T> extends AbstractClusterInvoker<T> {
 
@@ -57,8 +56,8 @@ public class FailoverClusterInvoker<T> extends AbstractClusterInvoker<T> {
     public Result doInvoke(Invocation invocation, final List<Invoker<T>> invokers, LoadBalance loadbalance) throws RpcException {
         List<Invoker<T>> copyInvokers = invokers;
         checkInvokers(copyInvokers, invocation);
-        String methodName = RpcUtils.getMethodName(invocation);
-        int len = getUrl().getMethodParameter(methodName, RETRIES_KEY, DEFAULT_RETRIES) + 1;
+        String methodName = RpcUtils.getMethodName(invocation); // 即服务方法名 sayHello
+        int len = getUrl().getMethodParameter(methodName, RETRIES_KEY, DEFAULT_RETRIES) + 1;    // sayHello、retries、2 此方法会根据 method 和 key，优先从 numbers 属性中获取 number 信息，然后再尝试从 url 中获取 number 信息
         if (len <= 0) {
             len = 1;
         }
@@ -70,14 +69,14 @@ public class FailoverClusterInvoker<T> extends AbstractClusterInvoker<T> {
             //Reselect before retry to avoid a change of candidate `invokers`.
             //NOTE: if `invokers` changed, then `invoked` also lose accuracy.
             if (i > 0) {
-                checkWhetherDestroyed();
+                checkWhetherDestroyed();    // 检查 invoker 的状态
                 copyInvokers = list(invocation);
                 // check again
                 checkInvokers(copyInvokers, invocation);
-            }
-            Invoker<T> invoker = select(loadbalance, invocation, copyInvokers, invoked);
+            }   // RegistryDirectory$InvokerDelegate -> ListenerInvokerWrapper -> ProtocolFilterWrapper$1 -> DubboInvoker
+            Invoker<T> invoker = select(loadbalance, invocation, copyInvokers, invoked);    // 根据不同的 LoadBalance 的实现规则选择出一个对应的 Invoker
             invoked.add(invoker);
-            RpcContext.getContext().setInvokers((List) invoked);
+            RpcContext.getContext().setInvokers((List) invoked);    // 将 invoked 保存到线程本地环境变量中
             try {
                 Result result = invoker.invoke(invocation);
                 if (le != null && logger.isWarnEnabled()) {

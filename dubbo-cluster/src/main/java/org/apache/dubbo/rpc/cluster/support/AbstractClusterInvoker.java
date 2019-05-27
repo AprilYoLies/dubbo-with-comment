@@ -125,23 +125,23 @@ public abstract class AbstractClusterInvoker<T> implements Invoker<T> {
         }
         String methodName = invocation == null ? StringUtils.EMPTY : invocation.getMethodName();
 
-        boolean sticky = invokers.get(0).getUrl()
+        boolean sticky = invokers.get(0).getUrl()   // 先根据 methodName 和 sticky 从 url 中尝试获取参数，默认为 false
                 .getMethodParameter(methodName, CLUSTER_STICKY_KEY, DEFAULT_CLUSTER_STICKY);
 
         //ignore overloaded method
         if (stickyInvoker != null && !invokers.contains(stickyInvoker)) {
-            stickyInvoker = null;
+            stickyInvoker = null;   // 如果 invokers 不包含 stickyInvoker 那么清空 stickyInvoker
         }
         //ignore concurrency problem
-        if (sticky && stickyInvoker != null && (selected == null || !selected.contains(stickyInvoker))) {
+        if (sticky && stickyInvoker != null && (selected == null || !selected.contains(stickyInvoker))) {   // 优先 stickyInvoker 的处理
             if (availablecheck && stickyInvoker.isAvailable()) {
                 return stickyInvoker;
             }
         }
-
+        // 根据不同的 LoadBalance 的实现规则选择出一个对应的 Invoker
         Invoker<T> invoker = doSelect(loadbalance, invocation, invokers, selected);
 
-        if (sticky) {
+        if (sticky) {   // 粘滞 Invoker 的设置
             stickyInvoker = invoker;
         }
         return invoker;
@@ -154,7 +154,7 @@ public abstract class AbstractClusterInvoker<T> implements Invoker<T> {
             return null;
         }
         if (invokers.size() == 1) {
-            return invokers.get(0);
+            return invokers.get(0); // 只有一个的话，那就直接返回，不同选了
         }
         Invoker<T> invoker = loadbalance.select(invokers, getUrl(), invocation);
 
@@ -242,9 +242,9 @@ public abstract class AbstractClusterInvoker<T> implements Invoker<T> {
             ((RpcInvocation) invocation).addAttachments(contextAttachments);    // 从 RpcContext 线程本地环境变量中获取 Attachments 添加到 invocation 中
         }
 
-        List<Invoker<T>> invokers = list(invocation);
-        LoadBalance loadbalance = initLoadBalance(invokers, invocation);
-        RpcUtils.attachInvocationIdIfAsync(getUrl(), invocation);
+        List<Invoker<T>> invokers = list(invocation); // 根据 invocation 和 directory 的一些相关信息来获取 invoker
+        LoadBalance loadbalance = initLoadBalance(invokers, invocation);    // 实际获取的是 org.apache.dubbo.rpc.cluster.loadbalance.RandomLoadBalance
+        RpcUtils.attachInvocationIdIfAsync(getUrl(), invocation);   // 如果 invocation 的 async 参数为 true，或者 url 的 methodName 或 methodName.invocationid.autoattach 属性为 true，就为 inv 添加一个 id 属性
         return doInvoke(invocation, invokers, loadbalance);
     }
 
@@ -278,7 +278,7 @@ public abstract class AbstractClusterInvoker<T> implements Invoker<T> {
                                        LoadBalance loadbalance) throws RpcException;
 
     protected List<Invoker<T>> list(Invocation invocation) throws RpcException {
-        return directory.list(invocation);
+        return directory.list(invocation);  // 根据 invocation 和 directory 的一些相关信息来获取 invoker
     }
 
     /**
@@ -295,7 +295,7 @@ public abstract class AbstractClusterInvoker<T> implements Invoker<T> {
     protected LoadBalance initLoadBalance(List<Invoker<T>> invokers, Invocation invocation) {
         if (CollectionUtils.isNotEmpty(invokers)) {
             return ExtensionLoader.getExtensionLoader(LoadBalance.class).getExtension(invokers.get(0).getUrl()
-                    .getMethodParameter(RpcUtils.getMethodName(invocation), LOADBALANCE_KEY, DEFAULT_LOADBALANCE));
+                    .getMethodParameter(RpcUtils.getMethodName(invocation), LOADBALANCE_KEY, DEFAULT_LOADBALANCE)); // 这里优先是获取 methodName.loadBalance，默认为 random
         } else {
             return ExtensionLoader.getExtensionLoader(LoadBalance.class).getExtension(DEFAULT_LOADBALANCE);
         }

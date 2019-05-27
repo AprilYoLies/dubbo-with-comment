@@ -94,7 +94,7 @@ public class RouterChain<T> {
      */
     public List<Invoker<T>> route(URL url, Invocation invocation) {
         List<Invoker<T>> finalInvokers = invokers;
-        for (Router router : routers) {
+        for (Router router : routers) { // 通过每个 router 对 invokers 进行筛选
             finalInvokers = router.route(finalInvokers, url, invocation);
         }
         return finalInvokers;

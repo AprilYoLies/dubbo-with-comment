@@ -41,7 +41,7 @@ import java.util.stream.Collectors;
 /**
  * Abstract router which listens to dynamic configuration
  */
-public abstract class ListenableRouter extends AbstractRouter implements ConfigurationListener {
+public abstract class ListenableRouter extends AbstractRouter implements ConfigurationListener {    // 此 router 会根据 conditionRouters 属性的路由规则进行 invoker 的筛选
     public static final String NAME = "LISTENABLE_ROUTER";
     private static final String RULE_SUFFIX = ".condition-router";
 

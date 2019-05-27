@@ -123,7 +123,7 @@ public class RpcUtils {
      *
      * @param url
      * @param inv
-     */
+     */ // 如果 invocation 的 async 参数为 true，或者 url 的 methodName 或 methodName.invocationid.autoattach 属性为 true，就为 inv 添加一个 id 属性
     public static void attachInvocationIdIfAsync(URL url, Invocation inv) {
         if (isAttachInvocationId(url, inv) && getInvocationId(inv) == null && inv instanceof RpcInvocation) {
             ((RpcInvocation) inv).setAttachment(ID_KEY, String.valueOf(INVOKE_ID.getAndIncrement()));
@@ -131,10 +131,10 @@ public class RpcUtils {
     }
 
     private static boolean isAttachInvocationId(URL url, Invocation invocation) {
-        String value = url.getMethodParameter(invocation.getMethodName(), AUTO_ATTACH_INVOCATIONID_KEY);
+        String value = url.getMethodParameter(invocation.getMethodName(), AUTO_ATTACH_INVOCATIONID_KEY);    // 优先获取 methodName 再 methodName.invocationid.autoattach
         if (value == null) {
             // add invocationid in async operation by default
-            return isAsync(url, invocation);
+            return isAsync(url, invocation);    // 看 invocation 的 async 参数是否为 true
         } else if (Boolean.TRUE.toString().equalsIgnoreCase(value)) {
             return true;
         } else {
@@ -180,6 +180,7 @@ public class RpcUtils {
         return invocation.getParameterTypes();
     }
 
+    // 看 invocation 的 async 参数是否为 true
     public static boolean isAsync(URL url, Invocation inv) {
         boolean isAsync;
         if (Boolean.TRUE.toString().equals(inv.getAttachment(ASYNC_KEY))) {

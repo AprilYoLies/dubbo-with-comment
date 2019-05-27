@@ -800,17 +800,18 @@ class URL implements Serializable {
         return l;
     }
 
+    // 此方法会根据 method 和 key，优先从 numbers 属性中获取 number 信息，然后再尝试从 url 中获取 number 信息
     public int getMethodParameter(String method, String key, int defaultValue) {
         String methodKey = method + "." + key;
-        Number n = getNumbers().get(methodKey);
+        Number n = getNumbers().get(methodKey); // numbers 是 Map<String, Number>
         if (n != null) {
             return n.intValue();
         }
-        String value = getMethodParameter(method, key);
+        String value = getMethodParameter(method, key); // 尝试从 url 中获取数字信息
         if (StringUtils.isEmpty(value)) {
             return defaultValue;
         }
-        int i = Integer.parseInt(value);
+        int i = Integer.parseInt(value);    // 解析、缓存、返回
         getNumbers().put(methodKey, i);
         return i;
     }

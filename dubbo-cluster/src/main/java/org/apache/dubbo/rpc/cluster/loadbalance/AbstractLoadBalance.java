@@ -71,14 +71,14 @@ public abstract class AbstractLoadBalance implements LoadBalance {
      * @return weight
      */
     protected int getWeight(Invoker<?> invoker, Invocation invocation) {
-        int weight = invoker.getUrl().getMethodParameter(invocation.getMethodName(), WEIGHT_KEY, DEFAULT_WEIGHT);
+        int weight = invoker.getUrl().getMethodParameter(invocation.getMethodName(), WEIGHT_KEY, DEFAULT_WEIGHT);   // 获取 methodName.weight，默认为 100
         if (weight > 0) {
-            long timestamp = invoker.getUrl().getParameter(REMOTE_TIMESTAMP_KEY, 0L);
+            long timestamp = invoker.getUrl().getParameter(REMOTE_TIMESTAMP_KEY, 0L);   // remote-timestamp
             if (timestamp > 0L) {
-                int uptime = (int) (System.currentTimeMillis() - timestamp);
-                int warmup = invoker.getUrl().getParameter(WARMUP_KEY, DEFAULT_WARMUP);
+                int uptime = (int) (System.currentTimeMillis() - timestamp);    // 递增的时间
+                int warmup = invoker.getUrl().getParameter(WARMUP_KEY, DEFAULT_WARMUP); // warm-up 默认
                 if (uptime > 0 && uptime < warmup) {
-                    weight = calculateWarmupWeight(uptime, warmup, weight);
+                    weight = calculateWarmupWeight(uptime, warmup, weight); // 计算权重
                 }
             }
         }

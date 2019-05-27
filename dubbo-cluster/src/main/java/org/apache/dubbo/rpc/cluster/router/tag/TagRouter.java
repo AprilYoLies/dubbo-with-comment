@@ -46,7 +46,7 @@ import static org.apache.dubbo.common.constants.RpcConstants.FORCE_USE_TAG;
 /**
  * TagRouter, "application.tag-router"
  */
-public class TagRouter extends AbstractRouter implements ConfigurationListener {
+public class TagRouter extends AbstractRouter implements ConfigurationListener {    // 此 router 会根据一些 tag 信息，对 invoker 进行筛选
     public static final String NAME = "TAG_ROUTER";
     private static final int TAG_ROUTER_DEFAULT_PRIORITY = 100;
     private static final Logger logger = LoggerFactory.getLogger(TagRouter.class);
@@ -93,7 +93,7 @@ public class TagRouter extends AbstractRouter implements ConfigurationListener {
         // since the rule can be changed by config center, we should copy one to use.
         final TagRouterRule tagRouterRuleCopy = tagRouterRule;
         if (tagRouterRuleCopy == null || !tagRouterRuleCopy.isValid() || !tagRouterRuleCopy.isEnabled()) {
-            return filterUsingStaticTag(invokers, url, invocation);
+            return filterUsingStaticTag(invokers, url, invocation);     // tagRouterRule 属性为空的处理方式
         }
 
         List<Invoker<T>> result = invokers;
@@ -167,11 +167,11 @@ public class TagRouter extends AbstractRouter implements ConfigurationListener {
                 invocation.getAttachment(ClusterConstants.TAG_KEY);
         // Tag request
         if (!StringUtils.isEmpty(tag)) {
-            result = filterInvoker(invokers, invoker -> tag.equals(invoker.getUrl().getParameter(TAG_KEY)));
+            result = filterInvoker(invokers, invoker -> tag.equals(invoker.getUrl().getParameter(TAG_KEY)));    // 只要 invoker 的 url 的 dubbo.tag 等于 tag 的项
             if (CollectionUtils.isEmpty(result) && !isForceUseTag(invocation)) {
                 result = filterInvoker(invokers, invoker -> StringUtils.isEmpty(invoker.getUrl().getParameter(TAG_KEY)));
             }
-        } else {
+        } else {    // 只要 invoker 的 url 的 dubbo.tag 为空的项
             result = filterInvoker(invokers, invoker -> StringUtils.isEmpty(invoker.getUrl().getParameter(TAG_KEY)));
         }
         return result;
