@@ -742,15 +742,15 @@ class URL implements Serializable {
     public String getMethodParameter(String method, String key) {
         String value = parameters.get(method + "." + key);
         if (StringUtils.isEmpty(value)) {
-            return getParameter(key);
+            return getParameter(key);   // 优先获取 method.key，没有的话就获取 key
         }
         return value;
     }
 
     public String getMethodParameter(String method, String key, String defaultValue) {
-        String value = getMethodParameter(method, key);
+        String value = getMethodParameter(method, key); // 从 parameters 获取 method.key 参数
         if (StringUtils.isEmpty(value)) {
-            return defaultValue;
+            return defaultValue;    // 没有获取到的话，就返回默认值
         }
         return value;
     }

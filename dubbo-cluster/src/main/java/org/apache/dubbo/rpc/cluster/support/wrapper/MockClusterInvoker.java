@@ -71,7 +71,7 @@ public class MockClusterInvoker<T> implements Invoker<T> {
     @Override
     public Result invoke(Invocation invocation) throws RpcException {
         Result result = null;
-
+        // 优先从 directory 的 overrideDirectoryUrl 中获取 methodName.mock 属性，没有的话就获取 mock 属性，还是没有就返回默认值 false
         String value = directory.getUrl().getMethodParameter(invocation.getMethodName(), MOCK_KEY, Boolean.FALSE.toString()).trim();
         if (value.length() == 0 || value.equalsIgnoreCase("false")) {
             //no mock

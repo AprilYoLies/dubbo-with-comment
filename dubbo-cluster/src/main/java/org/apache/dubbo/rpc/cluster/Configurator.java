@@ -33,7 +33,6 @@ import static org.apache.dubbo.common.constants.RegistryConstants.EMPTY_PROTOCOL
 
 /**
  * Configurator. (SPI, Prototype, ThreadSafe)
- *
  */
 public interface Configurator extends Comparable<Configurator> {
 
@@ -56,7 +55,7 @@ public interface Configurator extends Comparable<Configurator> {
     /**
      * Convert override urls to map for use when re-refer. Send all rules every time, the urls will be reassembled and
      * calculated
-     *
+     * <p>
      * URL contract:
      * <ol>
      * <li>override://0.0.0.0/...( or override://ip:port...?anyhost=true)&para1=value1... means global rules
@@ -69,7 +68,7 @@ public interface Configurator extends Comparable<Configurator> {
      * @param urls URL list to convert
      * @return converted configurator list
      */
-    static Optional<List<Configurator>> toConfigurators(List<URL> urls) {
+    static Optional<List<Configurator>> toConfigurators(List<URL> urls) {   // 将 urls 转换为 configurators
         if (CollectionUtils.isEmpty(urls)) {
             return Optional.empty();
         }
@@ -80,20 +79,20 @@ public interface Configurator extends Comparable<Configurator> {
         List<Configurator> configurators = new ArrayList<>(urls.size());
         for (URL url : urls) {
             if (EMPTY_PROTOCOL.equals(url.getProtocol())) {
-                configurators.clear();
+                configurators.clear();  // 如果有一个 url 使用的是 empty 协议，清空 configurators
                 break;
             }
             Map<String, String> override = new HashMap<>(url.getParameters());
             //The anyhost parameter of override may be added automatically, it can't change the judgement of changing url
-            override.remove(ANYHOST_KEY);
+            override.remove(ANYHOST_KEY);   // 移除 url 的 anyHost 参数
             if (override.size() == 0) {
-                configurators.clear();
+                configurators.clear();  // 如果参数为空，那么也要清空 configurators
                 continue;
-            }
+            }   // 这里是通过 configuratorFactory 将 url 转换为对应的 Configurator
             configurators.add(configuratorFactory.getConfigurator(url));
         }
-        Collections.sort(configurators);
-        return Optional.of(configurators);
+        Collections.sort(configurators);    // 对于获取的 configurators 进行排序后
+        return Optional.of(configurators);  // 封装成为 Optional 后返回
     }
 
     /**

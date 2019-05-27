@@ -234,12 +234,12 @@ public abstract class AbstractClusterInvoker<T> implements Invoker<T> {
 
     @Override
     public Result invoke(final Invocation invocation) throws RpcException {
-        checkWhetherDestroyed();
+        checkWhetherDestroyed();    // 检查当前 invoker 是否是摧毁状态
 
         // binding attachments into invocation.
         Map<String, String> contextAttachments = RpcContext.getContext().getAttachments();
         if (contextAttachments != null && contextAttachments.size() != 0) {
-            ((RpcInvocation) invocation).addAttachments(contextAttachments);
+            ((RpcInvocation) invocation).addAttachments(contextAttachments);    // 从 RpcContext 线程本地环境变量中获取 Attachments 添加到 invocation 中
         }
 
         List<Invoker<T>> invokers = list(invocation);
@@ -248,8 +248,9 @@ public abstract class AbstractClusterInvoker<T> implements Invoker<T> {
         return doInvoke(invocation, invokers, loadbalance);
     }
 
+    // 检查当前 invoker 是否是摧毁状态
     protected void checkWhetherDestroyed() {
-        if (destroyed.get()) {
+        if (destroyed.get()) {  // 检查当前 invoker 的状态
             throw new RpcException("Rpc cluster invoker for " + getInterface() + " on consumer " + NetUtils.getLocalHost()
                     + " use dubbo version " + Version.getVersion()
                     + " is now destroyed! Can not invoke any more.");

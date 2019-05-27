@@ -29,21 +29,22 @@ import java.util.Optional;
  * Consumer Model which is about subscribed services.
  */
 public class ConsumerModel {
-    private final Object proxyObject;
-    private final String serviceName;
-    private final Class<?> serviceInterfaceClass;
+    private final Object proxyObject;   // 即经过重重构造得到的 proxy0
+    private final String serviceName;   // org.apache.dubbo.demo.DemoService
+    private final Class<?> serviceInterfaceClass;   // interface org.apache.dubbo.demo.DemoService
 
     private final Map<Method, ConsumerMethodModel> methodModels = new IdentityHashMap<Method, ConsumerMethodModel>();
 
     /**
-     *  This constructor create an instance of ConsumerModel and passed objects should not be null.
-     *  If service name, service instance, proxy object,methods should not be null. If these are null
-     *  then this constructor will throw {@link IllegalArgumentException}
-     * @param serviceName Name of the service.
+     * This constructor create an instance of ConsumerModel and passed objects should not be null.
+     * If service name, service instance, proxy object,methods should not be null. If these are null
+     * then this constructor will throw {@link IllegalArgumentException}
+     *
+     * @param serviceName           Name of the service.
      * @param serviceInterfaceClass Service interface class.
-     * @param proxyObject  Proxy object.
-     * @param methods Methods of service class
-     * @param attributes Attributes of methods.
+     * @param proxyObject           Proxy object.
+     * @param methods               Methods of service class
+     * @param attributes            Attributes of methods.
      */
     public ConsumerModel(String serviceName
             , Class<?> serviceInterfaceClass
@@ -60,12 +61,13 @@ public class ConsumerModel {
         this.serviceInterfaceClass = serviceInterfaceClass;
         this.proxyObject = proxyObject;
         for (Method method : methods) {
-            methodModels.put(method, new ConsumerMethodModel(method, attributes));
+            methodModels.put(method, new ConsumerMethodModel(method, attributes));  // ConsumerMethodModel 用于保存方法的一些特征值
         }
     }
 
     /**
      * Return the proxy object used by called while creating instance of ConsumerModel
+     *
      * @return
      */
     public Object getProxyObject() {

@@ -34,7 +34,7 @@ public class ConsumerMethodModel {
 
     private final AsyncMethodInfo asyncInfo;
 
-
+    // ConsumerMethodModel 用于保存方法的一些特征值
     public ConsumerMethodModel(Method method, Map<String, Object> attributes) {
         this.method = method;
         this.parameterClasses = method.getParameterTypes();

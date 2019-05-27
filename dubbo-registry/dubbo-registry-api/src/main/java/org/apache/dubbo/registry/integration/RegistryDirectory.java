@@ -131,7 +131,25 @@ public class RegistryDirectory<T> extends AbstractDirectory<T> implements Notify
     private Protocol protocol; // Initialization at the time of injection, the assertion is not null
     private Registry registry; // Initialization at the time of injection, the assertion is not null
     private volatile boolean forbidden = false;
-
+    // zookeeper://127.0.0.1:2181/org.apache.dubbo.registry.RegistryService?
+    // anyhost=true&
+    // application=demo-consumer&
+    // bean.name=org.apache.dubbo.demo.DemoService&
+    // check=false&
+    // deprecated=false&
+    // dubbo=2.0.2&
+    // dynamic=true&
+    // generic=false&
+    // interface=org.apache.dubbo.demo.DemoService&
+    // lazy=false&
+    // methods=sayHello&
+    // pid=2213&
+    // register=true&
+    // register.ip=192.168.1.104&
+    // remote.application=demo-provider&
+    // side=consumer&
+    // sticky=false&
+    // timestamp=1558957440824
     private volatile URL overrideDirectoryUrl; // Initialization at construction time, assertion not null, and always assign non null value
 
     private volatile URL registeredConsumerUrl;
@@ -170,6 +188,7 @@ public class RegistryDirectory<T> extends AbstractDirectory<T> implements Notify
         String group = directoryUrl.getParameter(GROUP_KEY, "");
         this.multiGroup = group != null && (ANY_VALUE.equals(group) || group.contains(","));    // group 为 * 或包含 ，
     }
+
     // 入参 url 为 registryUrl
     private URL turnRegistryUrlToConsumerUrl(URL url) {
         // save any parameter in registry that will be useful to the new url.
@@ -236,10 +255,10 @@ public class RegistryDirectory<T> extends AbstractDirectory<T> implements Notify
     @Override
     public synchronized void notify(List<URL> urls) {
         Map<String, List<URL>> categoryUrls = urls.stream() // 这里是分组的结果，如 routers -> url 的 list
-                .filter(Objects::nonNull)
-                .filter(this::isValidCategory)
+                .filter(Objects::nonNull)   // 如果 url 不为空
+                .filter(this::isValidCategory)  // 验证 category 是否合法
                 .filter(this::isNotCompatibleFor26x)
-                .collect(Collectors.groupingBy(url -> {
+                .collect(Collectors.groupingBy(url -> { // 对 urls 按照 category 进行分组
                     if (UrlUtils.isConfigurator(url)) {
                         return CONFIGURATORS_CATEGORY;
                     } else if (UrlUtils.isRoute(url)) {
@@ -249,21 +268,21 @@ public class RegistryDirectory<T> extends AbstractDirectory<T> implements Notify
                     }
                     return "";
                 }));
-
+        // 尝试获取 configurators 分组的 urls，如果没有的话就是一个空集合。然后将 urls 逐个转换为 configuration 添加到 configurators 中
         List<URL> configuratorURLs = categoryUrls.getOrDefault(CONFIGURATORS_CATEGORY, Collections.emptyList());
         this.configurators = Configurator.toConfigurators(configuratorURLs).orElse(this.configurators);
-
+        // 尝试获取 routers 分组的 urls，默认返回空集合，然后将 url 根据 router 参数修改协议，再将其转换为 router 添加到 routers 中，用 Optional 包装返回
         List<URL> routerURLs = categoryUrls.getOrDefault(ROUTERS_CATEGORY, Collections.emptyList());
-        toRouters(routerURLs).ifPresent(this::addRouters);
+        toRouters(routerURLs).ifPresent(this::addRouters);  // 将获得的 routers 添加到当前实例的 routerChain 属性的 routers 属性中
 
-        // providers
+        // 尝试获取 providers 分组的 urls，默认返回空集合，然后将 url 根据 router 参数修改协议，再将其转换为 router 添加到 routers 中，用 Optional 包装返回
         List<URL> providerURLs = categoryUrls.getOrDefault(PROVIDERS_CATEGORY, Collections.emptyList());
         refreshOverrideAndInvoker(providerURLs);
     }
 
     private void refreshOverrideAndInvoker(List<URL> urls) {
         // mock zookeeper://xxx?mock=return null
-        overrideDirectoryUrl();
+        overrideDirectoryUrl();  // 这个方法即通过各个配置项的 Configurator 来对 overrideDirectoryUrl 进行配置
         refreshInvoker(urls);
     }
 
@@ -280,31 +299,34 @@ public class RegistryDirectory<T> extends AbstractDirectory<T> implements Notify
      * @param invokerUrls this parameter can't be null
      */
     // TODO: 2017/8/31 FIXME The thread pool should be used to refresh the address, otherwise the task may be accumulated.
-    private void refreshInvoker(List<URL> invokerUrls) {
+    // 如果 invokerUrls 大小为 1 且协议为 empty，进行一些禁止访问的属性的设置
+    // 如果 invokerUrls 为空，尝试获取 cachedInvokerUrls，还是为空直接返回
+    // 其他情况，将通过 invokerUrls 获取 urls 和 invokers 关系的 map，完成分组，并进行一些允许访问相关的属性设置
+    private void refreshInvoker(List<URL> invokerUrls) {    //
         Assert.notNull(invokerUrls, "invokerUrls should not be null");
 
         if (invokerUrls.size() == 1
                 && invokerUrls.get(0) != null
-                && EMPTY_PROTOCOL.equals(invokerUrls.get(0).getProtocol())) {
-            this.forbidden = true; // Forbid to access
-            this.invokers = Collections.emptyList();
-            routerChain.setInvokers(this.invokers);
+                && EMPTY_PROTOCOL.equals(invokerUrls.get(0).getProtocol())) {   // 如果唯一的 url 的协议是 empty
+            this.forbidden = true; // Forbid to access  修改状态
+            this.invokers = Collections.emptyList();    // 置空 invokers
+            routerChain.setInvokers(this.invokers); // 修改 routerChain 的 invokers 属性
             destroyAllInvokers(); // Close all invokers
         } else {
-            this.forbidden = false; // Allow to access
+            this.forbidden = false; // Allow to access 修改状态
             Map<String, Invoker<T>> oldUrlInvokerMap = this.urlInvokerMap; // local reference
             if (invokerUrls == Collections.<URL>emptyList()) {
                 invokerUrls = new ArrayList<>();
             }
             if (invokerUrls.isEmpty() && this.cachedInvokerUrls != null) {
-                invokerUrls.addAll(this.cachedInvokerUrls);
+                invokerUrls.addAll(this.cachedInvokerUrls); // 添加别人
             } else {
-                this.cachedInvokerUrls = new HashSet<>();
+                this.cachedInvokerUrls = new HashSet<>();   // 或者被添加
                 this.cachedInvokerUrls.addAll(invokerUrls);//Cached invoker urls, convenient for comparison
             }
             if (invokerUrls.isEmpty()) {
                 return;
-            }
+            }    // 此方法用于获取 url 和 invoker 对应关系的 map
             Map<String, Invoker<T>> newUrlInvokerMap = toInvokers(invokerUrls);// Translate url list to Invoker map
 
             /**
@@ -324,11 +346,12 @@ public class RegistryDirectory<T> extends AbstractDirectory<T> implements Notify
             List<Invoker<T>> newInvokers = Collections.unmodifiableList(new ArrayList<>(newUrlInvokerMap.values()));
             // pre-route and build cache, notice that route cache should build on original Invoker list.
             // toMergeMethodInvokerMap() will wrap some invokers having different groups, those wrapped invokers not should be routed.
-            routerChain.setInvokers(newInvokers);
+            routerChain.setInvokers(newInvokers);   // 将通过 urls 获取的 invoker 添加到 routerChain 中
+            // 尝试对 invokers 进行分组，然后对每组的 invoker 包装成为一个 invoker 后，返回，如果只有一个分组，那么就原样返回
             this.invokers = multiGroup ? toMergeInvokerList(newInvokers) : newInvokers;
-            this.urlInvokerMap = newUrlInvokerMap;
+            this.urlInvokerMap = newUrlInvokerMap;  // 将 url 和 invoker 的映射关系添加到 urlInvokerMap 属性中
 
-            try {
+            try {   // 后续清理工作
                 destroyUnusedInvokers(oldUrlInvokerMap, newUrlInvokerMap); // Close the unused Invoker
             } catch (Exception e) {
                 logger.warn("destroyUnusedInvokers error. ", e);
@@ -336,25 +359,26 @@ public class RegistryDirectory<T> extends AbstractDirectory<T> implements Notify
         }
     }
 
+    // 尝试对 invokers 进行分组，然后对每组的 invoker 包装成为一个 invoker 后，返回，如果只有一个分组，那么就原样返回
     private List<Invoker<T>> toMergeInvokerList(List<Invoker<T>> invokers) {
         List<Invoker<T>> mergedInvokers = new ArrayList<>();
         Map<String, List<Invoker<T>>> groupMap = new HashMap<>();
-        for (Invoker<T> invoker : invokers) {
+        for (Invoker<T> invoker : invokers) {   // 将 invokers 进行分组
             String group = invoker.getUrl().getParameter(GROUP_KEY, "");
             groupMap.computeIfAbsent(group, k -> new ArrayList<>());
             groupMap.get(group).add(invoker);
         }
 
-        if (groupMap.size() == 1) {
+        if (groupMap.size() == 1) { // 只有一个组的话，那么就直接用链表的方式包装
             mergedInvokers.addAll(groupMap.values().iterator().next());
-        } else if (groupMap.size() > 1) {
+        } else if (groupMap.size() > 1) {   // 如果是多个分组
             for (List<Invoker<T>> groupList : groupMap.values()) {
-                StaticDirectory<T> staticDirectory = new StaticDirectory<>(groupList);
-                staticDirectory.buildRouterChain();
+                StaticDirectory<T> staticDirectory = new StaticDirectory<>(groupList);  // 将分组内的 invoker 包装为 StaticDirectory
+                staticDirectory.buildRouterChain(); // 再将 StaticDirectory 通过 CLUSTER 处理后添加到 mergedInvokers 中，也就是一组作为一项
                 mergedInvokers.add(CLUSTER.join(staticDirectory));
             }
         } else {
-            mergedInvokers = invokers;
+            mergedInvokers = invokers; // 没有分组的话，俺就原样返回
         }
         return mergedInvokers;
     }
@@ -371,16 +395,16 @@ public class RegistryDirectory<T> extends AbstractDirectory<T> implements Notify
 
         List<Router> routers = new ArrayList<>();
         for (URL url : urls) {
-            if (EMPTY_PROTOCOL.equals(url.getProtocol())) {
+            if (EMPTY_PROTOCOL.equals(url.getProtocol())) { // 忽略那些协议为 empty 的 url
                 continue;
             }
-            String routerType = url.getParameter(ROUTER_KEY);
+            String routerType = url.getParameter(ROUTER_KEY);   // 获取 url 的 router
             if (routerType != null && routerType.length() > 0) {
-                url = url.setProtocol(routerType);
+                url = url.setProtocol(routerType);  // 不为空的话，就修改 url 的协议为 router 参数 routerType 对应的值
             }
-            try {
+            try {   // 通过 ROUTER_FACTORY 将 url 转换为 Router
                 Router router = ROUTER_FACTORY.getRouter(url);
-                if (!routers.contains(router)) {
+                if (!routers.contains(router)) {    // 如果此 router 不存在，就添加到 routers 中
                     routers.add(router);
                 }
             } catch (Throwable t) {
@@ -388,7 +412,7 @@ public class RegistryDirectory<T> extends AbstractDirectory<T> implements Notify
             }
         }
 
-        return Optional.of(routers);
+        return Optional.of(routers);    // 将 routers 转换为 Optional 后返回
     }
 
     /**
@@ -397,7 +421,7 @@ public class RegistryDirectory<T> extends AbstractDirectory<T> implements Notify
      * @param urls
      * @return invokers
      */
-    private Map<String, Invoker<T>> toInvokers(List<URL> urls) {
+    private Map<String, Invoker<T>> toInvokers(List<URL> urls) {    // 此方法用于获取 url 和 invoker 对应关系的 map
         Map<String, Invoker<T>> newUrlInvokerMap = new HashMap<>();
         if (urls == null || urls.isEmpty()) {
             return newUrlInvokerMap;
@@ -408,10 +432,10 @@ public class RegistryDirectory<T> extends AbstractDirectory<T> implements Notify
             // If protocol is configured at the reference side, only the matching protocol is selected
             if (queryProtocols != null && queryProtocols.length() > 0) {
                 boolean accept = false;
-                String[] acceptProtocols = queryProtocols.split(",");
+                String[] acceptProtocols = queryProtocols.split(",");   // 得到支持的协议数组
                 for (String acceptProtocol : acceptProtocols) {
-                    if (providerUrl.getProtocol().equals(acceptProtocol)) {
-                        accept = true;
+                    if (providerUrl.getProtocol().equals(acceptProtocol)) { // 如果当前 url 支持协议数组之一
+                        accept = true;  // 修改 accept 状态，表示 url 支持当前协议集
                         break;
                     }
                 }
@@ -420,41 +444,41 @@ public class RegistryDirectory<T> extends AbstractDirectory<T> implements Notify
                 }
             }
             if (EMPTY_PROTOCOL.equals(providerUrl.getProtocol())) {
-                continue;
-            }
+                continue;   // empty 协议要跳过
+            }   // 此协议对应的 Protocol SPI 接口实现类要存在
             if (!ExtensionLoader.getExtensionLoader(Protocol.class).hasExtension(providerUrl.getProtocol())) {
                 logger.error(new IllegalStateException("Unsupported protocol " + providerUrl.getProtocol() +
                         " in notified url: " + providerUrl + " from registry " + getUrl().getAddress() +
                         " to consumer " + NetUtils.getLocalHost() + ", supported protocol: " +
                         ExtensionLoader.getExtensionLoader(Protocol.class).getSupportedExtensions()));
                 continue;
-            }
+            }   // 通过各种 configurators 对 providerUrl 进行配置，添加 queryMap 的参数，然后检查并制定 path 信息
             URL url = mergeUrl(providerUrl);
 
             String key = url.toFullString(); // The parameter urls are sorted
             if (keys.contains(key)) { // Repeated url
                 continue;
             }
-            keys.add(key);
+            keys.add(key);  // 重复记录，避免重复添加
             // Cache key is url that does not merge with consumer side parameters, regardless of how the consumer combines parameters, if the server url changes, then refer again
             Map<String, Invoker<T>> localUrlInvokerMap = this.urlInvokerMap; // local reference
             Invoker<T> invoker = localUrlInvokerMap == null ? null : localUrlInvokerMap.get(key);
             if (invoker == null) { // Not in the cache, refer again
                 try {
-                    boolean enabled = true;
-                    if (url.hasParameter(DISABLED_KEY)) {
+                    boolean enabled = true; // 根据 url 确定 enable 信息
+                    if (url.hasParameter(DISABLED_KEY)) {   // url 有 disabled 参数
                         enabled = !url.getParameter(DISABLED_KEY, false);
                     } else {
                         enabled = url.getParameter(ENABLED_KEY, true);
                     }
-                    if (enabled) {
+                    if (enabled) {  // 如果 url 对应的 invoker 不存在，那么就直接根据 protocol 等信息新建一个
                         invoker = new InvokerDelegate<>(protocol.refer(serviceType, url), url, providerUrl);
                     }
                 } catch (Throwable t) {
                     logger.error("Failed to refer invoker for interface:" + serviceType + ",url:(" + url + ")" + t.getMessage(), t);
                 }
                 if (invoker != null) { // Put new invoker in cache
-                    newUrlInvokerMap.put(key, invoker);
+                    newUrlInvokerMap.put(key, invoker); // 缓存 key 和 invoker 的关系
                 }
             } else {
                 newUrlInvokerMap.put(key, invoker);
@@ -470,20 +494,20 @@ public class RegistryDirectory<T> extends AbstractDirectory<T> implements Notify
      * @param providerUrl
      * @return
      */
-    private URL mergeUrl(URL providerUrl) {
+    private URL mergeUrl(URL providerUrl) { // 通过各种 configurators 对 providerUrl 进行配置，添加 queryMap 的参数，然后检查并制定 path 信息
         providerUrl = ClusterUtils.mergeUrl(providerUrl, queryMap); // Merge the consumer side parameters
 
-        providerUrl = overrideWithConfigurator(providerUrl);
+        providerUrl = overrideWithConfigurator(providerUrl);    // 此方法就是通过各种 configurators 对 providerUrl 进行相关的配置
 
         providerUrl = providerUrl.addParameter(RemotingConstants.CHECK_KEY, String.valueOf(false)); // Do not check whether the connection is successful or not, always create Invoker!
 
         // The combination of directoryUrl and override is at the end of notify, which can't be handled here
         this.overrideDirectoryUrl = this.overrideDirectoryUrl.addParametersIfAbsent(providerUrl.getParameters()); // Merge the provider side parameters
 
-        if ((providerUrl.getPath() == null || providerUrl.getPath()
+        if ((providerUrl.getPath() == null || providerUrl.getPath() // providerUrl 为 dubbo 协议，但是路径信息为空
                 .length() == 0) && DUBBO_PROTOCOL.equals(providerUrl.getProtocol())) { // Compatible version 1.0
             //fix by tony.chenl DUBBO-44
-            String path = directoryUrl.getParameter(INTERFACE_KEY);
+            String path = directoryUrl.getParameter(INTERFACE_KEY); // 根据 directoryUrl 的 interface 参数对 providerUrl 的 path 进行设置
             if (path != null) {
                 int i = path.indexOf('/');
                 if (i >= 0) {
@@ -499,15 +523,16 @@ public class RegistryDirectory<T> extends AbstractDirectory<T> implements Notify
         return providerUrl;
     }
 
+    // 此方法就是通过各种 configurators 对 providerUrl 进行相关的配置
     private URL overrideWithConfigurator(URL providerUrl) {
         // override url with configurator from "override://" URL for dubbo 2.6 and before
-        providerUrl = overrideWithConfigurators(this.configurators, providerUrl);
+        providerUrl = overrideWithConfigurators(this.configurators, providerUrl);   // 通过 configurators 对 providerUrl 进行配置
 
-        // override url with configurator from configurator from "app-name.configurators"
+        // override url with configurator from configurator from "app-name.configurators"   // 同理
         providerUrl = overrideWithConfigurators(CONSUMER_CONFIGURATION_LISTENER.getConfigurators(), providerUrl);
 
         // override url with configurator from configurators from "service-name.configurators"
-        if (serviceConfigurationListener != null) {
+        if (serviceConfigurationListener != null) { // 同理
             providerUrl = overrideWithConfigurators(serviceConfigurationListener.getConfigurators(), providerUrl);
         }
 
@@ -588,7 +613,7 @@ public class RegistryDirectory<T> extends AbstractDirectory<T> implements Notify
 
     @Override
     public List<Invoker<T>> doList(Invocation invocation) {
-        if (forbidden) {
+        if (forbidden) {    // 检查 RegistryDirectory 的 forbidden 属性的状态
             // 1. No service provider 2. Service providers are disabled
             throw new RpcException(RpcException.FORBIDDEN_EXCEPTION, "No provider available from registry " +
                     getUrl().getAddress() + " for service " + getConsumerUrl().getServiceKey() + " on consumer " +
@@ -596,7 +621,7 @@ public class RegistryDirectory<T> extends AbstractDirectory<T> implements Notify
                     ", please check status of providers(disabled, not registered or in blacklist).");
         }
 
-        if (multiGroup) {
+        if (multiGroup) {   // 如果是 multiGroup，直接返回 RegistryDirectory 的 invokers 属性
             return this.invokers == null ? Collections.emptyList() : this.invokers;
         }
 
@@ -640,6 +665,7 @@ public class RegistryDirectory<T> extends AbstractDirectory<T> implements Notify
     public URL getRegisteredConsumerUrl() {
         return registeredConsumerUrl;
     }
+
     // consumer://192.168.1.104/org.apache.dubbo.demo.DemoService?application=demo-consumer&category=consumers&check=false&dubbo=2.0.2&interface=org.apache.dubbo.demo.DemoService&lazy=false&methods=sayHello&pid=50859&side=consumer&sticky=false&timestamp=1558925435531
     public void setRegisteredConsumerUrl(URL registeredConsumerUrl) {
         this.registeredConsumerUrl = registeredConsumerUrl;
@@ -677,12 +703,12 @@ public class RegistryDirectory<T> extends AbstractDirectory<T> implements Notify
     }
 
     private boolean isValidCategory(URL url) {
-        String category = url.getParameter(CATEGORY_KEY, DEFAULT_CATEGORY);
-        if ((ROUTERS_CATEGORY.equals(category) || ROUTE_PROTOCOL.equals(url.getProtocol())) ||
-                PROVIDERS_CATEGORY.equals(category) ||
+        String category = url.getParameter(CATEGORY_KEY, DEFAULT_CATEGORY); // category 默认为 providers
+        if ((ROUTERS_CATEGORY.equals(category) || ROUTE_PROTOCOL.equals(url.getProtocol())) ||  // 如果 category 为 routers 或者 url 的协议为 route
+                PROVIDERS_CATEGORY.equals(category) ||  // 或者 category 为 providers、configurators、dynamic-configurators、app-dynamic-configurators
                 CONFIGURATORS_CATEGORY.equals(category) || DYNAMIC_CONFIGURATORS_CATEGORY.equals(category) ||
                 APP_DYNAMIC_CONFIGURATORS_CATEGORY.equals(category)) {
-            return true;
+            return true;    // 以上几种情况任意之一都是符合条件的
         }
         logger.warn("Unsupported category " + category + " in notified url: " + url + " from registry " +
                 getUrl().getAddress() + " to consumer " + NetUtils.getLocalHost());
@@ -690,25 +716,25 @@ public class RegistryDirectory<T> extends AbstractDirectory<T> implements Notify
     }
 
     private boolean isNotCompatibleFor26x(URL url) {
-        return StringUtils.isEmpty(url.getParameter(COMPATIBLE_CONFIG_KEY));
+        return StringUtils.isEmpty(url.getParameter(COMPATIBLE_CONFIG_KEY));    // compatible_config
     }
 
-    private void overrideDirectoryUrl() {
+    private void overrideDirectoryUrl() {   // 这个方法即通过各个配置项的 Configurator 来对 overrideDirectoryUrl 进行配置
         // merge override parameters
-        this.overrideDirectoryUrl = directoryUrl;
+        this.overrideDirectoryUrl = directoryUrl;   // 如方法名，用 directoryUrl 覆盖 overrideDirectoryUrl 参数
         List<Configurator> localConfigurators = this.configurators; // local reference
-        doOverrideUrl(localConfigurators);
+        doOverrideUrl(localConfigurators);  // 即通过 configurator 对 overrideDirectoryUrl 进行配置
         List<Configurator> localAppDynamicConfigurators = CONSUMER_CONFIGURATION_LISTENER.getConfigurators(); // local reference
-        doOverrideUrl(localAppDynamicConfigurators);
+        doOverrideUrl(localAppDynamicConfigurators);    // 通过 CONSUMER_CONFIGURATION_LISTENER 中的 configurator 对 overrideDirectoryUrl 进行配置
         if (serviceConfigurationListener != null) {
             List<Configurator> localDynamicConfigurators = serviceConfigurationListener.getConfigurators(); // local reference
-            doOverrideUrl(localDynamicConfigurators);
+            doOverrideUrl(localDynamicConfigurators);   // 通过 serviceConfigurationListener 中的 configurator 对 overrideDirectoryUrl 进行配置
         }
     }
 
-    private void doOverrideUrl(List<Configurator> configurators) {
+    private void doOverrideUrl(List<Configurator> configurators) {  // 即通过 configurator 对 overrideDirectoryUrl 进行配置
         if (CollectionUtils.isNotEmpty(configurators)) {
-            for (Configurator configurator : configurators) {
+            for (Configurator configurator : configurators) {   // 进行配置后，重新赋值
                 this.overrideDirectoryUrl = configurator.configure(overrideDirectoryUrl);
             }
         }

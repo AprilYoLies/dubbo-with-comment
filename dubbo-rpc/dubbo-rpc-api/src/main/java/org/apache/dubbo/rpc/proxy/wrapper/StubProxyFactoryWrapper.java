@@ -70,32 +70,62 @@ public class StubProxyFactoryWrapper implements ProxyFactory {
     @Override
     @SuppressWarnings({"unchecked", "rawtypes"})
     public <T> T getProxy(Invoker<T> invoker) throws RpcException {
+        // public class org.apache.dubbo.common.bytecode.Proxy0 extends org.apache.dubbo.common.bytecode.Proxy {
+        //     public Object newInstance(java.lang.reflect.InvocationHandler h) {
+        //         return new org.apache.dubbo.common.bytecode.proxy0($1);
+        //     }
+        // }
+        // proxy 实例的源代码
+        // public class org.apache.dubbo.common.bytecode.proxy0 implements com.alibaba.dubbo.rpc.service.EchoService, org.apache.dubbo.demo.DemoService {
+        //     public static java.lang.reflect.Method[] methods;
+        //     private java.lang.reflect.InvocationHandler handler;
+        //     public <init>(
+        //     java.lang.reflect.InvocationHandler arg0)
+        //
+        //     {
+        //         handler = $1;
+        //     }
+        //
+        //     public java.lang.String sayHello(java.lang.String arg0) {
+        //         Object[] args = new Object[1];
+        //         args[0] = ($w) $1;
+        //         Object ret = handler.invoke(this, methods[0], args);
+        //         return (java.lang.String) ret;
+        //     }
+        //
+        //     public java.lang.Object $echo(java.lang.Object arg0) {
+        //         Object[] args = new Object[1];
+        //         args[0] = ($w) $1;
+        //         Object ret = handler.invoke(this, methods[1], args);
+        //         return (java.lang.Object) ret;
+        //     }
+        // }
         T proxy = proxyFactory.getProxy(invoker);   // 实际是 JavassistProxyFactory，invoker 的是 MockClusterInvoker
         if (GenericService.class != invoker.getInterface()) {
-            URL url = invoker.getUrl();
-            String stub = url.getParameter(STUB_KEY, url.getParameter(LOCAL_KEY));
+            URL url = invoker.getUrl(); // 这是原始的 url
+            String stub = url.getParameter(STUB_KEY, url.getParameter(LOCAL_KEY));  // stub 默认为 url 的 local 属性
             if (ConfigUtils.isNotEmpty(stub)) {
                 Class<?> serviceType = invoker.getInterface();
-                if (ConfigUtils.isDefault(stub)) {
+                if (ConfigUtils.isDefault(stub)) {  // stub 为 true 或者 default
                     if (url.hasParameter(STUB_KEY)) {
-                        stub = serviceType.getName() + "Stub";
+                        stub = serviceType.getName() + "Stub";  // org.apache.dubbo.demo.DemoServiceStub
                     } else {
-                        stub = serviceType.getName() + "Local";
+                        stub = serviceType.getName() + "Local"; // org.apache.dubbo.demo.DemoServiceLocal
                     }
                 }
                 try {
                     Class<?> stubClass = ReflectUtils.forName(stub);
-                    if (!serviceType.isAssignableFrom(stubClass)) {
+                    if (!serviceType.isAssignableFrom(stubClass)) { // Stub 类必须为服务类或者其子类
                         throw new IllegalStateException("The stub implementation class " + stubClass.getName() + " not implement interface " + serviceType.getName());
                     }
                     try {
                         Constructor<?> constructor = ReflectUtils.findConstructor(stubClass, serviceType);
-                        proxy = (T) constructor.newInstance(new Object[]{proxy});
+                        proxy = (T) constructor.newInstance(new Object[]{proxy});   // Stub 类有服务类为参数的构造函数，那么就用这个 Stub 类包装 proxy 类
                         //export stub service
                         URLBuilder urlBuilder = URLBuilder.from(url);
-                        if (url.getParameter(STUB_EVENT_KEY, DEFAULT_STUB_EVENT)) {
-                            urlBuilder.addParameter(STUB_EVENT_METHODS_KEY, StringUtils.join(Wrapper.getWrapper(proxy.getClass()).getDeclaredMethodNames(), ","));
-                            urlBuilder.addParameter(IS_SERVER_KEY, Boolean.FALSE.toString());
+                        if (url.getParameter(STUB_EVENT_KEY, DEFAULT_STUB_EVENT)) { // dubbo.stub.event 默认为 false
+                            urlBuilder.addParameter(STUB_EVENT_METHODS_KEY, StringUtils.join(Wrapper.getWrapper(proxy.getClass()).getDeclaredMethodNames(), ","));  // dubbo.stub.event.methods
+                            urlBuilder.addParameter(IS_SERVER_KEY, Boolean.FALSE.toString()); // isServer -> false
                             try {
                                 export(proxy, (Class) invoker.getInterface(), urlBuilder.build());
                             } catch (Exception e) {
@@ -123,5 +153,4 @@ public class StubProxyFactoryWrapper implements ProxyFactory {
     private <T> Exporter<T> export(T instance, Class<T> type, URL url) {
         return protocol.export(proxyFactory.getInvoker(instance, type, url));
     }
-
 }

@@ -386,7 +386,7 @@ public class ReferenceConfig<T> extends AbstractReferenceConfig {
         map.put(REGISTER_IP_KEY, hostToRegistry);   // register.ip
 
         ref = createProxy(map);
-
+        // org.apache.dubbo.demo.DemoService
         String serviceKey = URL.buildKey(interfaceName, group, version);
         ApplicationModel.initConsumerModel(serviceKey, buildConsumerModel(serviceKey, attributes));
     }
@@ -401,7 +401,7 @@ public class ReferenceConfig<T> extends AbstractReferenceConfig {
             } catch (ClassNotFoundException e) {
                 methods = interfaceClass.getMethods();
             }
-        }
+        }   // 就是将服务的一些信息保存到 ConsumerModel 中
         return new ConsumerModel(serviceKey, serviceInterface, ref, methods, attributes);
     }
 

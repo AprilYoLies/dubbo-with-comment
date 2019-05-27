@@ -103,6 +103,18 @@ public abstract class AbstractDirectory<T> implements Directory<T> {
         routerChain.addRouters(routers);
     }
 
+    // consumer://192.168.1.104/org.apache.dubbo.demo.DemoService?
+    // application=demo-consumer&
+    // category=providers,configurators,routers&
+    // check=false&
+    // dubbo=2.0.2&
+    // interface=org.apache.dubbo.demo.DemoService&
+    // lazy=false&
+    // methods=sayHello&
+    // pid=2213&
+    // side=consumer&
+    // sticky=false&
+    // timestamp=1558957440824
     public URL getConsumerUrl() {
         return consumerUrl;
     }
