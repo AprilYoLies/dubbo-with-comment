@@ -59,7 +59,7 @@ final class NettyChannel extends AbstractChannel {
     static NettyChannel getOrAddChannel(Channel ch, URL url, ChannelHandler handler) {
         if (ch == null) {
             return null;
-        }
+        }   // CHANNEL_MAP 中保存的是 netty 原生 channel 和它的包装类 NettyChannel 对
         NettyChannel ret = CHANNEL_MAP.get(ch);
         if (ret == null) {
             // 应该就是装饰者模式，用 NettyChannel 对 netty 的原生 Channel 进行封装
@@ -98,17 +98,17 @@ final class NettyChannel extends AbstractChannel {
 
     @Override
     public void send(Object message, boolean sent) throws RemotingException {
-        super.send(message, sent);
+        super.send(message, sent);  // 只是检查 channel 的状态
 
         boolean success = true;
         int timeout = 0;
         try {
-            ChannelFuture future = channel.writeAndFlush(message);
+            ChannelFuture future = channel.writeAndFlush(message);  // 通过 netty 原生 channel 发送 message
             if (sent) {
                 timeout = getUrl().getPositiveParameter(TIMEOUT_KEY, DEFAULT_TIMEOUT);
                 success = future.await(timeout);
             }
-            Throwable cause = future.cause();
+            Throwable cause = future.cause();   // 根据发送的结果来决定是否要抛出异常
             if (cause != null) {
                 throw cause;
             }

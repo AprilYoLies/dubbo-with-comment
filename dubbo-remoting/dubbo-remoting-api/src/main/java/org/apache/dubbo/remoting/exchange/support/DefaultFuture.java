@@ -61,8 +61,8 @@ public class DefaultFuture implements ResponseFuture {
 
     // invoke id.
     private final long id;
-    private final Channel channel;
-    private final Request request;
+    private final Channel channel;  // NettyClient
+    private final Request request;  // 待发送的数据
     private final int timeout;
     private final Lock lock = new ReentrantLock();
     private final Condition done = lock.newCondition();
@@ -72,12 +72,12 @@ public class DefaultFuture implements ResponseFuture {
     private volatile ResponseCallback callback;
 
     private DefaultFuture(Channel channel, Request request, int timeout) {
-        this.channel = channel;
-        this.request = request;
+        this.channel = channel; // NettyClient
+        this.request = request; // 待发送的数据
         this.id = request.getId();
         this.timeout = timeout > 0 ? timeout : channel.getUrl().getPositiveParameter(TIMEOUT_KEY, DEFAULT_TIMEOUT);
         // put into waiting map.
-        FUTURES.put(id, this);
+        FUTURES.put(id, this);  // 缓存 id 和 Future 信息，收到信息后，要根据此 map 进行接收数据的填充
         CHANNELS.put(id, channel);
     }
 
@@ -169,7 +169,7 @@ public class DefaultFuture implements ResponseFuture {
     @Override
     public Object get(int timeout) throws RemotingException {
         if (timeout <= 0) {
-            timeout = DEFAULT_TIMEOUT;
+            timeout = DEFAULT_TIMEOUT;  // 1000
         }
         if (!isDone()) {
             long start = System.currentTimeMillis();

@@ -39,7 +39,7 @@ import static org.apache.dubbo.common.constants.RpcConstants.$INVOKE;
  * EventFilter
  */
 @Activate(group = CommonConstants.CONSUMER)
-public class FutureFilter implements Filter {
+public class FutureFilter implements Filter {   // 此 filter 用于处理异步调用
 
     protected static final Logger logger = LoggerFactory.getLogger(FutureFilter.class);
 
@@ -61,11 +61,11 @@ public class FutureFilter implements Filter {
             });
             return asyncResult;
         } else {
-            syncCallback(invoker, invocation, result);
+            syncCallback(invoker, invocation, result);  // 处理返回的结果，要目是异常的处理，要么是根据条件处理异步调用
             return result;
         }
     }
-
+    // 处理返回的结果，要目是异常的处理，要么是根据条件处理异步调用
     private void syncCallback(final Invoker<?> invoker, final Invocation invocation, final Result result) {
         if (result.hasException()) {
             fireThrowCallback(invoker, invocation, result.getException());
@@ -82,8 +82,9 @@ public class FutureFilter implements Filter {
         }
     }
 
+    // 获取 AsyncMethodInfo，然后根据其中的 onInvokeMethod 和 onInvokeInst 进行异步调用
     private void fireInvokeCallback(final Invoker<?> invoker, final Invocation invocation) {
-        final ConsumerMethodModel.AsyncMethodInfo asyncMethodInfo = getAsyncMethodInfo(invoker, invocation);
+        final ConsumerMethodModel.AsyncMethodInfo asyncMethodInfo = getAsyncMethodInfo(invoker, invocation);    // 此方法主要是从 ApplicationModel 中获取 ConsumerModel，然后再从 consumerModel 获取 AsyncMethodInfo 的 AsyncInfo 信息
         if (asyncMethodInfo == null) {
             return;
         }
@@ -101,7 +102,7 @@ public class FutureFilter implements Filter {
         }
 
         Object[] params = invocation.getArguments();
-        try {
+        try {   // 获取 AsyncMethodInfo，然后根据其中的 onInvokeMethod 和 onInvokeInst 进行异步调用
             onInvokeMethod.invoke(onInvokeInst, params);
         } catch (InvocationTargetException e) {
             fireThrowCallback(invoker, invocation, e.getTargetException());
@@ -109,14 +110,14 @@ public class FutureFilter implements Filter {
             fireThrowCallback(invoker, invocation, e);
         }
     }
-
+    // 根据具体的情况来确定是否调用异步方法
     private void fireReturnCallback(final Invoker<?> invoker, final Invocation invocation, final Object result) {
         final ConsumerMethodModel.AsyncMethodInfo asyncMethodInfo = getAsyncMethodInfo(invoker, invocation);
         if (asyncMethodInfo == null) {
             return;
         }
 
-        final Method onReturnMethod = asyncMethodInfo.getOnreturnMethod();
+        final Method onReturnMethod = asyncMethodInfo.getOnreturnMethod();  // 获取 onReturnMethod 和 onReturnInst
         final Object onReturnInst = asyncMethodInfo.getOnreturnInstance();
 
         //not set onreturn callback
@@ -134,7 +135,7 @@ public class FutureFilter implements Filter {
         Object[] args = invocation.getArguments();
         Object[] params;
         Class<?>[] rParaTypes = onReturnMethod.getParameterTypes();
-        if (rParaTypes.length > 1) {
+        if (rParaTypes.length > 1) {    // 确定参数信息
             if (rParaTypes.length == 2 && rParaTypes[1].isAssignableFrom(Object[].class)) {
                 params = new Object[2];
                 params[0] = result;
@@ -148,7 +149,7 @@ public class FutureFilter implements Filter {
             params = new Object[]{result};
         }
         try {
-            onReturnMethod.invoke(onReturnInst, params);
+            onReturnMethod.invoke(onReturnInst, params);    // 异步调用方法
         } catch (InvocationTargetException e) {
             fireThrowCallback(invoker, invocation, e.getTargetException());
         } catch (Throwable e) {
@@ -203,6 +204,7 @@ public class FutureFilter implements Filter {
         }
     }
 
+    // 此方法主要是从 ApplicationModel 中获取 ConsumerModel，然后再从 consumerModel 获取 AsyncMethodInfo 的 AsyncInfo 信息
     private ConsumerMethodModel.AsyncMethodInfo getAsyncMethodInfo(Invoker<?> invoker, Invocation invocation) {
         final ConsumerModel consumerModel = ApplicationModel.getConsumerModel(invoker.getUrl().getServiceKey());
         if (consumerModel == null) {
@@ -211,7 +213,7 @@ public class FutureFilter implements Filter {
 
         String methodName = invocation.getMethodName();
         if (methodName.equals($INVOKE)) {
-            methodName = (String) invocation.getArguments()[0];
+            methodName = (String) invocation.getArguments()[0]; // 如果方法名为 $invoke，获取 invocation 的第一个 argument
         }
 
         ConsumerMethodModel methodModel = consumerModel.getMethodModel(methodName);
@@ -219,7 +221,7 @@ public class FutureFilter implements Filter {
             return null;
         }
 
-        final ConsumerMethodModel.AsyncMethodInfo asyncMethodInfo = methodModel.getAsyncInfo();
+        final ConsumerMethodModel.AsyncMethodInfo asyncMethodInfo = methodModel.getAsyncInfo(); // 获取 AsyncMethodInfo 的 AsyncInfo 信息
         if (asyncMethodInfo == null) {
             return null;
         }

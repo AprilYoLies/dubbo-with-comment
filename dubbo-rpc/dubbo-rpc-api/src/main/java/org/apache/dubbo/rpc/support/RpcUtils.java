@@ -184,11 +184,11 @@ public class RpcUtils {
     public static boolean isAsync(URL url, Invocation inv) {
         boolean isAsync;
         if (Boolean.TRUE.toString().equals(inv.getAttachment(ASYNC_KEY))) {
-            isAsync = true;
+            isAsync = true; // 优先从 inv 中获取 ASYNC_KEY，如果获取到了并且为 true，返回 true
         } else {
-            isAsync = url.getMethodParameter(getMethodName(inv), ASYNC_KEY, false);
+            isAsync = url.getMethodParameter(getMethodName(inv), ASYNC_KEY, false); // 尝试从 url 中获取 method-name.async 属性
         }
-        return isAsync;
+        return isAsync; // 这里说明 url 和 inv 任意 async 属性为 true 就返回 true
     }
 
     // 如果 inv 中的 future_returntype 参数指定为 true
@@ -199,15 +199,15 @@ public class RpcUtils {
     public static boolean hasFutureReturnType(Method method) {
         return CompletableFuture.class.isAssignableFrom(method.getReturnType());
     }
-
+    // 根据 url 和 inv 确定 one-way 信息
     public static boolean isOneway(URL url, Invocation inv) {
         boolean isOneway;
-        if (Boolean.FALSE.toString().equals(inv.getAttachment(RETURN_KEY))) {
+        if (Boolean.FALSE.toString().equals(inv.getAttachment(RETURN_KEY))) {   // inv 的 return 属性为 false
             isOneway = true;
         } else {
-            isOneway = !url.getMethodParameter(getMethodName(inv), RETURN_KEY, true);
+            isOneway = !url.getMethodParameter(getMethodName(inv), RETURN_KEY, true);   // 或者 url 的 method-name.return 属性为 true
         }
-        return isOneway;
+        return isOneway;    // 此两种情况都说明是 one-way
     }
 
     public static Map<String, String> getNecessaryAttachments(Invocation inv) {

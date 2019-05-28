@@ -31,7 +31,7 @@ import static org.apache.dubbo.common.constants.RpcConstants.FUTURE_RETURNTYPE_K
 /**
  * InvokerHandler
  */
-public class InvokerInvocationHandler implements InvocationHandler {
+public class InvokerInvocationHandler implements InvocationHandler {    // 此 handler 会特别的构建 invocation 信息
     private static final Logger logger = LoggerFactory.getLogger(InvokerInvocationHandler.class);
     private final Invoker<?> invoker;
 

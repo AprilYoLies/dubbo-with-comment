@@ -135,9 +135,9 @@ public abstract class AbstractInvoker<T> implements Invoker<T> {
                     + ", dubbo version is " + Version.getVersion() + ", this invoker should not be used any longer");
         }
         RpcInvocation invocation = (RpcInvocation) inv;
-        invocation.setInvoker(this);
+        invocation.setInvoker(this);    // 将当前 invoker 填充到 invocation 中
         if (CollectionUtils.isNotEmptyMap(attachment)) {
-            invocation.addAttachmentsIfAbsent(attachment);
+            invocation.addAttachmentsIfAbsent(attachment);  // 将当前 invoker 的 attachment 填充到 invocation 中
         }
         Map<String, String> contextAttachments = RpcContext.getContext().getAttachments();
         if (CollectionUtils.isNotEmptyMap(contextAttachments)) {
@@ -147,13 +147,13 @@ public abstract class AbstractInvoker<T> implements Invoker<T> {
              * by the built-in retry mechanism of the Dubbo. The attachment to update RpcContext will no longer work, which is
              * a mistake in most cases (for example, through Filter to RpcContext output traceId and spanId and other information).
              */
-            invocation.addAttachments(contextAttachments);
+            invocation.addAttachments(contextAttachments);  // 将线程本地环境变量中的 contextAttachments 填充到 invocation 中
         }
-        if (getUrl().getMethodParameter(invocation.getMethodName(), ASYNC_KEY, false)) {
+        if (getUrl().getMethodParameter(invocation.getMethodName(), ASYNC_KEY, false)) {    // method-name.async
             invocation.setAttachment(ASYNC_KEY, Boolean.TRUE.toString());
         }
+        // 如果 invocation 的 async 参数为 true，或者 url 的 methodName 或 methodName.invocationid.autoattach 属性为 true，就为 inv 添加一个 id 属性
         RpcUtils.attachInvocationIdIfAsync(getUrl(), invocation);
-
         try {
             return doInvoke(invocation);
         } catch (InvocationTargetException e) { // biz exception

@@ -35,11 +35,11 @@ import org.apache.dubbo.rpc.RpcInvocation;
  * @see RpcContext
  */
 @Activate(group = CommonConstants.CONSUMER, order = -10000)
-public class ConsumerContextFilter implements Filter {
+public class ConsumerContextFilter implements Filter {  // 此 filter 会将 invoker、invocation 等信息保存到 RpcContext 线程本地变量中
 
     @Override
     public Result invoke(Invoker<?> invoker, Invocation invocation) throws RpcException {
-        RpcContext.getContext()
+        RpcContext.getContext() // 将 invoker、invocation 等信息保存到 RpcContext 线程本地变量中
                 .setInvoker(invoker)
                 .setInvocation(invocation)
                 .setLocalAddress(NetUtils.getLocalHost(), 0)
@@ -51,7 +51,7 @@ public class ConsumerContextFilter implements Filter {
         try {
             // TODO should we clear server context?
             RpcContext.removeServerContext();
-            return invoker.invoke(invocation);
+            return invoker.invoke(invocation);  // 向下传递
         } finally {
             // TODO removeContext? but we need to save future for RpcContext.getFuture() API. If clear attachments here, attachments will not available when postProcessResult is invoked.
             RpcContext.getContext().clearAttachments();
@@ -60,7 +60,7 @@ public class ConsumerContextFilter implements Filter {
 
     @Override
     public Result onResponse(Result result, Invoker<?> invoker, Invocation invocation) {
-        RpcContext.getServerContext().setAttachments(result.getAttachments());
+        RpcContext.getServerContext().setAttachments(result.getAttachments());  // 保存 result 的附件到 RpcContext 中
         return result;
     }
 }

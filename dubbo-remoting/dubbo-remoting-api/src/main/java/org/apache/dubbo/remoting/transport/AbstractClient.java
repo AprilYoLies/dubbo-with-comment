@@ -186,7 +186,7 @@ public abstract class AbstractClient extends AbstractEndpoint implements Client 
             if (isConnected()) {
                 return;
             }
-
+            // 创建新的 channel，关闭旧的 channel，保存新的 channel 到当前实例中
             doConnect();
 
             if (!isConnected()) {

@@ -75,7 +75,7 @@ public class ListenerInvokerWrapper<T> implements Invoker<T> {
 
     @Override
     public Result invoke(Invocation invocation) throws RpcException {
-        // ConsumerContextFilter ->
+        // ConsumerContextFilter -> FutureFilter -> MonitorFilter -> DubboInvoker ->
         return invoker.invoke(invocation);
     }
 

@@ -52,7 +52,7 @@ public class NettyClient extends AbstractClient {
     private static final Logger logger = LoggerFactory.getLogger(NettyClient.class);
 
     private static final NioEventLoopGroup nioEventLoopGroup = new NioEventLoopGroup(RemotingConstants.DEFAULT_IO_THREADS, new DefaultThreadFactory("NettyClientWorker", true));
-    
+
     private static final String SOCKS_PROXY_HOST = "socksProxyHost";
 
     private static final String SOCKS_PROXY_PORT = "socksProxyPort";
@@ -96,7 +96,7 @@ public class NettyClient extends AbstractClient {
                         .addLast("client-idle-handler", new IdleStateHandler(heartbeatInterval, 0, 0, MILLISECONDS))
                         .addLast("handler", nettyClientHandler);
                 String socksProxyHost = ConfigUtils.getProperty(SOCKS_PROXY_HOST);
-                if(socksProxyHost != null) {
+                if (socksProxyHost != null) {
                     int socksProxyPort = Integer.parseInt(ConfigUtils.getProperty(SOCKS_PROXY_PORT, DEFAULT_SOCKS_PROXY_PORT));
                     Socks5ProxyHandler socks5ProxyHandler = new Socks5ProxyHandler(new InetSocketAddress(socksProxyHost, socksProxyPort));
                     ch.pipeline().addFirst(socks5ProxyHandler);
@@ -105,19 +105,19 @@ public class NettyClient extends AbstractClient {
         });
     }
 
-    @Override
+    @Override   // 创建新的 channel，关闭旧的 channel，保存新的 channel 到当前实例中
     protected void doConnect() throws Throwable {
         long start = System.currentTimeMillis();
         ChannelFuture future = bootstrap.connect(getConnectAddress());
         try {
-            boolean ret = future.awaitUninterruptibly(getConnectTimeout(), MILLISECONDS);
+            boolean ret = future.awaitUninterruptibly(getConnectTimeout(), MILLISECONDS);   // 尝试连接
 
-            if (ret && future.isSuccess()) {
-                Channel newChannel = future.channel();
+            if (ret && future.isSuccess()) {    // 根据连接的结果进行处理
+                Channel newChannel = future.channel();  // 拿到新的 channel
                 try {
                     // Close old channel
                     Channel oldChannel = NettyClient.this.channel; // copy reference
-                    if (oldChannel != null) {
+                    if (oldChannel != null) {   // 旧的 channel 需要关闭
                         try {
                             if (logger.isInfoEnabled()) {
                                 logger.info("Close old netty channel " + oldChannel + " on create new netty channel " + newChannel);
@@ -139,7 +139,7 @@ public class NettyClient extends AbstractClient {
                             NettyChannel.removeChannelIfDisconnected(newChannel);
                         }
                     } else {
-                        NettyClient.this.channel = newChannel;
+                        NettyClient.this.channel = newChannel;  // 保存新 channel
                     }
                 }
             } else if (future.cause() != null) {
@@ -173,12 +173,12 @@ public class NettyClient extends AbstractClient {
         //nioEventLoopGroup.shutdownGracefully();
     }
 
-    @Override
+    @Override   // 根据 netty 原生 channel 从 CHANNEL_MAP 中获取 NettyChannel
     protected org.apache.dubbo.remoting.Channel getChannel() {
         Channel c = channel;
         if (c == null || !c.isActive()) {
             return null;
-        }
+        }   // 根据 netty 原生 channel 从 CHANNEL_MAP 中获取 NettyChannel
         return NettyChannel.getOrAddChannel(c, getUrl(), this);
     }
 
