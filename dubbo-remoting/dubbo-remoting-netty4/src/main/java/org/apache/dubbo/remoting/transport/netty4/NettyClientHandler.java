@@ -48,8 +48,8 @@ public class NettyClientHandler extends ChannelDuplexHandler {
         if (handler == null) {
             throw new IllegalArgumentException("handler == null");
         }
-        this.url = url;
-        this.handler = handler;
+        this.url = url; // 仅仅是保存相关参数到属性中
+        this.handler = handler; // NettyClient 内部包含了真正的 handler
     }
 
     @Override
@@ -127,7 +127,7 @@ public class NettyClientHandler extends ChannelDuplexHandler {
             } finally {
                 NettyChannel.removeChannelIfDisconnected(ctx.channel());
             }
-       } else {
+        } else {
             super.userEventTriggered(ctx, evt);
         }
     }

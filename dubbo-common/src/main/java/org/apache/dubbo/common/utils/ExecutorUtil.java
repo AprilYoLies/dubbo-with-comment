@@ -134,7 +134,7 @@ public class ExecutorUtil {
         String name = url.getParameter(THREAD_NAME_KEY, defaultName);
         name = name + "-" + url.getAddress();
         // 注册为 threadname -> DubboServerHandler-192.168.1.104:20880
-        url = url.addParameter(THREAD_NAME_KEY, name);
+        url = url.addParameter(THREAD_NAME_KEY, name);  // thread-name
         return url;
     }
 

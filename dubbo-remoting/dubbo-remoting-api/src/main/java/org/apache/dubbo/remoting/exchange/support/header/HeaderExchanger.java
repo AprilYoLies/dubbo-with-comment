@@ -32,12 +32,13 @@ public class HeaderExchanger implements Exchanger {
 
     public static final String NAME = "header";
 
+    // 此方法针对服务的消费端
     @Override
-    public ExchangeClient connect(URL url, ExchangeHandler handler) throws RemotingException {
+    public ExchangeClient connect(URL url, ExchangeHandler handler) throws RemotingException {  // DecodeHandler -> HeaderExchangeHandler -> DubboProtocol$1
         return new HeaderExchangeClient(Transporters.connect(url, new DecodeHandler(new HeaderExchangeHandler(handler))), true);
     }
 
-    @Override
+    @Override   // 此方法针对服务发布端
     // handler 为 org.apache.dubbo.rpc.protocol.dubbo.DubboProtocol.requestHandler，实际是一个 ExchangeHandlerAdapter 实例
     public ExchangeServer bind(URL url, ExchangeHandler handler) throws RemotingException {
         // 这里通过 HeaderExchangeHandler 对 ExchangeHandlerAdapter 进行了封装，然后又通过 DecodeHandler 对 HeaderExchangeHandler 进行了封装

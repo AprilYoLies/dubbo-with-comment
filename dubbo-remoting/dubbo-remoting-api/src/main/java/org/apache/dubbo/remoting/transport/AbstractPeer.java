@@ -47,7 +47,7 @@ public abstract class AbstractPeer implements Endpoint, ChannelHandler {
         }
         // 保存 url 和 handler 参数
         this.url = url;
-        this.handler = handler;
+        this.handler = handler; // MultiMessageHandler -> HeartbeatHandler -> AllChannelHandler
     }
 
     @Override

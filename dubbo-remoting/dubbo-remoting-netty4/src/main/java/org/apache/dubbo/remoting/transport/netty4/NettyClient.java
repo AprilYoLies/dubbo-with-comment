@@ -50,7 +50,7 @@ import java.net.InetSocketAddress;
 public class NettyClient extends AbstractClient {
 
     private static final Logger logger = LoggerFactory.getLogger(NettyClient.class);
-
+    // 客户端默认 13 个线程，指定一个默认的线程工厂
     private static final NioEventLoopGroup nioEventLoopGroup = new NioEventLoopGroup(RemotingConstants.DEFAULT_IO_THREADS, new DefaultThreadFactory("NettyClientWorker", true));
 
     private static final String SOCKS_PROXY_HOST = "socksProxyHost";
@@ -70,7 +70,7 @@ public class NettyClient extends AbstractClient {
     @Override
     protected void doOpen() throws Throwable {
         final NettyClientHandler nettyClientHandler = new NettyClientHandler(getUrl(), this);
-        bootstrap = new Bootstrap();
+        bootstrap = new Bootstrap();    // 这是 netty 的客户端，和 ServerBootStrap 相对应
         bootstrap.group(nioEventLoopGroup)
                 .option(ChannelOption.SO_KEEPALIVE, true)
                 .option(ChannelOption.TCP_NODELAY, true)
@@ -79,7 +79,7 @@ public class NettyClient extends AbstractClient {
                 .channel(NioSocketChannel.class);
 
         if (getConnectTimeout() < 3000) {
-            bootstrap.option(ChannelOption.CONNECT_TIMEOUT_MILLIS, 3000);
+            bootstrap.option(ChannelOption.CONNECT_TIMEOUT_MILLIS, 3000);   // 这里说明连接超时至少要是 3000 毫秒
         } else {
             bootstrap.option(ChannelOption.CONNECT_TIMEOUT_MILLIS, getConnectTimeout());
         }
@@ -88,18 +88,18 @@ public class NettyClient extends AbstractClient {
 
             @Override
             protected void initChannel(Channel ch) throws Exception {
-                int heartbeatInterval = UrlUtils.getHeartbeat(getUrl());
-                NettyCodecAdapter adapter = new NettyCodecAdapter(getCodec(), getUrl(), NettyClient.this);
+                int heartbeatInterval = UrlUtils.getHeartbeat(getUrl());    // 心跳时间间隔
+                NettyCodecAdapter adapter = new NettyCodecAdapter(getCodec(), getUrl(), NettyClient.this);  // 将 codec、url、NettyClient 封装成为 NettyCodecAdapter
                 ch.pipeline()//.addLast("logging",new LoggingHandler(LogLevel.INFO))//for debug
-                        .addLast("decoder", adapter.getDecoder())
-                        .addLast("encoder", adapter.getEncoder())
+                        .addLast("decoder", adapter.getDecoder())   // 指定 decoder -> InternalDecoder
+                        .addLast("encoder", adapter.getEncoder())   // 指定 encoder -> InternalEncoder
                         .addLast("client-idle-handler", new IdleStateHandler(heartbeatInterval, 0, 0, MILLISECONDS))
-                        .addLast("handler", nettyClientHandler);
-                String socksProxyHost = ConfigUtils.getProperty(SOCKS_PROXY_HOST);
-                if (socksProxyHost != null) {
-                    int socksProxyPort = Integer.parseInt(ConfigUtils.getProperty(SOCKS_PROXY_PORT, DEFAULT_SOCKS_PROXY_PORT));
+                        .addLast("handler", nettyClientHandler);    // 最后的 handler，就是核心的逻辑处理器
+                String socksProxyHost = ConfigUtils.getProperty(SOCKS_PROXY_HOST);  // socksProxyHost
+                if (socksProxyHost != null) {   // 代理处理，暂时不进行深入了解
+                    int socksProxyPort = Integer.parseInt(ConfigUtils.getProperty(SOCKS_PROXY_PORT, DEFAULT_SOCKS_PROXY_PORT)); // socksProxyPort 默认 1080
                     Socks5ProxyHandler socks5ProxyHandler = new Socks5ProxyHandler(new InetSocketAddress(socksProxyHost, socksProxyPort));
-                    ch.pipeline().addFirst(socks5ProxyHandler);
+                    ch.pipeline().addFirst(socks5ProxyHandler); // 此代理 handler 是添加在所有的处理器之前的
                 }
             }
         });

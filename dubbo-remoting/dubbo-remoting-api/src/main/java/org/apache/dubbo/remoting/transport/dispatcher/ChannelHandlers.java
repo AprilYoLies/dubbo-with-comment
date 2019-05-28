@@ -48,7 +48,7 @@ public class ChannelHandlers {
     // handler 实际是一个 DecodeHandler，dispatch 方法返回值是通过 AllDispatcher 根据本函数的 handler 参数构建出来的 AllChannelHandler，
     // 然后又通过 HeartbeatHandler 对 AllChannelHandler 进行了封装，最后又通过 MultiMessageHandler 对 HeartbeatHandler 进行封装，所以
     // 函数的最终返回值是一个 MultiMessageHandler 类型
-    protected ChannelHandler wrapInternal(ChannelHandler handler, URL url) {
+    protected ChannelHandler wrapInternal(ChannelHandler handler, URL url) {    // MultiMessageHandler -> HeartbeatHandler -> AllChannelHandler
         return new MultiMessageHandler(new HeartbeatHandler(ExtensionLoader.getExtensionLoader(Dispatcher.class)
                 // getAdaptiveExtension 返回的 extension 实例的源代码
                 // package org.apache.dubbo.remoting;

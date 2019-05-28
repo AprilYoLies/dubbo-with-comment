@@ -54,7 +54,7 @@ public abstract class AbstractClient extends AbstractEndpoint implements Client 
     public AbstractClient(URL url, ChannelHandler handler) throws RemotingException {
         super(url, handler);
 
-        needReconnect = url.getParameter(RemotingConstants.SEND_RECONNECT_KEY, false);
+        needReconnect = url.getParameter(RemotingConstants.SEND_RECONNECT_KEY, false);  // send.reconnect
 
         try {
             doOpen();
@@ -92,9 +92,9 @@ public abstract class AbstractClient extends AbstractEndpoint implements Client 
     }
 
     protected static ChannelHandler wrapChannelHandler(URL url, ChannelHandler handler) {
-        url = ExecutorUtil.setThreadName(url, CLIENT_THREAD_POOL_NAME);
-        url = url.addParameterIfAbsent(THREADPOOL_KEY, DEFAULT_CLIENT_THREADPOOL);
-        return ChannelHandlers.wrap(handler, url);
+        url = ExecutorUtil.setThreadName(url, CLIENT_THREAD_POOL_NAME); // DubboClientHandler，为 url 添加 thread-name 参数
+        url = url.addParameterIfAbsent(THREADPOOL_KEY, DEFAULT_CLIENT_THREADPOOL);  // thread-pool -> cached
+        return ChannelHandlers.wrap(handler, url);  // MultiMessageHandler -> HeartbeatHandler -> AllChannelHandler
     }
 
     public InetSocketAddress getConnectAddress() {
