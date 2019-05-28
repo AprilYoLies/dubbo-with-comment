@@ -162,8 +162,8 @@ public class HeaderExchangeHandler implements ChannelHandlerDelegate {
     public void sent(Channel channel, Object message) throws RemotingException {
         Throwable exception = null;
         try {
-            channel.setAttribute(KEY_WRITE_TIMESTAMP, System.currentTimeMillis());
-            ExchangeChannel exchangeChannel = HeaderExchangeChannel.getOrAddChannel(channel);
+            channel.setAttribute(KEY_WRITE_TIMESTAMP, System.currentTimeMillis());  // WRITE_TIMESTAMP -> 当前时间戳
+            ExchangeChannel exchangeChannel = HeaderExchangeChannel.getOrAddChannel(channel);   // HeaderExchangeChannel 就是对 NettyChannel 进行了包装而已
             try {
                 handler.sent(exchangeChannel, message);
             } finally {
@@ -174,7 +174,7 @@ public class HeaderExchangeHandler implements ChannelHandlerDelegate {
         }
         if (message instanceof Request) {
             Request request = (Request) message;
-            DefaultFuture.sent(channel, request);
+            DefaultFuture.sent(channel, request);   // 实现就是记录当前时间戳
         }
         if (exception != null) {
             if (exception instanceof RuntimeException) {
@@ -229,14 +229,14 @@ public class HeaderExchangeHandler implements ChannelHandlerDelegate {
     public void caught(Channel channel, Throwable exception) throws RemotingException {
         if (exception instanceof ExecutionException) {
             ExecutionException e = (ExecutionException) exception;
-            Object msg = e.getRequest();
+            Object msg = e.getRequest();    // 捕获 ExecutionException 的 Request 信息
             if (msg instanceof Request) {
                 Request req = (Request) msg;
-                if (req.isTwoWay() && !req.isHeartbeat()) {
+                if (req.isTwoWay() && !req.isHeartbeat()) { // req 为 twoWay 且非心跳消息
                     Response res = new Response(req.getId(), req.getVersion());
                     res.setStatus(Response.SERVER_ERROR);
                     res.setErrorMessage(StringUtils.toString(e));
-                    channel.send(res);
+                    channel.send(res);  // 这里应该是将执行异常返回给请求者
                     return;
                 }
             }

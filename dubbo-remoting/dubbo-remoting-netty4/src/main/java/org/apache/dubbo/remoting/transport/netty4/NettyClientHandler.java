@@ -54,7 +54,7 @@ public class NettyClientHandler extends ChannelDuplexHandler {
 
     @Override
     public void channelActive(ChannelHandlerContext ctx) throws Exception {
-        NettyChannel channel = NettyChannel.getOrAddChannel(ctx.channel(), url, handler);
+        NettyChannel channel = NettyChannel.getOrAddChannel(ctx.channel(), url, handler);   // 尝试从 CHANNEL_MAP 中获取 netty 原生 channel 的装饰者 channel，如果没有获取到，那么就直接新建一个
         try {
             handler.connected(channel);
         } finally {
@@ -94,7 +94,7 @@ public class NettyClientHandler extends ChannelDuplexHandler {
         promise.addListener(future -> {
             try {
                 if (future.isSuccess()) {
-                    // if our future is success, mark the future to sent.
+                    // if our future is success, mark the future to sent.此方法貌似没有干什么重要的事情
                     handler.sent(channel, msg);
                     return;
                 }

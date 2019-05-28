@@ -117,7 +117,7 @@ public class DefaultFuture implements ResponseFuture {
     public static void sent(Channel channel, Request request) {
         DefaultFuture future = FUTURES.get(request.getId());
         if (future != null) {
-            future.doSent();
+            future.doSent();    // 记录当前时间错
         }
     }
 

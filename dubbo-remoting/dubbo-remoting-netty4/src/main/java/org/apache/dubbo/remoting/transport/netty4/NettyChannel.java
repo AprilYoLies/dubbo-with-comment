@@ -105,8 +105,8 @@ final class NettyChannel extends AbstractChannel {
         try {
             ChannelFuture future = channel.writeAndFlush(message);  // 通过 netty 原生 channel 发送 message
             if (sent) {
-                timeout = getUrl().getPositiveParameter(TIMEOUT_KEY, DEFAULT_TIMEOUT);
-                success = future.await(timeout);
+                timeout = getUrl().getPositiveParameter(TIMEOUT_KEY, DEFAULT_TIMEOUT);  // timeout 默认 1000
+                success = future.await(timeout);    // 如果是发送消息，那么在发送完成后，要 await timeout 长的时间
             }
             Throwable cause = future.cause();   // 根据发送的结果来决定是否要抛出异常
             if (cause != null) {
