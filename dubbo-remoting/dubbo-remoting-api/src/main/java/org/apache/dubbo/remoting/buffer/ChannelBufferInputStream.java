@@ -30,7 +30,7 @@ public class ChannelBufferInputStream extends InputStream {
         this(buffer, buffer.readableBytes());
     }
 
-    public ChannelBufferInputStream(ChannelBuffer buffer, int length) {
+    public ChannelBufferInputStream(ChannelBuffer buffer, int length) { // 记录了 buffer 的初始 readerIndex，读取的截止位置，持有了 buffer 实例
         if (buffer == null) {
             throw new NullPointerException("buffer");
         }
@@ -40,11 +40,11 @@ public class ChannelBufferInputStream extends InputStream {
         if (length > buffer.readableBytes()) {
             throw new IndexOutOfBoundsException();
         }
-
+        // 记录了 buffer 的初始 readerIndex，读取的截止位置，持有了 buffer 实例
         this.buffer = buffer;
         startIndex = buffer.readerIndex();
         endIndex = startIndex + length;
-        buffer.markReaderIndex();
+        buffer.markReaderIndex();   // 就是让 netty 原生 buf 记录一下 readerIndex 到 markedReaderIndex 中
     }
 
     public int readBytes() {

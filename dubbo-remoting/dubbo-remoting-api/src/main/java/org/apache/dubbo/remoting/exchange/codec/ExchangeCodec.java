@@ -82,7 +82,7 @@ public class ExchangeCodec extends TelnetCodec {
         // 先获取 buffer 的可读字节数
         int readable = buffer.readableBytes();
         // 可读字节数和 16 取较小的那个
-        byte[] header = new byte[Math.min(readable, HEADER_LENGTH)];
+        byte[] header = new byte[Math.min(readable, HEADER_LENGTH)];    // 至多预留一个 header 的长度
         // 读取 header 部分的数据
         buffer.readBytes(header);
         // 解码除 header 以外剩余的其它内容，得到的是一个 request 或者 response 实例
@@ -99,19 +99,19 @@ public class ExchangeCodec extends TelnetCodec {
         // magic header.
         // protected static final short MAGIC = (short) 0xdabb;
         if (readable > 0 && header[0] != MAGIC_HIGH
-                || readable > 1 && header[1] != MAGIC_LOW) {
+                || readable > 1 && header[1] != MAGIC_LOW) {    // 这里说明魔幻头不正确，于是需要重新找到魔幻头的位置，然后将 readerIndex 定位到新的魔幻头位置
             // 如果魔幻数字不对
             int length = header.length;
-            if (header.length < readable) {
+            if (header.length < readable) { // 这里说明够头部的长度
                 // 这里就说明，除了 header 的字节部分，还有真正的数据部分
                 header = Bytes.copyOf(header, readable);
                 // 这样就是将全部数据读到了 header 中，前 16 个为 header 部分，后边的为剩余数据
-                buffer.readBytes(header, length, readable - length);
+                buffer.readBytes(header, length, readable - length);    // 全部的数据都到了 header 中
             }
             for (int i = 1; i < header.length - 1; i++) {
-                if (header[i] == MAGIC_HIGH && header[i + 1] == MAGIC_LOW) {
+                if (header[i] == MAGIC_HIGH && header[i + 1] == MAGIC_LOW) {    // 这里是重新确定魔幻头的位置
                     // 这里就说明又检测到了一个数据包，那么就将第一个数据包的内容放到 header 中
-                    buffer.readerIndex(buffer.readerIndex() - header.length + i);
+                    buffer.readerIndex(buffer.readerIndex() - header.length + i);   // 将 readerIndex 重新定位到新的魔幻头位置
                     header = Bytes.copyOf(header, i);
                     break;
                 }
@@ -120,7 +120,7 @@ public class ExchangeCodec extends TelnetCodec {
             return super.decode(channel, buffer, readable, header);
         }
         // check length.
-        if (readable < HEADER_LENGTH) {
+        if (readable < HEADER_LENGTH) { // 接收到的数据还不足以解析出一个完整的数据包
             return DecodeResult.NEED_MORE_INPUT;
         }
 
@@ -129,13 +129,13 @@ public class ExchangeCodec extends TelnetCodec {
         checkPayload(channel, len);
         // 总长度为 header + 数据长度（header 后四位进行记录）
         int tt = len + HEADER_LENGTH;
-        if (readable < tt) {
+        if (readable < tt) {    // 也就是说目前接受到的数据还不够 header + 包长度得到的总长度
             return DecodeResult.NEED_MORE_INPUT;
         }
 
         // limit input stream.通过 ChannelBufferInputStream 对 buffer 进行封装，记录了内容读取的上下界
+        // ChannelBufferInputStream -> NettyBackedCahnnelBuffer -> Netty 原生 buf
         ChannelBufferInputStream is = new ChannelBufferInputStream(buffer, len);
-
         try {
             return decodeBody(channel, is, header); // 解码除开 header 以外的信息
         } finally {

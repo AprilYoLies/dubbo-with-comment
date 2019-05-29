@@ -33,7 +33,7 @@ import java.util.List;
 /**
  * NettyCodecAdapter.
  */
-final public class NettyCodecAdapter {
+final public class NettyCodecAdapter {  // 此 NettyCodecAdapter 仅仅是提供了一个获取 Encoder 还是 Decoder 的适配方式，同时持有了 codec、url 等信息供编解码器使用
 
     private final ChannelHandler encoder = new InternalEncoder();
 
@@ -70,7 +70,7 @@ final public class NettyCodecAdapter {
             // 将 netty 原生 channel 包装成为 NettyChannel
             NettyChannel channel = NettyChannel.getOrAddChannel(ch, url, handler);
             try {
-                // 这是真正的编码逻辑
+                // 这是真正的编码逻辑，最终的写入内容为 2.0.2 -> org.apache.dubbo.demo.DemoService -> 0.0.0 -> sayHello -> parametersDesc -> 参数实例 -> 附件信息
                 codec.encode(channel, buffer, msg);
             } finally {
                 NettyChannel.removeChannelIfDisconnected(ch);
@@ -79,10 +79,10 @@ final public class NettyCodecAdapter {
     }
 
     private class InternalDecoder extends ByteToMessageDecoder {
-
+        // InternalDecoder -> DubboCountCodec -> DubboCodec
         @Override
         protected void decode(ChannelHandlerContext ctx, ByteBuf input, List<Object> out) throws Exception {
-
+            // 通过 NettyBackedChannelBuffer 对 netty 原生 buf 进行装饰
             ChannelBuffer message = new NettyBackedChannelBuffer(input);
             // 尝试从 CHANNEL_MAP 中获取 netty 原生 channel 的装饰者 channel，如果没有获取到，那么就直接新建一个
             NettyChannel channel = NettyChannel.getOrAddChannel(ctx.channel(), url, handler);
@@ -91,7 +91,7 @@ final public class NettyCodecAdapter {
                 // decode object.
                 do {
                     int saveReaderIndex = message.readerIndex();
-                    // 这是真正的解码逻辑
+                    // 这是真正的解码逻辑，即将 buf 解析为 java 对象
                     Object msg = codec.decode(channel, message);
                     if (msg == Codec2.DecodeResult.NEED_MORE_INPUT) {
                         message.readerIndex(saveReaderIndex);   // 没能解析出结果，恢复备份的 readerIndex

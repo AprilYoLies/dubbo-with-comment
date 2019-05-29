@@ -64,7 +64,7 @@ public class DubboCodec extends ExchangeCodec {
 
     @Override
     protected Object decodeBody(Channel channel, InputStream is, byte[] header) throws IOException {
-        byte flag = header[2], proto = (byte) (flag & SERIALIZATION_MASK);  // flag 为 ContentTypeId
+        byte flag = header[2], proto = (byte) (flag & SERIALIZATION_MASK);  // flag & 0001 1111 -> 能够得到 SERIALIZATION_ID 的内容
         // get request id.                                          // | magic | ContentTypeId | null | reqID | len |
         long id = Bytes.bytes2long(header, 4);                      // |   2   |       1       |   1  |   8   |  4  |
         if ((flag & FLAG_REQUEST) == 0) { // 如果掩码结果为 0，则说明不是 request 消息，那么将 is 解析为 response
