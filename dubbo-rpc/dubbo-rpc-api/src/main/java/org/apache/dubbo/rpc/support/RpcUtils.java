@@ -180,7 +180,7 @@ public class RpcUtils {
         return invocation.getParameterTypes();
     }
 
-    // 看 invocation 的 async 参数是否为 true
+    // 看 invocation 的 async 参数是否为 true，然后是查看 url 的 methodName.async 是否为 true
     public static boolean isAsync(URL url, Invocation inv) {
         boolean isAsync;
         if (Boolean.TRUE.toString().equals(inv.getAttachment(ASYNC_KEY))) {
@@ -209,11 +209,11 @@ public class RpcUtils {
         }
         return isOneway;    // 此两种情况都说明是 one-way
     }
-
+    // 去掉 inv 附件中的 async 和 future_generated 后返回
     public static Map<String, String> getNecessaryAttachments(Invocation inv) {
         Map<String, String> attachments = new HashMap<>(inv.getAttachments());
-        attachments.remove(ASYNC_KEY);
-        attachments.remove(FUTURE_GENERATED_KEY);
+        attachments.remove(ASYNC_KEY);  // async
+        attachments.remove(FUTURE_GENERATED_KEY);   // future_generated
         return attachments;
     }
 

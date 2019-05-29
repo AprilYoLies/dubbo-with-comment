@@ -31,7 +31,7 @@ import java.io.IOException;
 import static org.apache.dubbo.common.constants.RpcConstants.INPUT_KEY;
 import static org.apache.dubbo.common.constants.RpcConstants.OUTPUT_KEY;
 
-public final class DubboCountCodec implements Codec2 {
+public final class DubboCountCodec implements Codec2 {  // 此 codec 主要是在解码时，进行一些相关的计数
     // 通过 DubboCodec 进行
     private DubboCodec codec = new DubboCodec();
 

@@ -45,7 +45,7 @@ public class FutureFilter implements Filter {   // 此 filter 用于处理异步
 
     @Override
     public Result invoke(final Invoker<?> invoker, final Invocation invocation) throws RpcException {
-        fireInvokeCallback(invoker, invocation);
+        fireInvokeCallback(invoker, invocation);     // 获取 AsyncMethodInfo，然后根据其中的 onInvokeMethod 和 onInvokeInst 进行异步调用
         // need to configure if there's return value before the invocation in order to help invoker to judge if it's
         // necessary to return future.
         return invoker.invoke(invocation);
@@ -65,6 +65,7 @@ public class FutureFilter implements Filter {   // 此 filter 用于处理异步
             return result;
         }
     }
+
     // 处理返回的结果，要目是异常的处理，要么是根据条件处理异步调用
     private void syncCallback(final Invoker<?> invoker, final Invocation invocation, final Result result) {
         if (result.hasException()) {
@@ -110,6 +111,7 @@ public class FutureFilter implements Filter {   // 此 filter 用于处理异步
             fireThrowCallback(invoker, invocation, e);
         }
     }
+
     // 根据具体的情况来确定是否调用异步方法
     private void fireReturnCallback(final Invoker<?> invoker, final Invocation invocation, final Object result) {
         final ConsumerMethodModel.AsyncMethodInfo asyncMethodInfo = getAsyncMethodInfo(invoker, invocation);

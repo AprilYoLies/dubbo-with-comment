@@ -28,7 +28,10 @@ public class Application {
     public static void main(String[] args) {
         ClassPathXmlApplicationContext context = new ClassPathXmlApplicationContext("spring/dubbo-consumer.xml");
         context.start();
-        // proxy0 -> InvokerInvocationHandler -> MockClusterInvoker -> FailoverClusterInvoker ->
+        // 留意 RegistryDirectory 的 invokers 是怎么获得的？DubboInvoker 的 clients 属性是怎么得到的？
+        // proxy0 -> InvokerInvocationHandler -> MockClusterInvoker -> FailoverClusterInvoker -> （从 RegistryDirectory 中获取）RegistryDirectory$InvokerDelegate ->
+        // ListenerInvokerWrapper -> ProtocolFilterWrapper$1（可能是多个，形成 Invoker 链） -> DubboInvoker -> （从 DubboInvoker 的 clients 属性获取）ReferenceCountExchangeClient ->
+        // HeaderExchangeHandler -> HeaderExchangeChannel -> NettyClient.send -> （NettyClient 持有 NettyChannel）NettyChannel.send -> （NettyChannel 持有 NioSocketChannel）NioSocketChannel
         DemoService demoService = context.getBean("demoService", DemoService.class);
         String hello = demoService.sayHello("world");
         System.out.println("result: " + hello);

@@ -169,24 +169,24 @@ public class DubboCodec extends ExchangeCodec {
     protected void encodeResponseData(Channel channel, ObjectOutput out, Object data) throws IOException {
         encodeResponseData(channel, out, data, DUBBO_VERSION);
     }
-
-    @Override
+    // 所以最终的写入内容为 2.0.2 -> org.apache.dubbo.demo.DemoService -> 0.0.0 -> sayHello -> parametersDesc -> 参数实例 -> 附件信息
+    @Override   // NettyChannel - Hessian2ObjectOutput - RpcInvocation - 2.0.2
     protected void encodeRequestData(Channel channel, ObjectOutput out, Object data, String version) throws IOException {
         RpcInvocation inv = (RpcInvocation) data;
 
-        out.writeUTF(version);
-        out.writeUTF(inv.getAttachment(PATH_KEY));
-        out.writeUTF(inv.getAttachment(VERSION_KEY));
+        out.writeUTF(version);  // 2.0.2
+        out.writeUTF(inv.getAttachment(PATH_KEY));  // org.apache.dubbo.demo.DemoService
+        out.writeUTF(inv.getAttachment(VERSION_KEY));   // 0.0.0
 
-        out.writeUTF(inv.getMethodName());
-        out.writeUTF(ReflectUtils.getDesc(inv.getParameterTypes()));
-        Object[] args = inv.getArguments();
+        out.writeUTF(inv.getMethodName());  // sayHello
+        out.writeUTF(ReflectUtils.getDesc(inv.getParameterTypes()));    // parameters Desc
+        Object[] args = inv.getArguments(); // 参数实例
         if (args != null) {
             for (int i = 0; i < args.length; i++) {
                 out.writeObject(encodeInvocationArgument(channel, inv, i));
             }
-        }
-        out.writeObject(RpcUtils.getNecessaryAttachments(inv));
+        }   // 所以最终的写入内容为 2.0.2 -> org.apache.dubbo.demo.DemoService -> 0.0.0 -> sayHello -> parametersDesc -> 参数实例 -> 附件信息
+        out.writeObject(RpcUtils.getNecessaryAttachments(inv)); // 附件信息
     }
 
     @Override

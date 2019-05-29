@@ -53,9 +53,9 @@ public class ExchangeCodec extends TelnetCodec {
     protected static final byte MAGIC_HIGH = Bytes.short2bytes(MAGIC)[0];
     protected static final byte MAGIC_LOW = Bytes.short2bytes(MAGIC)[1];
     // message flag.
-    protected static final byte FLAG_REQUEST = (byte) 0x80;
-    protected static final byte FLAG_TWOWAY = (byte) 0x40;
-    protected static final byte FLAG_EVENT = (byte) 0x20;
+    protected static final byte FLAG_REQUEST = (byte) 0x80; // request 消息的标志    1000 0000
+    protected static final byte FLAG_TWOWAY = (byte) 0x40;  // twoway 消息的标志     0100 0000
+    protected static final byte FLAG_EVENT = (byte) 0x20;   // event 消息的标志      0010 0000
     protected static final int SERIALIZATION_MASK = 0x1f;
     private static final Logger logger = LoggerFactory.getLogger(ExchangeCodec.class);
 
@@ -68,7 +68,7 @@ public class ExchangeCodec extends TelnetCodec {
     public void encode(Channel channel, ChannelBuffer buffer, Object msg) throws IOException {
         if (msg instanceof Request) {
             // 如果 msg 的类型为 Request
-            encodeRequest(channel, buffer, (Request) msg);
+            encodeRequest(channel, buffer, (Request) msg);  // 对 Request 消息的编码，实际是将请求信息填充到 buffer 中
         } else if (msg instanceof Response) {
             // 如果 msg 的类型为 Response
             encodeResponse(channel, buffer, (Response) msg);
@@ -225,15 +225,15 @@ public class ExchangeCodec extends TelnetCodec {
         return req.getData();
     }
 
-    // 对 Request 消息的编码
+    // 对 Request 消息的编码，实际是将请求信息填充到 buffer 中
     // 这里的 channel 为对 netty 原生 channel 进行包装后得到的 NettyChannel
     protected void encodeRequest(Channel channel, ChannelBuffer buffer, Request req) throws IOException {
         // 根据 channel 的 url 的 serialization 参数值获取 Serialization SPI 接口对应的实现类
-        Serialization serialization = getSerialization(channel);
+        Serialization serialization = getSerialization(channel);    // 这里就是获取序列化的方式
         // header.
         // 共 16 个字节
-        // | magic | ContentTypeId | null | reqID | len |
-        // |   2   |       1       |   1  |   8   |  4  |
+        // | magic |   标志字节位    | null | reqID | len |        |       7      |       6     |      5     |      4 - 0       |
+        // |   2   |       1       |   1  |   8   |  4  |        | FLAG_REQUEST | FLAG_TWOWAY | FLAG_EVENT | SERIALIZATION_ID |
         byte[] header = new byte[HEADER_LENGTH];
         // set magic number.
         // 将魔幻数字填充到 header 中，以大端的模式进行填充，占用两个字节
@@ -241,23 +241,23 @@ public class ExchangeCodec extends TelnetCodec {
 
         // set request and serialization flag.
         // 这里使用的是 Hessian2Serialization，所以获取的 ContentTypeId 为 2
-        header[2] = (byte) (FLAG_REQUEST | serialization.getContentTypeId());
+        header[2] = (byte) (FLAG_REQUEST | serialization.getContentTypeId());   // 实际的消息 1000 0000 | 0000 0010 -> 1000 0010
 
-        // req 的 two 和 event 信息存储到 header[2]
+        // req 的 two 和 event 信息存储到 header[2]    到这里可以看出来 header[2] 的字节就是各种标志位的集合
         if (req.isTwoWay()) {
-            header[2] |= FLAG_TWOWAY;
-        }
-        if (req.isEvent()) {
-            header[2] |= FLAG_EVENT;
+            header[2] |= FLAG_TWOWAY;   // 1000 0010 | 0100 0000 -> 1100 0010
+        }                               // header[3] 的各个位的作用
+        if (req.isEvent()) {            //  |       7      |       6     |      5     |      4 - 0       |
+            header[2] |= FLAG_EVENT;    //  | FLAG_REQUEST | FLAG_TWOWAY | FLAG_EVENT | SERIALIZATION_ID |
         }
 
-        // set request id.
+        // set request id.即请求 id 号，占头部 4 - 11 号字节
         Bytes.long2bytes(req.getId(), header, 4);
 
         // encode request data.
-        // 记录 writerIndex 的位置
+        // 记录 writerIndex 的位置，此位置将是 header 的起始位置
         int savedWriteIndex = buffer.writerIndex();
-        buffer.writerIndex(savedWriteIndex + HEADER_LENGTH);
+        buffer.writerIndex(savedWriteIndex + HEADER_LENGTH);    // 将 WriterIndex 移动到指定的位置（跳过 header 的区域）
         ChannelBufferOutputStream bos = new ChannelBufferOutputStream(buffer);
         // 得到的是 new Hessian2ObjectOutput(out)，它对 Hessian2Output 进行了封装
         ObjectOutput out = serialization.serialize(channel.getUrl(), bos);
@@ -267,12 +267,12 @@ public class ExchangeCodec extends TelnetCodec {
         } else {
             // 此方法的作用和 if 代码块中的方法作用是一样的，都是将 req.getData() 写入到 out 中
             encodeRequestData(channel, out, req.getData(), req.getVersion());
-        }
+        }   // 最终的写入内容为 2.0.2 -> org.apache.dubbo.demo.DemoService -> 0.0.0 -> sayHello -> parametersDesc -> 参数实例 -> 附件信息
         out.flushBuffer();
         if (out instanceof Cleanable) {
             ((Cleanable) out).cleanup();
         }
-        // 调用 flush 函数，才会进行真正的数据写操作
+        // 调用 flush 函数，才会进行真正的数据写操作，但是个人感觉这个方法没必要执行的
         bos.flush();
         bos.close();
         // 获取写入的字节数
@@ -282,7 +282,7 @@ public class ExchangeCodec extends TelnetCodec {
         // 这是最终的填充的结果
         // | magic | ContentTypeId | null | reqID | len |
         // |   2   |       1       |   1  |   8   |  4  |
-        Bytes.int2bytes(len, header, 12);
+        Bytes.int2bytes(len, header, 12);   // 填充 header 最后四个字节的长度信息
         // write
         // 恢复 writerIndex
         buffer.writerIndex(savedWriteIndex);

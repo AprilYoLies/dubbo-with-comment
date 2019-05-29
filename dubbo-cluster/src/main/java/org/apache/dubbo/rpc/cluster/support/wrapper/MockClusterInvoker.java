@@ -35,7 +35,7 @@ import java.util.List;
 import static org.apache.dubbo.common.constants.ClusterConstants.INVOCATION_NEED_MOCK;
 import static org.apache.dubbo.common.constants.RpcConstants.MOCK_KEY;
 
-public class MockClusterInvoker<T> implements Invoker<T> {
+public class MockClusterInvoker<T> implements Invoker<T> {  // 此 invoker 会针对 mock 相关的属性进行特殊的处理
 
     private static final Logger logger = LoggerFactory.getLogger(MockClusterInvoker.class);
 

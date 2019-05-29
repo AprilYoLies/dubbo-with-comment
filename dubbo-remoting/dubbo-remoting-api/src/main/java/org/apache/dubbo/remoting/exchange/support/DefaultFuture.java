@@ -75,10 +75,10 @@ public class DefaultFuture implements ResponseFuture {
         this.channel = channel; // NettyClient
         this.request = request; // 待发送的数据
         this.id = request.getId();
-        this.timeout = timeout > 0 ? timeout : channel.getUrl().getPositiveParameter(TIMEOUT_KEY, DEFAULT_TIMEOUT);
+        this.timeout = timeout > 0 ? timeout : channel.getUrl().getPositiveParameter(TIMEOUT_KEY, DEFAULT_TIMEOUT); // timeout 默认 1000
         // put into waiting map.
         FUTURES.put(id, this);  // 缓存 id 和 Future 信息，收到信息后，要根据此 map 进行接收数据的填充
-        CHANNELS.put(id, channel);
+        CHANNELS.put(id, channel);  // CHANNELS 维护了 id 和 channel 的关系
     }
 
     /**
@@ -102,7 +102,7 @@ public class DefaultFuture implements ResponseFuture {
     public static DefaultFuture newFuture(Channel channel, Request request, int timeout) {
         final DefaultFuture future = new DefaultFuture(channel, request, timeout);
         // timeout check
-        timeoutCheck(future);
+        timeoutCheck(future);   // 这个就是检查 future 状态，并填充响应结果的方法
         return future;
     }
 
@@ -143,12 +143,12 @@ public class DefaultFuture implements ResponseFuture {
             }
         }
     }
-
+    // 清除 FUTURES 和 CHANNELS 对应于 id 的缓存，进行真正的接收操作
     public static void received(Channel channel, Response response) {
         try {
             DefaultFuture future = FUTURES.remove(response.getId());
             if (future != null) {
-                future.doReceived(response);
+                future.doReceived(response);    // 进行真正的接收操作
             } else {
                 logger.warn("The timeout response finally returned at "
                         + (new SimpleDateFormat("yyyy-MM-dd HH:mm:ss.SSS").format(new Date()))
@@ -171,12 +171,12 @@ public class DefaultFuture implements ResponseFuture {
         if (timeout <= 0) {
             timeout = DEFAULT_TIMEOUT;  // 1000
         }
-        if (!isDone()) {
+        if (!isDone()) {    // 发送操作未完成
             long start = System.currentTimeMillis();
             lock.lock();
             try {
-                while (!isDone()) {
-                    done.await(timeout, TimeUnit.MILLISECONDS);
+                while (!isDone()) { // 以防异常唤醒
+                    done.await(timeout, TimeUnit.MILLISECONDS); // 等待超时时长
                     if (isDone() || System.currentTimeMillis() - start > timeout) {
                         break;
                     }
@@ -244,7 +244,7 @@ public class DefaultFuture implements ResponseFuture {
             // create exception response.
             Response timeoutResponse = new Response(future.getId());
             // set timeout status.
-            timeoutResponse.setStatus(future.isSent() ? Response.SERVER_TIMEOUT : Response.CLIENT_TIMEOUT);
+            timeoutResponse.setStatus(future.isSent() ? Response.SERVER_TIMEOUT : Response.CLIENT_TIMEOUT); // 31 30
             timeoutResponse.setErrorMessage(future.getTimeoutMessage(true));
             // handle response.
             DefaultFuture.received(future.getChannel(), timeoutResponse);
@@ -286,7 +286,7 @@ public class DefaultFuture implements ResponseFuture {
     }
 
     private Object returnFromResponse() throws RemotingException {
-        Response res = response;
+        Response res = response;    // 需要注意的是这里的 response 可能是正常消息接收到的 response，也可能是超时等待结束后的超时异常 response
         if (res == null) {
             throw new IllegalStateException("response cannot be null");
         }

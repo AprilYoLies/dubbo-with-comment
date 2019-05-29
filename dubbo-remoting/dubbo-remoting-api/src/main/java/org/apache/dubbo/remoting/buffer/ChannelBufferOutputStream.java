@@ -21,7 +21,7 @@ import java.io.IOException;
 import java.io.OutputStream;
 
 public class ChannelBufferOutputStream extends OutputStream {
-
+    // 此 ChannelBufferOutputStream 不仅是起适配作用，同时还记录了 buffer 的写索引位置
     private final ChannelBuffer buffer;
     private final int startIndex;
 

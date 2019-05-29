@@ -88,10 +88,10 @@ public class DubboInvoker<T> extends AbstractInvoker<T> {
             currentClient = clients[index.getAndIncrement() % clients.length];  // 这里是轮流调用吧
         }
         try {
-            boolean isAsync = RpcUtils.isAsync(getUrl(), invocation);   // 看 invocation 的 async 参数是否为 true
+            boolean isAsync = RpcUtils.isAsync(getUrl(), invocation);   // 看 invocation 的 async 参数是否为 true，然后是查看 url 的 methodName.async 是否为 true
             boolean isAsyncFuture = RpcUtils.isReturnTypeFuture(inv);   // 如果 inv 中的 future_return-type 参数指定为 true
             boolean isOneway = RpcUtils.isOneway(getUrl(), invocation); // 根据 url 和 inv 确定 one-way 信息
-            int timeout = getUrl().getMethodParameter(methodName, TIMEOUT_KEY, DEFAULT_TIMEOUT);    // 获取 timeout 信息
+            int timeout = getUrl().getMethodParameter(methodName, TIMEOUT_KEY, DEFAULT_TIMEOUT);    // 获取 methodName.timeout 信息，默认 1000
             if (isOneway) { // one-way 方式，只是发送了消息，返回的是一个空 RpcResult（没有填充结果）
                 boolean isSent = getUrl().getMethodParameter(methodName, RemotingConstants.SENT_KEY, false);    // method-name.send
                 currentClient.send(inv, isSent);
@@ -111,9 +111,9 @@ public class DubboInvoker<T> extends AbstractInvoker<T> {
                     result = new SimpleAsyncRpcResult(futureAdapter, futureAdapter.getResultFuture(), false);
                 }
                 return result;
-            } else {
+            } else { // request 方法返回的 Future 封装了 channel（NettyClient），req 请求信息，data 为 RpcInvocation
                 RpcContext.getContext().setFuture(null);    // 置空 future 属性
-                return (Result) currentClient.request(inv, timeout).get();  // 发送请求后再获取请求结果
+                return (Result) currentClient.request(inv, timeout).get();  // request 发送请求后再 get 获取请求结果
             }   // ReferenceCountExchangeClient -> HeaderExchangeClient -> HeaderExchangeChannel -> NettyChannel
         } catch (TimeoutException e) {
             throw new RpcException(RpcException.TIMEOUT_EXCEPTION, "Invoke remote method timeout. method: " + invocation.getMethodName() + ", provider: " + getUrl() + ", cause: " + e.getMessage(), e);

@@ -54,8 +54,8 @@ public class FailoverClusterInvoker<T> extends AbstractClusterInvoker<T> {
     @Override
     @SuppressWarnings({"unchecked", "rawtypes"})
     public Result doInvoke(Invocation invocation, final List<Invoker<T>> invokers, LoadBalance loadbalance) throws RpcException {
-        List<Invoker<T>> copyInvokers = invokers;
-        checkInvokers(copyInvokers, invocation);
+        List<Invoker<T>> copyInvokers = invokers;   // RegistryDirectory$InvokerDelegate -> ListenerInvokerWrapper -> ProtocolFilterWrapper$1 -> DubboInvoker
+        checkInvokers(copyInvokers, invocation);    // 检查是否为空
         String methodName = RpcUtils.getMethodName(invocation); // 即服务方法名 sayHello
         int len = getUrl().getMethodParameter(methodName, RETRIES_KEY, DEFAULT_RETRIES) + 1;    // sayHello、retries、2 此方法会根据 method 和 key，优先从 numbers 属性中获取 number 信息，然后再尝试从 url 中获取 number 信息
         if (len <= 0) {
@@ -78,7 +78,7 @@ public class FailoverClusterInvoker<T> extends AbstractClusterInvoker<T> {
             invoked.add(invoker);
             RpcContext.getContext().setInvokers((List) invoked);    // 将 invoked 保存到线程本地环境变量中
             try {
-                Result result = invoker.invoke(invocation);
+                Result result = invoker.invoke(invocation); // 调用筛选出来的那个 invoker 的 invoke 方法
                 if (le != null && logger.isWarnEnabled()) {
                     logger.warn("Although retry the method " + methodName
                             + " in the service " + getInterface().getName()

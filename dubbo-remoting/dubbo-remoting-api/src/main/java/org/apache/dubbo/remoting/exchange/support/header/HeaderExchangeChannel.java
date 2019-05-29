@@ -116,7 +116,7 @@ final class HeaderExchangeChannel implements ExchangeChannel {
         req.setVersion(Version.getProtocolVersion());
         req.setTwoWay(true);
         req.setData(request);   // request 实际为 RpcInvocation
-        DefaultFuture future = DefaultFuture.newFuture(channel, req, timeout);
+        DefaultFuture future = DefaultFuture.newFuture(channel, req, timeout);  // Future 封装了 channel（NettyClient），req 请求信息，data 为 RpcInvocation
         try {
             channel.send(req);
         } catch (RemotingException e) {

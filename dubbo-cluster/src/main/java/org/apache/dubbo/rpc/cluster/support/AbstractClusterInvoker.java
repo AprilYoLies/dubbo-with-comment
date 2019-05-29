@@ -241,7 +241,7 @@ public abstract class AbstractClusterInvoker<T> implements Invoker<T> {
         if (contextAttachments != null && contextAttachments.size() != 0) {
             ((RpcInvocation) invocation).addAttachments(contextAttachments);    // 从 RpcContext 线程本地环境变量中获取 Attachments 添加到 invocation 中
         }
-
+        // 此方法主要是根据 routerChain 来筛选出 invokers 中的部分 invoker
         List<Invoker<T>> invokers = list(invocation); // 根据 invocation 和 directory 的一些相关信息来获取 invoker
         LoadBalance loadbalance = initLoadBalance(invokers, invocation);    // 实际获取的是 org.apache.dubbo.rpc.cluster.loadbalance.RandomLoadBalance
         RpcUtils.attachInvocationIdIfAsync(getUrl(), invocation);   // 如果 invocation 的 async 参数为 true，或者 url 的 methodName 或 methodName.invocationid.autoattach 属性为 true，就为 inv 添加一个 id 属性
@@ -276,7 +276,7 @@ public abstract class AbstractClusterInvoker<T> implements Invoker<T> {
 
     protected abstract Result doInvoke(Invocation invocation, List<Invoker<T>> invokers,
                                        LoadBalance loadbalance) throws RpcException;
-
+    // 此方法主要是根据 routerChain 来筛选出 invokers 中的部分 invoker
     protected List<Invoker<T>> list(Invocation invocation) throws RpcException {
         return directory.list(invocation);  // 根据 invocation 和 directory 的一些相关信息来获取 invoker
     }

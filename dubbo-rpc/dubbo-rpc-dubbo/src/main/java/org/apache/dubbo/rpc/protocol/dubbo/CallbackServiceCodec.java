@@ -256,17 +256,17 @@ class CallbackServiceCodec {
 
     public static Object encodeInvocationArgument(Channel channel, RpcInvocation inv, int paraIndex) throws IOException {
         // get URL directly
-        URL url = inv.getInvoker() == null ? null : inv.getInvoker().getUrl();
-        byte callbackStatus = isCallBack(url, inv.getMethodName(), paraIndex);
+        URL url = inv.getInvoker() == null ? null : inv.getInvoker().getUrl();  // 获取 DubboInvoker 持有的 Url
+        byte callbackStatus = isCallBack(url, inv.getMethodName(), paraIndex);  // 获取 url 的 methodName.paraIndex.callback 属性 0、1、2
         Object[] args = inv.getArguments();
         Class<?>[] pts = inv.getParameterTypes();
         switch (callbackStatus) {
             case CallbackServiceCodec.CALLBACK_NONE:
                 return args[paraIndex];
-            case CallbackServiceCodec.CALLBACK_CREATE:
+            case CallbackServiceCodec.CALLBACK_CREATE:  // sys_callback_arg-paraIndex   暂时没用到不作了解
                 inv.setAttachment(INV_ATT_CALLBACK_KEY + paraIndex, exportOrUnexportCallbackService(channel, url, pts[paraIndex], args[paraIndex], true));
                 return null;
-            case CallbackServiceCodec.CALLBACK_DESTROY:
+            case CallbackServiceCodec.CALLBACK_DESTROY: // sys_callback_arg-paraIndex   暂时没用到不作了解
                 inv.setAttachment(INV_ATT_CALLBACK_KEY + paraIndex, exportOrUnexportCallbackService(channel, url, pts[paraIndex], args[paraIndex], false));
                 return null;
             default:

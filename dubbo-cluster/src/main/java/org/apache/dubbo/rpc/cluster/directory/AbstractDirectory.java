@@ -82,7 +82,7 @@ public abstract class AbstractDirectory<T> implements Directory<T> {
             throw new RpcException("Directory already destroyed .url: " + getUrl());
         }
         // 根据 invocation 和 directory 的一些相关信息来获取 invoker
-        return doList(invocation);
+        return doList(invocation);  // 此方法主要是根据 routerChain 来筛选出 invokers 中的部分 invoker
     }
 
     @Override

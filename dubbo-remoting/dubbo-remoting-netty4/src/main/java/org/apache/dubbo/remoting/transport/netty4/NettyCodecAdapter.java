@@ -60,8 +60,8 @@ final public class NettyCodecAdapter {
         return decoder;
     }
 
-    private class InternalEncoder extends MessageToByteEncoder {
-
+    private class InternalEncoder extends MessageToByteEncoder {    // 引用了 DubboCountCodec，主要是完成对原生 buf 的封装
+        // InternalEncoder -> DubboCountCodec -> DubboCodec -> ExchangeCodec
         @Override
         protected void encode(ChannelHandlerContext ctx, Object msg, ByteBuf out) throws Exception {
             // 将 netty 原生 ByteBuf 包装成为 NettyBackedChannelBuffer

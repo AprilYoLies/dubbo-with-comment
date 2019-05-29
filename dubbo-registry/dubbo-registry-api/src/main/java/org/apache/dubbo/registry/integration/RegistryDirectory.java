@@ -615,7 +615,7 @@ public class RegistryDirectory<T> extends AbstractDirectory<T> implements Notify
     }
 
     @Override
-    public List<Invoker<T>> doList(Invocation invocation) {
+    public List<Invoker<T>> doList(Invocation invocation) { // 此方法主要是根据 routerChain 来筛选出 invokers 中的部分 invoker
         if (forbidden) {    // 检查 RegistryDirectory 的 forbidden 属性的状态
             // 1. No service provider 2. Service providers are disabled
             throw new RpcException(RpcException.FORBIDDEN_EXCEPTION, "No provider available from registry " +
