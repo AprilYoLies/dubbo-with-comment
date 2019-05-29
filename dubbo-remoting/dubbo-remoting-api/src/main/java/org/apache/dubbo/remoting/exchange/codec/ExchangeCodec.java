@@ -89,7 +89,7 @@ public class ExchangeCodec extends TelnetCodec {
         return decode(channel, buffer, readable, header);
     }
 
-    @Override
+    @Override   // 此方法主要是会对接收的数据进行检查，比如是否是魔幻头？是否够头的长度？是否够一个完整的数据包？
     protected Object decode(Channel channel, ChannelBuffer buffer, int readable, byte[] header) throws IOException {
         // check magic number.
         // header.

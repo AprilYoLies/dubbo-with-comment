@@ -96,9 +96,9 @@ public class DubboCodec extends ExchangeCodec {
                                     new UnsafeByteArrayInputStream(readMessageData(is)),
                                     (Invocation) getRequestData(id), proto);
                         }
-                        data = result;
+                        data = result;  // 实际类型为 DecodeableRpcResult
                     }
-                    res.setResult(data);
+                    res.setResult(data);    // 将 DecodeableRpcResult 保存到 Response 中，DecodeableRpcResult 中包含了 value 和 attachment 两部分
                 } else {
                     ObjectInput in = CodecSupport.deserialize(channel.getUrl(), is, proto);
                     res.setErrorMessage(in.readUTF());

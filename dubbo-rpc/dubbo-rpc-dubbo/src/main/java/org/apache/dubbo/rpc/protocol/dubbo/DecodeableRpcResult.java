@@ -74,10 +74,10 @@ public class DecodeableRpcResult extends RpcResult implements Codec, Decodeable 
     public Object decode(Channel channel, InputStream input) throws IOException {
         ObjectInput in = CodecSupport.getSerialization(channel.getUrl(), serializationType)
                 .deserialize(channel.getUrl(), input);
-
-        byte flag = in.readByte();  // 没看懂啥意思
-        switch (flag) {                             // | magic | flag | status | reqID | len |
-            case DubboCodec.RESPONSE_NULL_VALUE:    // |   2   |   1  |    1   |   8   |  4  |
+        // 从这里可以看出来，根据数据包体第一个字节的内容，完成的 Response 构成可能为：headers（16 个字节）flag（标志位 1 个字节）[value（由 invocation 的 returnType 指定）] [attachment（一定为 map 类型）]
+        byte flag = in.readByte();  // 没看懂啥意思    // | magic | flag | status | reqID | len |
+        switch (flag) {                              // |   2   |   1  |    1   |   8   |  4  |
+            case DubboCodec.RESPONSE_NULL_VALUE:
                 break;
             case DubboCodec.RESPONSE_VALUE:
                 handleValue(in);
@@ -89,7 +89,7 @@ public class DecodeableRpcResult extends RpcResult implements Codec, Decodeable 
                 handleAttachment(in);
                 break;
             case DubboCodec.RESPONSE_VALUE_WITH_ATTACHMENTS:
-                handleValue(in);
+                handleValue(in);    // 获取相应的结果，保存到父类 RpcResult 中
                 handleAttachment(in);
                 break;
             case DubboCodec.RESPONSE_WITH_EXCEPTION_WITH_ATTACHMENTS:
@@ -117,7 +117,7 @@ public class DecodeableRpcResult extends RpcResult implements Codec, Decodeable 
                 response.setStatus(Response.CLIENT_ERROR);
                 response.setErrorMessage(StringUtils.toString(e));
             } finally {
-                hasDecoded = true;
+                hasDecoded = true;  // 将已解码标志位设置为 true
             }
         }
     }
@@ -126,14 +126,14 @@ public class DecodeableRpcResult extends RpcResult implements Codec, Decodeable 
         try {
             Type[] returnTypes = RpcUtils.getReturnTypes(invocation);
             Object value = null;
-            if (ArrayUtils.isEmpty(returnTypes)) {
+            if (ArrayUtils.isEmpty(returnTypes)) {  // 没有确定的返回类型，直接返回 Object
                 value = in.readObject();
             } else if (returnTypes.length == 1) {
-                value = in.readObject((Class<?>) returnTypes[0]);
+                value = in.readObject((Class<?>) returnTypes[0]);   // 此 else if 条件的执行逻辑和 else 基本相同
             } else {
-                value = in.readObject((Class<?>) returnTypes[0], returnTypes[1]);
+                value = in.readObject((Class<?>) returnTypes[0], returnTypes[1]);   // 等价于 else if 中的执行逻辑
             }
-            setValue(value);
+            setValue(value);    // 将获得的结果保存到父类 RpcResult 中
         } catch (ClassNotFoundException e) {
             rethrow(e);
         }
@@ -153,7 +153,7 @@ public class DecodeableRpcResult extends RpcResult implements Codec, Decodeable 
 
     private void handleAttachment(ObjectInput in) throws IOException {
         try {
-            setAttachments((Map<String, String>) in.readObject(Map.class));
+            setAttachments((Map<String, String>) in.readObject(Map.class)); // 这里获取的是 attachment，一定是一个 map 类型
         } catch (ClassNotFoundException e) {
             rethrow(e);
         }
