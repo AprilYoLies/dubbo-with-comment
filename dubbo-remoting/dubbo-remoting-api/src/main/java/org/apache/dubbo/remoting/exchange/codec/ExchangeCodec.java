@@ -94,8 +94,8 @@ public class ExchangeCodec extends TelnetCodec {
         // check magic number.
         // header.
         // 共 16 个字节
-        // | magic | ContentTypeId | null | reqID | len |
-        // |   2   |       1       |   1  |   8   |  4  |
+        // | magic | flag | status | reqID | len |
+        // |   2   |   1  |    1   |   8   |  4  |
         // magic header.
         // protected static final short MAGIC = (short) 0xdabb;
         if (readable > 0 && header[0] != MAGIC_HIGH
@@ -232,8 +232,8 @@ public class ExchangeCodec extends TelnetCodec {
         Serialization serialization = getSerialization(channel);    // 这里就是获取序列化的方式
         // header.
         // 共 16 个字节
-        // | magic |   标志字节位    | null | reqID | len |        |       7      |       6     |      5     |      4 - 0       |
-        // |   2   |       1       |   1  |   8   |  4  |        | FLAG_REQUEST | FLAG_TWOWAY | FLAG_EVENT | SERIALIZATION_ID |
+        // | magic |   标志字节位    | status | reqID | len |        |       7      |       6     |      5     |      4 - 0       |
+        // |   2   |       1       |    1   |   8   |  4  |        | FLAG_REQUEST | FLAG_TWOWAY | FLAG_EVENT | SERIALIZATION_ID |
         byte[] header = new byte[HEADER_LENGTH];
         // set magic number.
         // 将魔幻数字填充到 header 中，以大端的模式进行填充，占用两个字节
@@ -280,8 +280,8 @@ public class ExchangeCodec extends TelnetCodec {
         // 传输的数据量不应该超过 payload 上限
         checkPayload(channel, len);
         // 这是最终的填充的结果
-        // | magic | ContentTypeId | null | reqID | len |
-        // |   2   |       1       |   1  |   8   |  4  |
+        // | magic | ContentTypeId | status | reqID | len |
+        // |   2   |       1       |    1   |   8   |  4  |
         Bytes.int2bytes(len, header, 12);   // 填充 header 最后四个字节的长度信息
         // write
         // 恢复 writerIndex

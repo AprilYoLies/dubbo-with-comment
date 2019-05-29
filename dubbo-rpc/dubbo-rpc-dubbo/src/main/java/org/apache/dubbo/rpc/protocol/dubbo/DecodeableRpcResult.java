@@ -75,9 +75,9 @@ public class DecodeableRpcResult extends RpcResult implements Codec, Decodeable 
         ObjectInput in = CodecSupport.getSerialization(channel.getUrl(), serializationType)
                 .deserialize(channel.getUrl(), input);
 
-        byte flag = in.readByte();
-        switch (flag) {
-            case DubboCodec.RESPONSE_NULL_VALUE:
+        byte flag = in.readByte();  // 没看懂啥意思
+        switch (flag) {                             // | magic | flag | status | reqID | len |
+            case DubboCodec.RESPONSE_NULL_VALUE:    // |   2   |   1  |    1   |   8   |  4  |
                 break;
             case DubboCodec.RESPONSE_VALUE:
                 handleValue(in);

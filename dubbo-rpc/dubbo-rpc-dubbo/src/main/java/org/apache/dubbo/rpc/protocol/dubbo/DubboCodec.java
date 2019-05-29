@@ -65,13 +65,13 @@ public class DubboCodec extends ExchangeCodec {
     @Override
     protected Object decodeBody(Channel channel, InputStream is, byte[] header) throws IOException {
         byte flag = header[2], proto = (byte) (flag & SERIALIZATION_MASK);  // flag & 0001 1111 -> 能够得到 SERIALIZATION_ID 的内容
-        // get request id.                                          // | magic | ContentTypeId | null | reqID | len |
-        long id = Bytes.bytes2long(header, 4);                      // |   2   |       1       |   1  |   8   |  4  |
+        // get request id.                                          // | magic |      flag     | status | reqID | len |
+        long id = Bytes.bytes2long(header, 4);                      // |   2   |       1       |    1   |   8   |  4  |
         if ((flag & FLAG_REQUEST) == 0) { // 如果掩码结果为 0，则说明不是 request 消息，那么将 is 解析为 response
             // decode response.
             Response res = new Response(id);
-            if ((flag & FLAG_EVENT) != 0) {
-                res.setEvent(true);
+            if ((flag & FLAG_EVENT) != 0) { // flag & 0010 0000，这里是检查 event 位是否为 1
+                res.setEvent(true); // 如果是心跳消息，那么此 if 条件就会为真，res 就会设置 mEvent 属性为真
             }
             // get status.
             byte status = header[3];
@@ -87,9 +87,9 @@ public class DubboCodec extends ExchangeCodec {
                         data = decodeEventData(channel, in);
                     } else {
                         DecodeableRpcResult result;
-                        if (channel.getUrl().getParameter(DECODE_IN_IO_THREAD_KEY, DEFAULT_DECODE_IN_IO_THREAD)) {
-                            result = new DecodeableRpcResult(channel, res, is,
-                                    (Invocation) getRequestData(id), proto);
+                        if (channel.getUrl().getParameter(DECODE_IN_IO_THREAD_KEY, DEFAULT_DECODE_IN_IO_THREAD)) {  // decode.in.io 默认为 true
+                            result = new DecodeableRpcResult(channel, res, is,  // channel 为 NettyChannel、res 为 Response、is 为 ChannelBufferInputStream -> NettyBackedChannelBuffer -> Netty 原生 buf
+                                    (Invocation) getRequestData(id), proto);    // getRequestData 为获取 DefaultFuture 中 id 对应的 future、proto 为序列化协议
                             result.decode();
                         } else {
                             result = new DecodeableRpcResult(channel, res,
