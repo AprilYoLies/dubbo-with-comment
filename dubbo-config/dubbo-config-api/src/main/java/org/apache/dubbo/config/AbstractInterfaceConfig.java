@@ -352,7 +352,7 @@ public abstract class AbstractInterfaceConfig extends AbstractMethodConfig {
         // 通过 DynamicConfigurationFactory SPI 接口的 ExtensionLoader 获取 别名为 url.getProtocol() 的 DynamicConfigurationFactory
         DynamicConfigurationFactory factories = ExtensionLoader
                 .getExtensionLoader(DynamicConfigurationFactory.class)
-                .getExtension(url.getProtocol());
+                .getExtension(url.getProtocol());   // 根据 url 的协议获取 DynamicConfigurationFactory 的实现类，可能存在 setter 方法，所以还会通过 inject 方法对相应的属性进行填充
         // 通过 factories 工厂类获取 DynamicConfiguration
         DynamicConfiguration configuration = factories.getDynamicConfiguration(url);
         // 将 DynamicConfiguration 保存到 Environment 中

@@ -52,7 +52,7 @@ public class ZookeeperDynamicConfiguration implements DynamicConfiguration {
     ZookeeperDynamicConfiguration(URL url, ZookeeperTransporter zookeeperTransporter) {
         // 完成对相关属性的填充
         this.url = url;
-        rootPath = "/" + url.getParameter(CONFIG_NAMESPACE_KEY, DEFAULT_GROUP) + "/config";
+        rootPath = "/" + url.getParameter(CONFIG_NAMESPACE_KEY, DEFAULT_GROUP) + "/config"; // config.namespace 默认 dubbo，实际得到 /dubbo/config
 
         initializedLatch = new CountDownLatch(1);
         this.cacheListener = new CacheListener(rootPath, initializedLatch);
