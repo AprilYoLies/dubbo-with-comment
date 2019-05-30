@@ -23,7 +23,7 @@ import org.apache.dubbo.common.extension.SPI;
 /**
  * SpiExtensionFactory
  */
-public class SpiExtensionFactory implements ExtensionFactory {
+public class SpiExtensionFactory implements ExtensionFactory {  // 此 ExtensionFactory 就是获取 SPI 接口对应的 Adaptive 实现类
 
     @Override
     public <T> T getExtension(Class<T> type, String name) {

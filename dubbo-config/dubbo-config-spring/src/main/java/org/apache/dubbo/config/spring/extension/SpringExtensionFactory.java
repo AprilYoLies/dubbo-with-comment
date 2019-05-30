@@ -37,7 +37,7 @@ import java.util.Set;
 /**
  * SpringExtensionFactory
  */
-public class SpringExtensionFactory implements ExtensionFactory {
+public class SpringExtensionFactory implements ExtensionFactory {   // 此 ExtensionFactory 就是从 Spring 容器中获取非 SPI 接口对应的 Adaptive 实现类
     private static final Logger logger = LoggerFactory.getLogger(SpringExtensionFactory.class);
 
     private static final Set<ApplicationContext> CONTEXTS = new ConcurrentHashSet<ApplicationContext>();
@@ -80,14 +80,14 @@ public class SpringExtensionFactory implements ExtensionFactory {
     public <T> T getExtension(Class<T> type, String name) {
 
         //SPI should be get from SpiExtensionFactory
-        if (type.isInterface() && type.isAnnotationPresent(SPI.class)) {
+        if (type.isInterface() && type.isAnnotationPresent(SPI.class)) {    // 跟 SpiExtensionFactory 恰好相反，它是完全忽略 SPI 注解的 Type 类型
             return null;
         }
 
-        for (ApplicationContext context : CONTEXTS) {
+        for (ApplicationContext context : CONTEXTS) {   // 尝试从 Spring 容器中获取 name 名称 type 类型的 bean
             if (context.containsBean(name)) {
                 Object bean = context.getBean(name);
-                if (type.isInstance(bean)) {
+                if (type.isInstance(bean)) {    // 找到了同名同类型的 bean 就直接返回
                     return (T) bean;
                 }
             }
@@ -95,13 +95,13 @@ public class SpringExtensionFactory implements ExtensionFactory {
 
         logger.warn("No spring extension (bean) named:" + name + ", try to find an extension (bean) of type " + type.getName());
 
-        if (Object.class == type) {
+        if (Object.class == type) { // 如果类型为 Object 那就直接返回 null
             return null;
         }
 
         for (ApplicationContext context : CONTEXTS) {
             try {
-                return context.getBean(type);
+                return context.getBean(type);   // 如果没有同时满足 name 和 type 都相同的 bean，那么就尝试着只找到类型匹配的 bean，优先返回找到的第一个 bean
             } catch (NoUniqueBeanDefinitionException multiBeanExe) {
                 logger.warn("Find more than 1 spring extensions (beans) of type " + type.getName() + ", will stop auto injection. Please make sure you have specified the concrete parameter type and there's only one extension of that type.");
             } catch (NoSuchBeanDefinitionException noBeanExe) {

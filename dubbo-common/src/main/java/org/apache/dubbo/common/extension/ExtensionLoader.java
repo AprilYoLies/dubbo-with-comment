@@ -590,7 +590,7 @@ public class ExtensionLoader<T> {
             throw findException(name);
         }
         try {
-            // 尝试从 EXTENSION_INSTANCES 获取 Extension 实例
+            // 尝试从 EXTENSION_INSTANCES 获取 Extension 实例，此 EXTENSION_INSTANCES 存放的是 Class 到实例的映射对
             T instance = (T) EXTENSION_INSTANCES.get(clazz);
             if (instance == null) {
                 // 没有获取到，那就直接通过 class 创建即可
@@ -703,7 +703,7 @@ public class ExtensionLoader<T> {
             synchronized (cachedClasses) {
                 classes = cachedClasses.get();
                 if (classes == null) {
-                    // 没有获取到，便从资源路径加载
+                    // 此方法会加载 type 属性对应的接口的实现类的 class 到 extensionClasses，同时根据不同特性的 class 还会有着针对性的缓存，比如 AdaptiveClass
                     classes = loadExtensionClasses();
                     // 将加载的 ExtensionClasses 放入缓存
                     cachedClasses.set(classes);
@@ -713,7 +713,7 @@ public class ExtensionLoader<T> {
         return classes;
     }
 
-    // synchronized in getExtensionClasses
+    // synchronized in getExtensionClasses，此方法会加载 type 属性对应的接口的实现类的 class 到 extensionClasses，同时根据不同特性的 class 还会有着针对性的缓存，比如 AdaptiveClass
     private Map<String, Class<?>> loadExtensionClasses() {
         // 缓存 SPI 接口的默认名（如果存在的话）
         cacheDefaultExtensionName();
