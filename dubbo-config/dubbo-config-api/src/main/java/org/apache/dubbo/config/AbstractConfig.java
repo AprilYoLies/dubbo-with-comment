@@ -580,7 +580,7 @@ public abstract class AbstractConfig implements Serializable {
             // compositeConfiguration 存储着不同的配置信息
             CompositeConfiguration compositeConfiguration = Environment.getInstance().getConfiguration(getPrefix(), getId());   // compositeConfiguration 包含了四种类型的配置
             InmemoryConfiguration config = new InmemoryConfiguration(getPrefix(), getId()); // 用于保存当前 bean 的 metadata 信息
-            // 将当前类的属性值添加到 config 中，获取的方式比较特别，是通过 get 方法名来查找的
+            // 将当前类的属性值添加到 config 中，获取的方式比较特别，是通过 getter 方法名来查找的
             config.addProperties(getMetaData());    // 相当于是把当前类中通过 getter 方法获取的属性全部添加到 config 中
             // 根据配置信息确定 config 在 compositeConfiguration 中的位置
             if (Environment.getInstance().isConfigCenterFirst()) {

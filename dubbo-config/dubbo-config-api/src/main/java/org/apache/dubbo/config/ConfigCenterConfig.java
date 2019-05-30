@@ -65,7 +65,7 @@ public class ConfigCenterConfig extends AbstractConfig {
     public ConfigCenterConfig() {
     }
 
-    public URL toUrl() {
+    public URL toUrl() {    // 将当前类的 MetaData 转换为 map，向其中添加一个 path -> ConfigCenterConfig 属性，然后将得到的 map 和属性 address 组装成为 URL
         // 获取当前类的属性值
         Map<String, String> map = this.getMetaData();
         if (StringUtils.isEmpty(address)) {

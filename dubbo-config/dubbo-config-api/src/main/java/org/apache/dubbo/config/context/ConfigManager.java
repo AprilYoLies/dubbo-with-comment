@@ -326,7 +326,7 @@ public class ConfigManager {
         getApplication().ifPresent(ApplicationConfig::refresh);
         getMonitor().ifPresent(MonitorConfig::refresh);
         getModule().ifPresent(ModuleConfig::refresh);
-
+        // 这里说明 Application、Monitor、Module 配置项只会存在一个，而 Protocol、Registries、Providers、Consumers 可能存在多个
         getProtocols().values().forEach(ProtocolConfig::refresh);
         getRegistries().values().forEach(RegistryConfig::refresh);
         getProviders().values().forEach(ProviderConfig::refresh);

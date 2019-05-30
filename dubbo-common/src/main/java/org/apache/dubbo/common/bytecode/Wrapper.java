@@ -181,9 +181,9 @@ public abstract class Wrapper {
         // int do(int arg1) => "do(I)I"
         // void do(String arg1,boolean arg2) => "do(Ljava/lang/String;Z)V"
         Map<String, Method> ms = new LinkedHashMap<>(); // <method desc, Method instance>
-        // 保存方法名
+        // 保存方法名，包括 Object 类声明的方法
         List<String> mns = new ArrayList<>(); // method names.
-        // 保存声明方法的类名
+        // 保存方法名，仅限服务接口声明的方法
         List<String> dmns = new ArrayList<>(); // declaring method names.
 
         // get all public field.
@@ -314,7 +314,7 @@ public abstract class Wrapper {
                 // 保存拼接的方法名
                 mns.add(mn);
                 if (m.getDeclaringClass() == c) {
-                    // 保存声明方法的类名
+                    // 保存方法名，仅限服务接口声明的方法
                     dmns.add(mn);
                 }
                 // 保存方法的签名和方法实例
@@ -436,7 +436,7 @@ public abstract class Wrapper {
             wc.getField("pns").set(null, pts.keySet().toArray(new String[0]));
             // mns 集合专门用来保存方法名
             wc.getField("mns").set(null, mns.toArray(new String[0]));
-            // dmns 集合专门用来保存方法的声明类
+            // 保存方法名，仅限服务接口声明的方法
             wc.getField("dmns").set(null, dmns.toArray(new String[0]));
             int ix = 0;
             // ms 保存的是方法签名和方法实例

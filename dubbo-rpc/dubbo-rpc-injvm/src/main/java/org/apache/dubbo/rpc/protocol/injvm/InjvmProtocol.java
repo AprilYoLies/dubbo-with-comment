@@ -98,6 +98,7 @@ public class InjvmProtocol extends AbstractProtocol implements Protocol {
         return new InjvmInvoker<T>(serviceType, url, url.getServiceKey(), exporterMap);
     }
 
+    // url 的 scope 参数为 locol 或者 injvm 为 true，scope 为 remote 或者 generic 为 true 时返回 false
     public boolean isInjvmRefer(URL url) {
         String scope = url.getParameter(SCOPE_KEY); // scope
         // Since injvm protocol is configured explicitly, we don't need to set any extra flag, use normal refer process.

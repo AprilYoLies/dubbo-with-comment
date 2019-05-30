@@ -190,15 +190,15 @@ public abstract class AbstractInterfaceConfig extends AbstractMethodConfig {
     protected String tag;
 
     /**
-     * 检查 ServiceBean 中的 registries 属性，并根据实际情况将其应用到 ConfigCenterConfig
+     * 检查当前 ConfigBean 中的 registries 属性，并根据实际情况将其应用到 ConfigCenterConfig，然后 startConfigCenter
      * <p>
      * Check whether the registry config is exists, and then conversion it to {@link RegistryConfig}
      */
     protected void checkRegistry() {
-        // 优先从环境中获取 registries 相关的配置
+        // 检查 registry 属性是否存在，否则从环境中获取 registries 相关的配置，转换为 registry 填充到属性中
         loadRegistriesFromBackwardConfig();
-
         // 没有获取到的前提下，就根据 registryIds 进行 registries 的注册
+        // 整体优先级是先使用已存在的 registries，没有的话就根据 registriesIds，还是没有就使用 ConfigManager 中的 registries，最后才是新建一个
         convertRegistryIdsToRegistries();
 
         // 对 ServiceBean 中的 registries 进行验证
@@ -209,12 +209,12 @@ public abstract class AbstractInterfaceConfig extends AbstractMethodConfig {
             }
         }
 
-        // 查看是否有使用了 zookeeper 协议的 registry，如果有，就将 registry 中的相关属性添加到 ConfigCenterConfig 中
+        // 找到 registries 中第一个使用 zookeeper 协议的，将此 registry 的协议和地址填充到 ConfigCenterConfig 中，然后将这个配置中心填充到当前 reference 实例中，启动配置中心
         useRegistryForConfigIfNecessary();
     }
 
     /**
-     * 检查 application 属性是否存在，并对 shutdown.wait 相关的属性进行处理
+     * 检查 application 属性是否存在，将 application 的 name 设置到 ApplicationModel 中，并对 shutdown.wait 相关的属性进行处理
      */
     @SuppressWarnings("deprecation")
     protected void checkApplication() {
@@ -284,7 +284,7 @@ public abstract class AbstractInterfaceConfig extends AbstractMethodConfig {
         }
     }
 
-
+    // 检查 ConfigCenter 是否存在，刷新其属性
     void startConfigCenter() {
         // 这里对应 config-center 标签，存储在 ServiceBean 中
         if (configCenter == null) {
@@ -309,7 +309,7 @@ public abstract class AbstractInterfaceConfig extends AbstractMethodConfig {
             if (!configCenter.checkOrUpdateInited()) {
                 return;
             }
-            // configCenter.toUrl() 是根据 configCenter 生成完整的 url 地址
+            // configCenter.toUrl() 将当 configCenter 的 MetaData 转换为 map，向其中添加一个 path -> ConfigCenterConfig 属性，然后将得到的 map 和属性 address 组装成为 URL
             // getDynamicConfiguration 获取到的是 DynamicConfiguration
             // 以 ZookeeperDynamicConfiguration 为例，ZookeeperDynamicConfiguration 此时已经是持有了 zkClient 实例了
             DynamicConfiguration dynamicConfiguration = getDynamicConfiguration(configCenter.toUrl());
@@ -604,13 +604,14 @@ public abstract class AbstractInterfaceConfig extends AbstractMethodConfig {
 
     /**
      * Legitimacy check of stub, note that: the local will deprecated, and replace with <code>stub</code>
+     * 检查是否有 local 和 stub 属性，如果有且为 true 或者 default，那么需要保证 interfaceClass 对应的 local 和 stub 类存在且为子类或者一致
      *
      * @param interfaceClass for provider side, it is the {@link Class} of the service that will be exported; for consumer
      *                       side, it is the {@link Class} of the remote service interface
      */
     void checkStubAndLocal(Class<?> interfaceClass) {
         if (ConfigUtils.isNotEmpty(local)) {
-            // 如果 ServiceBean 的 local 属性为 local 或者为 true，不论那种情况，都是获取的 xxxLocal 实例
+            // 如果 ServiceBean 的 local 属性为 default 或者为 true，不论那种情况，都是获取的 xxxLocal 实例
             Class<?> localClass = ConfigUtils.isDefault(local) ?
                     ReflectUtils.forName(interfaceClass.getName() + "Local") : ReflectUtils.forName(local);
             verify(interfaceClass, localClass);
@@ -639,6 +640,7 @@ public abstract class AbstractInterfaceConfig extends AbstractMethodConfig {
         }
     }
 
+    // 整体优先级是先使用已存在的 registries，没有的话就根据 registriesIds，还是没有就使用 ConfigManager 中的 registries，最后才是新建一个
     private void convertRegistryIdsToRegistries() {
         // 从环境中获取 registryIds 相关的属性值
         if (StringUtils.isEmpty(registryIds) && CollectionUtils.isEmpty(registries)) {
@@ -715,7 +717,7 @@ public abstract class AbstractInterfaceConfig extends AbstractMethodConfig {
     /**
      * For compatibility purpose, use registry as the default config center if the registry protocol is zookeeper and
      * there's no config center specified explicitly.
-     */
+     */ // 找到 registries 中第一个使用 zookeeper 协议的，将此 registry 的协议和地址填充到 ConfigCenterConfig 中，然后将这个配置中心填充到当前 reference 实例中，启动配置中心
     private void useRegistryForConfigIfNecessary() {
         // 从所有的 registries 中查找第一个使用 zookeeper 协议的，如果找到了，就获取 ConfigCenterConfig，并将该 registry 的相关信息添加到 ConfigCenterConfig 中
         registries.stream().filter(RegistryConfig::isZookeeperProtocol).findFirst().ifPresent(rc -> {
