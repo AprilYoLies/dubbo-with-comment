@@ -147,7 +147,7 @@ public abstract class AbstractPeer implements Endpoint, ChannelHandler {
     public void received(Channel ch, Object msg) throws RemotingException {
         if (closed) {
             return;
-        }
+        }   // handler: NettyClient -> MultiMessageHandler -> HeartBeatHandler -> AllChannelHandler
         handler.received(ch, msg);
     }
 

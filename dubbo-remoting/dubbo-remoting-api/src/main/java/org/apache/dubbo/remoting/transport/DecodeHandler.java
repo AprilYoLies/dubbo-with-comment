@@ -26,7 +26,7 @@ import org.apache.dubbo.remoting.RemotingException;
 import org.apache.dubbo.remoting.exchange.Request;
 import org.apache.dubbo.remoting.exchange.Response;
 
-public class DecodeHandler extends AbstractChannelHandlerDelegate {
+public class DecodeHandler extends AbstractChannelHandlerDelegate { // 如果是接收消息，那个这个类会检查消息是否已经是完成解码，然后完成对应的解码工作，所以被叫做 DecodeHandler
 
     private static final Logger log = LoggerFactory.getLogger(DecodeHandler.class);
 
@@ -47,7 +47,7 @@ public class DecodeHandler extends AbstractChannelHandlerDelegate {
         if (message instanceof Response) {
             decode(((Response) message).getResult());   // 对 response 中的 data 进行解码（只是尝试，因为 data 可能是已解码状态）
         }
-
+        // handler: NettyClient -> MultiMessageHandler -> HeartBeatHandler -> AllChannelHandler -> （AllChannelHandler 持有）DecodeHandler -> HeaderExchangeHandler -> DubboProtocol$1
         handler.received(channel, message); // 调用服务方法，将返回结果通过 channel 写回
     }
 

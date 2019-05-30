@@ -148,7 +148,7 @@ public class DefaultFuture implements ResponseFuture {
         try {
             DefaultFuture future = FUTURES.remove(response.getId());
             if (future != null) {
-                future.doReceived(response);    // 进行真正的接收操作
+                future.doReceived(response);    // 进行真正的接收操作，按理说已经是提交过定时任务来执行此过程了
             } else {
                 logger.warn("The timeout response finally returned at "
                         + (new SimpleDateFormat("yyyy-MM-dd HH:mm:ss.SSS").format(new Date()))

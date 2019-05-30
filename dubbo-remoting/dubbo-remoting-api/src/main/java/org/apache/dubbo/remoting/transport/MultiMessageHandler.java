@@ -37,7 +37,7 @@ public class MultiMessageHandler extends AbstractChannelHandlerDelegate {
             MultiMessage list = (MultiMessage) message;
             for (Object obj : list) {   // 整体处理
                 handler.received(channel, obj);
-            }
+            }   // handler: NettyClient -> MultiMessageHandler -> HeartBeatHandler -> AllChannelHandler -> （AllChannelHandler 持有）DecodeHandler -> HeaderExchangeHandler -> DubboProtocol$1
         } else {
             handler.received(channel, message); // 逐个处理
         }

@@ -47,7 +47,7 @@ public class HeaderExchangeHandler implements ChannelHandlerDelegate {
     public static final String KEY_READ_TIMESTAMP = HeartbeatHandler.KEY_READ_TIMESTAMP;
 
     public static final String KEY_WRITE_TIMESTAMP = HeartbeatHandler.KEY_WRITE_TIMESTAMP;
-    // handler 为 DubboProtocol 类中的 ExchangeHandlerAdapter 匿名内部类
+    // handler 为 DubboProtocol 类中的 ExchangeHandlerAdapter 匿名内部类，需要关注此 handler 是如何被初始化的
     private final ExchangeHandler handler;
 
     public HeaderExchangeHandler(ExchangeHandler handler) {
@@ -57,6 +57,7 @@ public class HeaderExchangeHandler implements ChannelHandlerDelegate {
         this.handler = handler;
     }
 
+    // 此方法主要是从 DefaultFuture 的 FUTURES 中获取 response id 对应的 DefaultFuture，然后将 response 赋值为 DefaultFuture 的 response 属性
     static void handleResponse(Channel channel, Response response) throws RemotingException {
         if (response != null && !response.isHeartbeat()) {
             DefaultFuture.received(channel, response);
@@ -130,7 +131,7 @@ public class HeaderExchangeHandler implements ChannelHandlerDelegate {
         }
     }
 
-    @Override
+    @Override   // 对于连接消息，此 handler 就是为 channel 添加两个时间戳属性
     public void connected(Channel channel) throws RemotingException {
         // 添加 READ_TIMESTAMP 属性，值为当前时间戳
         channel.setAttribute(KEY_READ_TIMESTAMP, System.currentTimeMillis());
@@ -138,8 +139,8 @@ public class HeaderExchangeHandler implements ChannelHandlerDelegate {
         channel.setAttribute(KEY_WRITE_TIMESTAMP, System.currentTimeMillis());
         // 获取 channel 中的 HeaderExchangeChannel，没有的话就新建一个
         ExchangeChannel exchangeChannel = HeaderExchangeChannel.getOrAddChannel(channel);
-        try {
-            handler.connected(exchangeChannel);
+        try {   // handler: NettyClient -> MultiMessageHandler -> HeartBeatHandler -> AllChannelHandler -> （AllChannelHandler 持有）DecodeHandler -> HeaderExchangeHandler -> DubboProtocol$1
+            handler.connected(exchangeChannel); // 本方法主要是根据 url 的 on-connection 参数构建对应的 invocation，再调用 reply 方法
         } finally {
             HeaderExchangeChannel.removeChannelIfDisconnected(channel);
         }
@@ -189,6 +190,7 @@ public class HeaderExchangeHandler implements ChannelHandlerDelegate {
     }
 
     @Override
+    // 如果 message 是 response，此方法主要是从 DefaultFuture 的 FUTURES 中获取 response id 对应的 DefaultFuture，然后将 response 赋值为 DefaultFuture 的 response 属性
     public void received(Channel channel, Object message) throws RemotingException {
         channel.setAttribute(KEY_READ_TIMESTAMP, System.currentTimeMillis());   // 设置 READ_TIMESTAMP 属性
         final ExchangeChannel exchangeChannel = HeaderExchangeChannel.getOrAddChannel(channel); // 尝试获取 channel 中的 HeaderExchangeChannel 属性值，没有的话就新建一个，然后保存到 channel 中
@@ -205,7 +207,7 @@ public class HeaderExchangeHandler implements ChannelHandlerDelegate {
                         handler.received(exchangeChannel, request.getData());
                     }
                 }
-            } else if (message instanceof Response) {   // 处理响应
+            } else if (message instanceof Response) {   // 此方法主要是从 DefaultFuture 的 FUTURES 中获取 response id 对应的 DefaultFuture，然后将 response 赋值为 DefaultFuture 的 response 属性
                 handleResponse(channel, (Response) message);
             } else if (message instanceof String) { // 处理字符串
                 if (isClientSide(channel)) {    // 客户端处理方式

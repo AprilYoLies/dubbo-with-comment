@@ -94,7 +94,7 @@ final public class NettyCodecAdapter {  // 此 NettyCodecAdapter 仅仅是提供
                     // 这是真正的解码逻辑，即将 buf 解析为 java 对象
                     Object msg = codec.decode(channel, message);
                     if (msg == Codec2.DecodeResult.NEED_MORE_INPUT) {
-                        message.readerIndex(saveReaderIndex);   // 没能解析出结果，恢复备份的 readerIndex
+                        message.readerIndex(saveReaderIndex);   // 没能解析出结果，恢复备份的 readerIndex，其实后续的解码器已经进行过恢复了，个人感觉可以省略
                         break;
                     } else {
                         //is it possible to go here ?

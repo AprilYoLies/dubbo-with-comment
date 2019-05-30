@@ -77,7 +77,7 @@ public class ExchangeCodec extends TelnetCodec {
         }
     }
 
-    @Override
+    @Override   // 此方法会在确保数据存在的情况下优先提取不超过 header 长度的数据
     public Object decode(Channel channel, ChannelBuffer buffer) throws IOException {
         // 先获取 buffer 的可读字节数
         int readable = buffer.readableBytes();

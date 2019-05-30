@@ -61,7 +61,7 @@ public class AllChannelHandler extends WrappedChannelHandler {  // 之所以被�
     @Override
     public void received(Channel channel, Object message) throws RemotingException {
         ExecutorService executor = getExecutorService();
-        try {
+        try {   // handler: NettyClient -> MultiMessageHandler -> HeartBeatHandler -> AllChannelHandler -> （AllChannelHandler 持有）DecodeHandler -> HeaderExchangeHandler -> DubboProtocol$1
             executor.execute(new ChannelEventRunnable(channel, handler, ChannelState.RECEIVED, message));
         } catch (Throwable t) {
             //TODO A temporary solution to the problem that the exception information can not be sent to the opposite end after the thread pool is full. Need a refactoring

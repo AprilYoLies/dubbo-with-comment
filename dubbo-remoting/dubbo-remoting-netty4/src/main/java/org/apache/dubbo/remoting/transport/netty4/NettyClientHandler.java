@@ -55,7 +55,7 @@ public class NettyClientHandler extends ChannelDuplexHandler {
     @Override
     public void channelActive(ChannelHandlerContext ctx) throws Exception {
         NettyChannel channel = NettyChannel.getOrAddChannel(ctx.channel(), url, handler);   // 尝试从 CHANNEL_MAP 中获取 netty 原生 channel 的装饰者 channel，如果没有获取到，那么就直接新建一个
-        try {
+        try {   // handler: NettyClient -> MultiMessageHandler -> HeartBeatHandler -> AllChannelHandler -> （AllChannelHandler 持有）DecodeHandler -> HeaderExchangeHandler -> DubboProtocol$1
             handler.connected(channel);
         } finally {
             NettyChannel.removeChannelIfDisconnected(ctx.channel());
@@ -65,7 +65,7 @@ public class NettyClientHandler extends ChannelDuplexHandler {
     @Override
     public void channelInactive(ChannelHandlerContext ctx) throws Exception {
         NettyChannel channel = NettyChannel.getOrAddChannel(ctx.channel(), url, handler);
-        try {
+        try {  // handler: NettyClient -> MultiMessageHandler -> HeartBeatHandler -> AllChannelHandler -> （AllChannelHandler 持有）DecodeHandler -> HeaderExchangeHandler -> DubboProtocol$1
             handler.disconnected(channel);
         } finally {
             NettyChannel.removeChannelIfDisconnected(ctx.channel());
@@ -75,7 +75,7 @@ public class NettyClientHandler extends ChannelDuplexHandler {
     @Override
     public void channelRead(ChannelHandlerContext ctx, Object msg) throws Exception {
         NettyChannel channel = NettyChannel.getOrAddChannel(ctx.channel(), url, handler);
-        try {
+        try {   // handler: NettyClient -> MultiMessageHandler -> HeartBeatHandler -> AllChannelHandler -> （AllChannelHandler 持有）DecodeHandler -> HeaderExchangeHandler -> DubboProtocol$1
             handler.received(channel, msg);
         } finally {
             NettyChannel.removeChannelIfDisconnected(ctx.channel());
@@ -95,7 +95,7 @@ public class NettyClientHandler extends ChannelDuplexHandler {
             try {
                 if (future.isSuccess()) {
                     // if our future is success, mark the future to sent.此方法貌似没有干什么重要的事情
-                    handler.sent(channel, msg);
+                    handler.sent(channel, msg); // handler: NettyClient -> MultiMessageHandler -> HeartBeatHandler -> AllChannelHandler
                     return;
                 }
 
@@ -111,16 +111,16 @@ public class NettyClientHandler extends ChannelDuplexHandler {
         });
     }
 
-    @Override
+    @Override   // 心跳消息的传播
     public void userEventTriggered(ChannelHandlerContext ctx, Object evt) throws Exception {
         if (evt instanceof IdleStateEvent) {
-            try {
+            try {   // handler: NettyClient -> MultiMessageHandler -> HeartBeatHandler -> AllChannelHandler -> （AllChannelHandler 持有）DecodeHandler -> HeaderExchangeHandler -> DubboProtocol$1
                 NettyChannel channel = NettyChannel.getOrAddChannel(ctx.channel(), url, handler);
                 if (logger.isDebugEnabled()) {
                     logger.debug("IdleStateEvent triggered, send heartbeat to channel " + channel);
                 }
                 Request req = new Request();
-                req.setVersion(Version.getProtocolVersion());
+                req.setVersion(Version.getProtocolVersion());   // 2.0.2
                 req.setTwoWay(true);
                 req.setEvent(Request.HEARTBEAT_EVENT);
                 channel.send(req);
@@ -132,11 +132,11 @@ public class NettyClientHandler extends ChannelDuplexHandler {
         }
     }
 
-    @Override
+    @Override   // 全局的异常处理
     public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause)
-            throws Exception {
+            throws Exception {  // handler: NettyClient -> MultiMessageHandler -> HeartBeatHandler -> AllChannelHandler -> （AllChannelHandler 持有）DecodeHandler -> HeaderExchangeHandler -> DubboProtocol$1
         NettyChannel channel = NettyChannel.getOrAddChannel(ctx.channel(), url, handler);
-        try {
+        try {   // handler: NettyClient -> MultiMessageHandler -> HeartBeatHandler -> AllChannelHandler -> （AllChannelHandler 持有）DecodeHandler -> HeaderExchangeHandler -> DubboProtocol$1
             handler.caught(channel, cause);
         } finally {
             NettyChannel.removeChannelIfDisconnected(ctx.channel());

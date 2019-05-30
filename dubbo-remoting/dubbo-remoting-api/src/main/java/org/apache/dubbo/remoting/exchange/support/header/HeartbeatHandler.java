@@ -87,7 +87,7 @@ public class HeartbeatHandler extends AbstractChannelHandlerDelegate {
                 logger.debug("Receive heartbeat response in thread " + Thread.currentThread().getName());
             }
             return;
-        }
+        }   // handler: NettyClient -> MultiMessageHandler -> HeartBeatHandler -> AllChannelHandler -> （AllChannelHandler 持有）DecodeHandler -> HeaderExchangeHandler -> DubboProtocol$1
         handler.received(channel, message);
     }
 

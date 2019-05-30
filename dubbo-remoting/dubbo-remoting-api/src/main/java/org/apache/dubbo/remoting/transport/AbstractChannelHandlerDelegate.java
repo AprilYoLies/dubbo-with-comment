@@ -40,8 +40,8 @@ public abstract class AbstractChannelHandlerDelegate implements ChannelHandlerDe
 
     @Override
     public void connected(Channel channel) throws RemotingException {
-        // 这里持有的是 HearbeatHandler
-        handler.connected(channel);
+        // handler: NettyClient -> MultiMessageHandler -> HeartBeatHandler -> AllChannelHandler -> （AllChannelHandler 持有）DecodeHandler -> HeaderExchangeHandler -> DubboProtocol$1
+        handler.connected(channel); // 本方法主要是根据 url 的 on-connection 参数构建对应的 invocation，再调用 reply 方法
     }
 
     @Override

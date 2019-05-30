@@ -176,7 +176,7 @@ public class DubboProtocol extends AbstractProtocol {
 
         @Override
         public void connected(Channel channel) throws RemotingException {
-            // onconnect
+            // onconnect，本方法主要是根据 url 的 on-connection 参数构建对应的 invocation，再调用 reply 方法
             invoke(channel, ON_CONNECT_KEY);
         }
 
@@ -188,7 +188,7 @@ public class DubboProtocol extends AbstractProtocol {
             invoke(channel, ON_DISCONNECT_KEY);
         }
 
-        // channel 实际为 HeaderExchangeChannel，内部持有了 netty 的原生 channel，methodKey 这里是 oncconnect
+        // channel 实际为 HeaderExchangeChannel，内部持有了 netty 的原生 channel，methodKey 这里是 oncconnect，本方法主要是根据 url 的 on-connection 参数构建对应的 invocation，再调用 reply 方法
         private void invoke(Channel channel, String methodKey) {
             Invocation invocation = createInvocation(channel, channel.getUrl(), methodKey); // 创建的 Invocation 仅仅是保存了一些从 url 中获取的参数
             if (invocation != null) {

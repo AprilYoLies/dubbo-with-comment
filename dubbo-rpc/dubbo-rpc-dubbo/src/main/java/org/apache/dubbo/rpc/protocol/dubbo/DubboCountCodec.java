@@ -31,7 +31,8 @@ import java.io.IOException;
 import static org.apache.dubbo.common.constants.RpcConstants.INPUT_KEY;
 import static org.apache.dubbo.common.constants.RpcConstants.OUTPUT_KEY;
 
-public final class DubboCountCodec implements Codec2 {  // 此 codec 主要是在解码时，进行一些相关的计数
+// 此 codec 主要是在解码时，进行一些相关的计数，比如 readIndex 的值，以便于在数据包不全时进行恢复，同时还会为 Request 或者 Response 添加数据包长度的信息
+public final class DubboCountCodec implements Codec2 {
     // 通过 DubboCodec 进行
     private DubboCodec codec = new DubboCodec();
 
@@ -70,13 +71,13 @@ public final class DubboCountCodec implements Codec2 {  // 此 codec 主要是�
             return;
         }
         if (result instanceof Request) {
-            try {
+            try {   // 为 Request 的 data 即 RpcInvocation 的 attachment 添加一个 input -> 数据包长度的属性
                 ((RpcInvocation) ((Request) result).getData()).setAttachment(INPUT_KEY, String.valueOf(bytes)); // input -> 数据长度
             } catch (Throwable e) {
                 /* ignore */
             }
         } else if (result instanceof Response) {
-            try {
+            try {   // 为 Response 的 result 即 RpcResult 的 attachment 添加一个 output -> 数据包长度的属性
                 ((RpcResult) ((Response) result).getResult()).setAttachment(OUTPUT_KEY, String.valueOf(bytes)); // output -> 数据长度
             } catch (Throwable e) {
                 /* ignore */
