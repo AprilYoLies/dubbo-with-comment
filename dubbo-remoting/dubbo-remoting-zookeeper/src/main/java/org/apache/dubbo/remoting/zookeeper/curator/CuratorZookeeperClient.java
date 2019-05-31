@@ -53,6 +53,7 @@ public class CuratorZookeeperClient extends AbstractZookeeperClient<CuratorZooke
     private final CuratorFramework client;
     private Map<String, TreeCache> treeCacheMap = new ConcurrentHashMap<>();
 
+    // zookeeper://127.0.0.1:2181/org.apache.dubbo.remoting.zookeeper.ZookeeperTransporter?timeout=3000
     // 构建 CuratorZookeeperClient，本质是操作的 client 属性，在构造函数中主要也就是完成此 client 的构建
     public CuratorZookeeperClient(URL url) {
         // 保存 url 地址
@@ -60,7 +61,7 @@ public class CuratorZookeeperClient extends AbstractZookeeperClient<CuratorZooke
         try {
             int timeout = url.getParameter(TIMEOUT_KEY, 5000);  // timeout 默认 5000，这里需要用到 timeout 值，所以需要保留
             CuratorFrameworkFactory.Builder builder = CuratorFrameworkFactory.builder() // 需要好好研究一下 CuratorFrameworkFactory 的使用方式
-                    // 备用地址
+                    // 127.0.0.1:2181,备用地址1：端口,备用地址2：端口
                     .connectString(url.getBackupAddress())  // 这里需要拥戴 backup 地址，所以需要保留
                     // 重试策略
                     .retryPolicy(new RetryNTimes(1, 1000))

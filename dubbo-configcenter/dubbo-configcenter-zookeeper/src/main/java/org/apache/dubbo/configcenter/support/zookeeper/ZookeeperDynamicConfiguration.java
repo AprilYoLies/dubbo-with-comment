@@ -52,8 +52,8 @@ public class ZookeeperDynamicConfiguration implements DynamicConfiguration {    
     ZookeeperDynamicConfiguration(URL url, ZookeeperTransporter zookeeperTransporter) {
         // 完成对相关属性的填充
         this.url = url;
+        // path 在 listeners 缓存中做 key，用来映射 ConcurrentMap<DataListener, TargetDataListener>，在 treeCacheMap 中做 key，用来映射 TreeCache，TreeCache 也持有了 path
         rootPath = "/" + url.getParameter(CONFIG_NAMESPACE_KEY, DEFAULT_GROUP) + "/config"; // config.namespace 默认 dubbo，实际得到 /dubbo/config
-
         initializedLatch = new CountDownLatch(1);
         this.cacheListener = new CacheListener(rootPath, initializedLatch); // 该类会监听 EventType，如果是 EventType.INITIALIZED，会释放 CountDownLatch，否则会构建对应的 ConfigChangeEvent，交由它持有的 Listener 执行
         this.executor = Executors.newFixedThreadPool(1, new NamedThreadFactory(this.getClass().getSimpleName(), true));
@@ -101,7 +101,7 @@ public class ZookeeperDynamicConfiguration implements DynamicConfiguration {    
      * @return
      * @throws IllegalStateException
      */
-    @Override
+    @Override   // key -> dubbo.properties
     public String getConfig(String key, String group, long timeout) throws IllegalStateException {
         /**
          * when group is not null, we are getting startup configs from Config Center, for example:
@@ -122,7 +122,7 @@ public class ZookeeperDynamicConfiguration implements DynamicConfiguration {    
             key = key.substring(0, i) + "/" + key.substring(i + 1);
         }
 
-        // 尝试获取 zookeeper 中的配置文件
+        // 尝试获取 zookeeper 中的配置文件    /dubbo/config/dubbo/dubbo.properties
         return (String) getInternalProperty(rootPath + "/" + key);
     }
 }

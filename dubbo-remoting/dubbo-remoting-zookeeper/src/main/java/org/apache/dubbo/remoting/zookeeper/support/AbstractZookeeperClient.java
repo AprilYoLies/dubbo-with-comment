@@ -119,7 +119,7 @@ public abstract class AbstractZookeeperClient<TargetDataListener, TargetChildLis
         if (dataListenerMap == null) {
             listeners.putIfAbsent(path, new ConcurrentHashMap<DataListener, TargetDataListener>());
             dataListenerMap = listeners.get(path);
-        }
+        }   // path 在 listeners 缓存中做 key，用来映射 ConcurrentMap<DataListener, TargetDataListener>，在 treeCacheMap 中做 key，用来映射 TreeCache，TreeCache 也持有了 path
         TargetDataListener targetListener = dataListenerMap.get(listener);
         if (targetListener == null) {   // 创建的是 CuratorZookeeperClient.CuratorWatcherImpl，仅仅是将 DataListener 保存到字段中，并没有什么额外的操作，
             dataListenerMap.putIfAbsent(listener, createTargetDataListener(path, listener));    // 也就是形成了 DataListener -> CuratorZookeeperClient.CuratorWatcherImpl 的映射

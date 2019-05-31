@@ -313,26 +313,26 @@ public abstract class AbstractInterfaceConfig extends AbstractMethodConfig {
             // getDynamicConfiguration 获取到的是 DynamicConfiguration
             // 以 ZookeeperDynamicConfiguration 为例，ZookeeperDynamicConfiguration 此时已经是持有了 zkClient 实例了
             DynamicConfiguration dynamicConfiguration = getDynamicConfiguration(configCenter.toUrl());
-            // 尝试从 zookeeper 中获取配置文件，参数 key 和 group 均是通过 config-center 标签进行设置
-            String configContent = dynamicConfiguration.getConfig(configCenter.getConfigFile(), configCenter.getGroup());
+            // 尝试从 zookeeper 中获取配置文件，参数 key 和 group 均是通过 config-center 标签进行设置，dubbo.properties,dubbo
+            String configContent = dynamicConfiguration.getConfig(configCenter.getConfigFile(), configCenter.getGroup());   // /dubbo/config/dubbo/dubbo.properties
 
             // 使用 application name 作为 appGroup
             String appGroup = application != null ? application.getName() : null;
             String appConfigContent = null;
             if (StringUtils.isNotEmpty(appGroup)) {
                 // 从 zookeeper 的 appGroup/configCenter.getAppConfigFile 或者 appGroup/configCenter.getConfigFile 路径下获取 appConfigContent
-                appConfigContent = dynamicConfiguration.getConfig
+                appConfigContent = dynamicConfiguration.getConfig   // 优先 configCenter 的 appConfigFile，然后再是 configFile 作为 key，group 为 demo-consumer
                         (StringUtils.isNotEmpty(configCenter.getAppConfigFile()) ? configCenter.getAppConfigFile() : configCenter.getConfigFile(),
                                 appGroup
-                        );
+                        );  // /dubbo/config/group/config-file
             }
             try {
                 // 设置 configCenter 的优先级
                 Environment.getInstance().setConfigCenterFirst(configCenter.isHighestPriority());
-                // 将从 zookeeper 中获取的配置更新到 ExternalConfigurationMap 中
-                Environment.getInstance().updateExternalConfigurationMap(parseProperties(configContent));
-                // 将从 zookeeper 中获取的配置更新到 AppExternalConfiguration 中
-                Environment.getInstance().updateAppExternalConfigurationMap(parseProperties(appConfigContent));
+                // 将从 zookeeper 中获取的配置更新到 ExternalConfigurationMap 中    位于 zookeeper 的 /dubbo/config/dubbo/dubbo.properties 路径之下
+                Environment.getInstance().updateExternalConfigurationMap(parseProperties(configContent));   // 更新四种配置中的 ExternalConfiguration
+                // 将从 zookeeper 中获取的配置更新到 AppExternalConfiguration 中    位于 zookeeper 的 /dubbo/config/group/config-file 路径之下
+                Environment.getInstance().updateAppExternalConfigurationMap(parseProperties(appConfigContent)); // 更新四种配置中的 AppExternalConfiguration
             } catch (IOException e) {
                 throw new IllegalStateException("Failed to parse configurations from Config Center.", e);
             }

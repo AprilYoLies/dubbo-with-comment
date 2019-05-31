@@ -429,11 +429,11 @@ class URL implements Serializable {
     }
 
     public String getBackupAddress() {
-        return getBackupAddress(0);
+        return getBackupAddress(0); // 127.0.0.1:2181,备用地址1：端口,备用地址2：端口
     }
 
-    public String getBackupAddress(int defaultPort) {
-        StringBuilder address = new StringBuilder(appendDefaultPort(getAddress(), defaultPort));
+    public String getBackupAddress(int defaultPort) {   // appendDefaultPort 方法在满足条件的情况下，用默认端口替换 address 的端口
+        StringBuilder address = new StringBuilder(appendDefaultPort(getAddress(), defaultPort));    // 127.0.0.1:2181
         String[] backups = getParameter(RemotingConstants.BACKUP_KEY, new String[0]);
         if (ArrayUtils.isNotEmpty(backups)) {
             for (String backup : backups) {
@@ -441,7 +441,7 @@ class URL implements Serializable {
                 address.append(appendDefaultPort(backup, defaultPort));
             }
         }
-        return address.toString();
+        return address.toString();  // 127.0.0.1:2181,备用地址1：端口,备用地址2：端口
     }
 
     public List<URL> getBackupUrls() {  // 即获取 backup 参数
@@ -456,13 +456,14 @@ class URL implements Serializable {
         return urls;
     }
 
-    static String appendDefaultPort(String address, int defaultPort) {
-        if (address != null && address.length() > 0 && defaultPort > 0) {
+    // 在满足条件的情况下，用默认端口替换 address 的端口
+    static String appendDefaultPort(String address, int defaultPort) {  // address -> 127.0.0.1:2181    defaultPort -> 0
+        if (address != null && address.length() > 0 && defaultPort > 0) {   // 如果 address 不为空，默认端口大于 0
             int i = address.indexOf(':');
-            if (i < 0) {
+            if (i < 0) {    // address 没有指定端口，就使用默认端口
                 return address + ":" + defaultPort;
             } else if (Integer.parseInt(address.substring(i + 1)) == 0) {
-                return address.substring(0, i + 1) + defaultPort;
+                return address.substring(0, i + 1) + defaultPort;   // address 的端口为 0，用默认端口替换 address 的端口
             }
         }
         return address;
