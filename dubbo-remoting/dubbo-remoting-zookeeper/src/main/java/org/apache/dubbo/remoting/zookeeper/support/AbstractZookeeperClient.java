@@ -110,16 +110,19 @@ public abstract class AbstractZookeeperClient<TargetDataListener, TargetChildLis
         this.addDataListener(path, listener, null);
     }
 
-    @Override
+    // 此方法会根据 path 优先从 listeners 缓存中获取 ConcurrentMap<DataListener, TargetDataListener>，然后尝试根据 DataListener 从此 map 中获取 TargetDataListener，
+    // 即 CuratorZookeeperClient.CuratorWatcherImpl（仅仅是引用 DataListener），最后将获取到的 targetListener 添加到 curator 框架的 TreeCache 中，注意 TreeCache 引用
+    // 了 client 属性，并和 path 一起缓存到 treeCacheMap 中，即一个 path 对应一个 TreeCache
+    @Override   // path -> /dubbo/config    listener -> CacheListen     executor -> ThreadPoolExecutor
     public void addDataListener(String path, DataListener listener, Executor executor) {
-        ConcurrentMap<DataListener, TargetDataListener> dataListenerMap = listeners.get(path);
+        ConcurrentMap<DataListener, TargetDataListener> dataListenerMap = listeners.get(path);  // listener -> (path,(DataListener,TargetListener))
         if (dataListenerMap == null) {
             listeners.putIfAbsent(path, new ConcurrentHashMap<DataListener, TargetDataListener>());
             dataListenerMap = listeners.get(path);
         }
         TargetDataListener targetListener = dataListenerMap.get(listener);
-        if (targetListener == null) {
-            dataListenerMap.putIfAbsent(listener, createTargetDataListener(path, listener));
+        if (targetListener == null) {   // 创建的是 CuratorZookeeperClient.CuratorWatcherImpl，仅仅是将 DataListener 保存到字段中，并没有什么额外的操作，
+            dataListenerMap.putIfAbsent(listener, createTargetDataListener(path, listener));    // 也就是形成了 DataListener -> CuratorZookeeperClient.CuratorWatcherImpl 的映射
             targetListener = dataListenerMap.get(listener);
         }
         addTargetDataListener(path, targetListener, executor);

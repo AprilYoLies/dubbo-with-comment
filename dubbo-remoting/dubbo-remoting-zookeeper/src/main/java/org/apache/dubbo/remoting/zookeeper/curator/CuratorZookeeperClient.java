@@ -53,21 +53,21 @@ public class CuratorZookeeperClient extends AbstractZookeeperClient<CuratorZooke
     private final CuratorFramework client;
     private Map<String, TreeCache> treeCacheMap = new ConcurrentHashMap<>();
 
-
+    // 构建 CuratorZookeeperClient，本质是操作的 client 属性，在构造函数中主要也就是完成此 client 的构建
     public CuratorZookeeperClient(URL url) {
         // 保存 url 地址
         super(url);
         try {
-            int timeout = url.getParameter(TIMEOUT_KEY, 5000);  // timeout
-            CuratorFrameworkFactory.Builder builder = CuratorFrameworkFactory.builder()
+            int timeout = url.getParameter(TIMEOUT_KEY, 5000);  // timeout 默认 5000，这里需要用到 timeout 值，所以需要保留
+            CuratorFrameworkFactory.Builder builder = CuratorFrameworkFactory.builder() // 需要好好研究一下 CuratorFrameworkFactory 的使用方式
                     // 备用地址
-                    .connectString(url.getBackupAddress())
+                    .connectString(url.getBackupAddress())  // 这里需要拥戴 backup 地址，所以需要保留
                     // 重试策略
                     .retryPolicy(new RetryNTimes(1, 1000))
                     // 连接超时策略
                     .connectionTimeoutMs(timeout);
             // 获取授权信息
-            String authority = url.getAuthority();
+            String authority = url.getAuthority();  // 尝试获取 username:password
             if (authority != null && authority.length() > 0) {
                 builder = builder.authorization("digest", authority.getBytes());
             }
@@ -229,16 +229,16 @@ public class CuratorZookeeperClient extends AbstractZookeeperClient<CuratorZooke
         this.addTargetDataListener(path, treeCacheListener, null);
     }
 
-    @Override
+    @Override   // path -> /dubbo/config
     protected void addTargetDataListener(String path, CuratorZookeeperClient.CuratorWatcherImpl treeCacheListener, Executor executor) {
-        try {
-            TreeCache treeCache = TreeCache.newBuilder(client, path).setCacheData(false).build();
-            treeCacheMap.putIfAbsent(path, treeCache);
+        try {   // TreeCache 会监视 zk 的 path 及所有的子路径的变化情况如 update/create/delete events, pull down the data（拉取数据）等，可以为它添加一个监听器用于监听这些事件及变化
+            TreeCache treeCache = TreeCache.newBuilder(client, path).setCacheData(false).build();   // 了解 TreeCache 的作用
+            treeCacheMap.putIfAbsent(path, treeCache); // treeCacheMap -> (path, treeCache)
             treeCache.start();
             if (executor == null) {
-                treeCache.getListenable().addListener(treeCacheListener);
+                treeCache.getListenable().addListener(treeCacheListener);   // 这里添加的是 TargetListener 即 CuratorZookeeperClient.CuratorWatcherImpl
             } else {
-                treeCache.getListenable().addListener(treeCacheListener, executor);
+                treeCache.getListenable().addListener(treeCacheListener, executor); // 这里添加的是 TargetListener 即 CuratorZookeeperClient.CuratorWatcherImpl
             }
         } catch (Exception e) {
             throw new IllegalStateException("Add treeCache listener for path:" + path, e);

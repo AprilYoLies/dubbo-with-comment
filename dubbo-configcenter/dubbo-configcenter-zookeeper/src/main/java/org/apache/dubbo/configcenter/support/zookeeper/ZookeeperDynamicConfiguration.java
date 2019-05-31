@@ -36,7 +36,7 @@ import static org.apache.dubbo.common.constants.ConfigConstants.CONFIG_NAMESPACE
 /**
  *
  */
-public class ZookeeperDynamicConfiguration implements DynamicConfiguration {
+public class ZookeeperDynamicConfiguration implements DynamicConfiguration {    // ZookeeperDynamicConfiguration 被称为配置类，是因为持有了众多的配置相关的信息
     private static final Logger logger = LoggerFactory.getLogger(ZookeeperDynamicConfiguration.class);
 
     private Executor executor;
@@ -48,21 +48,21 @@ public class ZookeeperDynamicConfiguration implements DynamicConfiguration {
     private CacheListener cacheListener;
     private URL url;
 
-
+    // 构造函数，完成了相关属性的设置，如 url、rootPath、initializedLatch、cacheListener、executor、zkClient
     ZookeeperDynamicConfiguration(URL url, ZookeeperTransporter zookeeperTransporter) {
         // 完成对相关属性的填充
         this.url = url;
         rootPath = "/" + url.getParameter(CONFIG_NAMESPACE_KEY, DEFAULT_GROUP) + "/config"; // config.namespace 默认 dubbo，实际得到 /dubbo/config
 
         initializedLatch = new CountDownLatch(1);
-        this.cacheListener = new CacheListener(rootPath, initializedLatch);
+        this.cacheListener = new CacheListener(rootPath, initializedLatch); // 该类会监听 EventType，如果是 EventType.INITIALIZED，会释放 CountDownLatch，否则会构建对应的 ConfigChangeEvent，交由它持有的 Listener 执行
         this.executor = Executors.newFixedThreadPool(1, new NamedThreadFactory(this.getClass().getSimpleName(), true));
-
-        // 获取 ZookeeperClient
+        // 获取 ZookeeperClient，zookeeperTransporter 是 Adaptive 实例，实际是执行的 CuratorZookeeperTransporter 的 connect 方法，而此 connect 方法实际是返回了一个
+        // 新构建的 CuratorZookeeperClient，注意这个 connect 方法的内容较多，主要是还是做了一些关于主机地址和备用地址到 zkClient（CuratorZookeeperClient）的映射缓存操作，还有 registry url 到 client url 的转换
         zkClient = zookeeperTransporter.connect(url);
         zkClient.addDataListener(rootPath, cacheListener, executor);
         try {
-            // Wait for connection
+            // Wait for connection，因为添加了 cacheListener（持有 initializedLatch），在连接成功后会释放 CountDownLatch
             this.initializedLatch.await();
         } catch (InterruptedException e) {
             logger.warn("Failed to build local cache for config center (zookeeper)." + url);

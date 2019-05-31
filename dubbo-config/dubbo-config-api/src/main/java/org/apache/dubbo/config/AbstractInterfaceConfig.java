@@ -339,6 +339,11 @@ public abstract class AbstractInterfaceConfig extends AbstractMethodConfig {
         }
     }
 
+    // 根据 url 的协议获取对应的 DynamicConfigurationFactory，此 DynamicConfigurationFactory 工厂类在获取时通过 inject 方法填充了 zookeeperTransporter 属性，
+    // 作为工厂类，它会根据注入的 zookeeperTransporter 属性来构建 ZookeeperDynamicConfiguration 实例，也就是说 ZookeeperDynamicConfiguration 会持有 zookeeperTransporter
+    // 在构建 ZookeeperDynamicConfiguration 时，会对 zkClient 进行初始化，需要使用到 zookeeperTransporter，它其实是一个 Adaptive 实例，实际调用的是 CuratorZookeeperTransporter
+    // 的 connect 方法，此 connect 方法实际是返回了一个新构建的 CuratorZookeeperClient，注意这个 connect 方法的内容较多，主要是还是做了一些关于主机地址和备用地址到 zkClient（CuratorZookeeperClient）
+    // 的映射缓存操作，还有 registry url 到 client url 的转换
     private DynamicConfiguration getDynamicConfiguration(URL url) {
         // url -> zookeeper://127.0.0.1:2181/ConfigCenterConfig?
         //          address=zookeeper://127.0.0.1:2181&
@@ -353,9 +358,9 @@ public abstract class AbstractInterfaceConfig extends AbstractMethodConfig {
         DynamicConfigurationFactory factories = ExtensionLoader
                 .getExtensionLoader(DynamicConfigurationFactory.class)
                 .getExtension(url.getProtocol());   // 根据 url 的协议获取 DynamicConfigurationFactory 的实现类，可能存在 setter 方法，所以还会通过 inject 方法对相应的属性进行填充
-        // 通过 factories 工厂类获取 DynamicConfiguration
+        // 通过 factories 工厂类获取 DynamicConfiguration，实际获取到的是 ZookeeperDynamicConfiguration
         DynamicConfiguration configuration = factories.getDynamicConfiguration(url);
-        // 将 DynamicConfiguration 保存到 Environment 中
+        // 将 DynamicConfiguration 保存到 Environment 中，实际保存的是 ZookeeperDynamicConfiguration
         Environment.getInstance().setDynamicConfiguration(configuration);
         return configuration;
     }

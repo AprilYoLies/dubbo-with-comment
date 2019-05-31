@@ -21,7 +21,7 @@ import org.apache.dubbo.remoting.zookeeper.ZookeeperClient;
 import org.apache.dubbo.remoting.zookeeper.support.AbstractZookeeperTransporter;
 
 public class CuratorZookeeperTransporter extends AbstractZookeeperTransporter {
-    @Override
+    @Override    // 构建 CuratorZookeeperClient，本质是操作的 client 属性，在构造函数中主要也就是完成此 client 的构建
     public ZookeeperClient createZookeeperClient(URL url) {
         return new CuratorZookeeperClient(url);
     }

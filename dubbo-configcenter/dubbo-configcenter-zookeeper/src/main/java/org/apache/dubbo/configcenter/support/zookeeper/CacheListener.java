@@ -39,7 +39,7 @@ public class CacheListener implements DataListener {
 
     private Map<String, Set<ConfigurationListener>> keyListeners = new ConcurrentHashMap<>();
     private CountDownLatch initializedLatch;
-    private String rootPath;
+    private String rootPath;    // /dubbo/config
 
     public CacheListener(String rootPath, CountDownLatch initializedLatch) {
         this.rootPath = rootPath;
@@ -80,7 +80,7 @@ public class CacheListener implements DataListener {
         }
 
         if (eventType == EventType.INITIALIZED) {
-            initializedLatch.countDown();
+            initializedLatch.countDown();   // 释放 CountDownLatch
             return;
         }
 
@@ -92,9 +92,9 @@ public class CacheListener implements DataListener {
         //  /dubbo/config/service/configurators, other config changes not in this level will not get notified,
         //  say /dubbo/config/dubbo.properties
         if (path.split("/").length >= MIN_PATH_DEPTH) {
-            String key = pathToKey(path);
+            String key = pathToKey(path);   // 根据 path 确定 listener 对应的 key
             ConfigChangeType changeType;
-            switch (eventType) {
+            switch (eventType) {    // 根据事件类型确定
                 case NodeCreated:
                     changeType = ConfigChangeType.ADDED;
                     break;
@@ -109,8 +109,8 @@ public class CacheListener implements DataListener {
             }
 
             ConfigChangeEvent configChangeEvent = new ConfigChangeEvent(key, (String) value, changeType);
-            Set<ConfigurationListener> listeners = keyListeners.get(key);
-            if (CollectionUtils.isNotEmpty(listeners)) {
+            Set<ConfigurationListener> listeners = keyListeners.get(key);   // keyListeners -> (key, Set<ConfigurationListener)
+            if (CollectionUtils.isNotEmpty(listeners)) {    // 将 ConfigChangeEvent 通知到持有的各个 listener
                 listeners.forEach(listener -> listener.process(configChangeEvent));
             }
         }

@@ -68,8 +68,8 @@ public abstract class AbstractZookeeperTransporter implements ZookeeperTransport
             if ((zookeeperClient = fetchAndUpdateZookeeperClientCache(addressList)) != null && zookeeperClient.isConnected()) {
                 logger.info("find valid zookeeper client from the cache for address: " + url);
                 return zookeeperClient;
-            }
-
+            }   // toClientUrl 之前：zookeeper://127.0.0.1:2181/ConfigCenterConfig?address=zookeeper://127.0.0.1:2181&check=true&configFile=dubbo.properties&group=dubbo&highestPriority=false&namespace=dubbo&prefix=dubbo.config-center&timeout=3000&valid=true
+                // toClientUrl 之后：zookeeper://127.0.0.1:2181/org.apache.dubbo.remoting.zookeeper.ZookeeperTransporter?timeout=3000      替换了路径，只保留了 timeout 和 backup 参数
             // 创建 ZookeeperClient 实际是创建的 CuratorZookeeperClient
             zookeeperClient = createZookeeperClient(toClientURL(url));
             logger.info("No valid zookeeper client found from cache, therefore create a new client for url. " + url);
@@ -152,11 +152,11 @@ public abstract class AbstractZookeeperTransporter implements ZookeeperTransport
         // for CuratorZookeeperClient
         if (url.getParameter(TIMEOUT_KEY) != null) {
             // 获取 timeout 参数
-            parameterMap.put(TIMEOUT_KEY, url.getParameter(TIMEOUT_KEY));
+            parameterMap.put(TIMEOUT_KEY, url.getParameter(TIMEOUT_KEY));   // 原 url 的 timeout 属性
         }
         if (url.getParameter(RemotingConstants.BACKUP_KEY) != null) {
             // 获取备用地址
-            parameterMap.put(RemotingConstants.BACKUP_KEY, url.getParameter(RemotingConstants.BACKUP_KEY));
+            parameterMap.put(RemotingConstants.BACKUP_KEY, url.getParameter(RemotingConstants.BACKUP_KEY)); // 原 url 的 backup 属性
         }
         // 这里的 path 为 ZookeeperTransporter，参数就只有 timeout 和 backup
         return new URL(url.getProtocol(), url.getUsername(), url.getPassword(), url.getHost(), url.getPort(),
