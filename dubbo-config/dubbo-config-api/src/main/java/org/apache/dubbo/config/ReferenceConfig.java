@@ -217,7 +217,7 @@ public class ReferenceConfig<T> extends AbstractReferenceConfig {
             throw new IllegalStateException("<dubbo:reference interface=\"\" /> interface not allow null!");
         }
         completeCompoundConfigs();  // 根据 consumer、module、application 属性来完成其它属性的填充，非覆盖
-        startConfigCenter();    // 检查并填充 configCenter，对 ConfigManager 持有的各项信息进行刷新
+        startConfigCenter();    // 核心就是获取 ZookeeperDynamicConfiguration，然后还会根据 configCenter 和 application 的相关属性从 zookeeper 的对应路径下获取配置信息，并更新到四种配置项中，最后刷新各种 ConfigBean
         // get consumer's global configuration
         checkDefault(); // 检查 consumer 是否存在，没有的话就是从 ConfigManager 持有的 consumers 中获取默认的那一项，如果还是没有，那就新建一个
         this.refresh(); // 刷新当前实例
@@ -278,7 +278,7 @@ public class ReferenceConfig<T> extends AbstractReferenceConfig {
         checkMock(interfaceClass);  // 测试相关的，这里先不深入了解
         Map<String, String> map = new HashMap<String, String>();
 
-        map.put(SIDE_KEY, CONSUMER_SIDE);
+        map.put(SIDE_KEY, CONSUMER_SIDE);   // side -> consumer
 
         appendRuntimeParameters(map);   // 添加一些运行时的信息如 version、release、timestamp
         if (!isGeneric()) {
@@ -364,7 +364,7 @@ public class ReferenceConfig<T> extends AbstractReferenceConfig {
                 map.put(METHODS_KEY, StringUtils.join(new HashSet<String>(Arrays.asList(methods)), COMMA_SEPARATOR));   // methods
             }
         }
-        map.put(INTERFACE_KEY, interfaceName);  // interface
+        map.put(INTERFACE_KEY, interfaceName);  // interface -> org.apache.dubbo.demo.DemoService
         appendParameters(map, metrics); // 将 metrics、application、module、consumer、reference 中的配置信息添加到 map 中，属性获取的方式是 getter 方法反射调用
         appendParameters(map, application);
         appendParameters(map, module);
@@ -443,14 +443,16 @@ public class ReferenceConfig<T> extends AbstractReferenceConfig {
             } else { // assemble URL from register center's configuration
                 // if protocols not injvm checkRegistry
                 if (!LOCAL_PROTOCOL.equalsIgnoreCase(getProtocol())) {  // 如果 protocol 不是使用的 injvm
+                    // 检查并填充 registries 属性，找到 registries 中第一个使用 zookeeper 协议的，将此 registry 的协议和地址填充到 ConfigCenterConfig 中，然后将这个配置中心填充到当前 reference 实例中，启动配置中心
+                    // 启动配置中心核心就是获取 ZookeeperDynamicConfiguration，然后还会根据 configCenter 和 application 的相关属性从 zookeeper 的对应路径下获取配置信息，并更新到四种配置项中，最后刷新各种 ConfigBean
                     checkRegistry();    // 检查当前 ConfigBean 中的 registries 属性，并根据实际情况将其应用到 ConfigCenterConfig，然后 startConfigCenter
-                    List<URL> us = loadRegistries(false);   // 获取 registries URL 信息
-                    if (CollectionUtils.isNotEmpty(us)) {
+                    List<URL> us = loadRegistries(false);   // 根据 registries 获取 URL 链信息
+                    if (CollectionUtils.isNotEmpty(us)) {   // 此一部分代码就是用来构建最终的 url 了，期间还考虑了 monitor 参数的问题
                         for (URL u : us) {
-                            URL monitorUrl = loadMonitor(u);
-                            if (monitorUrl != null) {
-                                map.put(MONITOR_KEY, URL.encode(monitorUrl.toFullString()));
-                            }
+                            URL monitorUrl = loadMonitor(u);    // 根据当前 url 获取到 monitor url 信息
+                            if (monitorUrl != null) {   // 将 monitor url 与 monitor 一起映射到 map 中
+                                map.put(MONITOR_KEY, URL.encode(monitorUrl.toFullString()));    // 添加构建的 monitorUrl 到 map 中
+                            }   // 所以添加的 url 最终就是 registry + map 的组合？？
                             urls.add(u.addParameterAndEncoded(REFER_KEY, StringUtils.toQueryString(map)));  // 将每一个 registries URL 地址添加 refer 属性并编码后添加到 urls 中
                         }
                     }
@@ -459,7 +461,7 @@ public class ReferenceConfig<T> extends AbstractReferenceConfig {
                     }
                 }
             }
-
+            // registry://127.0.0.1:2181/org.apache.dubbo.registry.RegistryService?application=demo-consumer&dubbo=2.0.2&pid=77389&refer=application%3Ddemo-consumer%26check%3Dfalse%26dubbo%3D2.0.2%26interface%3Dorg.apache.dubbo.demo.DemoService%26lazy%3Dfalse%26methods%3DsayHello%26pid%3D77389%26register.ip%3D192.168.1.102%26side%3Dconsumer%26sticky%3Dfalse%26timestamp%3D1559300508608&registry=zookeeper&timestamp=1559300517630
             if (urls.size() == 1) {
                 // 这是静态字段，在加载 ServiceBean 的 class 对象时，就会对静态字段进行初始化工作
                 // package org.apache.dubbo.rpc;
@@ -488,11 +490,14 @@ public class ReferenceConfig<T> extends AbstractReferenceConfig {
                 //         String extName = (url.getProtocol() == null ? "dubbo" : url.getProtocol());
                 //         if (extName == null)
                 //             throw new IllegalStateException("Failed to get extension (org.apache.dubbo.rpc.Protocol) name from url (" + url.toString() + ") use keys([protocol])");
+                // 这里实际得到的 extension 类是 ProtocolListenerWrapper
                 //         org.apache.dubbo.rpc.Protocol extension = (org.apache.dubbo.rpc.Protocol) ExtensionLoader.getExtensionLoader(org.apache.dubbo.rpc.Protocol.class).getExtension(extName);
                 //         return extension.refer(arg0, arg1);
                 //     }
                 // }
                 // 得到的是 MockClusterInvoker
+                // ProtocolListenerWrapper -> ProtocolFilterWrapper -> RegistryProtocol -> （RegistryProtocol 持有）RegistryFactory$Adaptive 获取 ZookeeperRegistryFactory ->
+                //
                 invoker = REF_PROTOCOL.refer(interfaceClass, urls.get(0));
             } else {
                 List<Invoker<?>> invokers = new ArrayList<Invoker<?>>();

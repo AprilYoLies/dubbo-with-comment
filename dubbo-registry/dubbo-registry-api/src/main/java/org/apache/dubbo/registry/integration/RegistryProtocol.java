@@ -539,7 +539,7 @@ public class RegistryProtocol implements Protocol {
         // timestamp=1558921508381&
         // registry=zookeeper&
         // timestamp=1558921508775
-        url = URLBuilder.from(url)
+        url = URLBuilder.from(url)  // 此处又将 url 中的 registry 属性拿出来作为 protocol 类型，这里的 registry 其实就是 registry 标签的那个协议，在构建 url 时进行了替换而已
                 .setProtocol(url.getParameter(REGISTRY_KEY, DEFAULT_REGISTRY))
                 .removeParameter(REGISTRY_KEY)
                 .build();

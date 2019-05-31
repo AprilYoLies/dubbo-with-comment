@@ -754,6 +754,7 @@ public class ExtensionLoader<T> {
             }
         }
     }
+
     // dir -> META-INF/dubbo/internal/      type -> org.apache.dubbo.configcenter.DynamicConfigurationFactory
     private void loadDirectory(Map<String, Class<?>> extensionClasses, String dir, String type) {
         // META-INF/dubbo/internal/com.alibaba.dubbo.common.extension.ExtensionFactory

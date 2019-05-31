@@ -208,8 +208,8 @@ public abstract class AbstractInterfaceConfig extends AbstractMethodConfig {
                         "The registry config is: " + registryConfig);
             }
         }
-
-        // 找到 registries 中第一个使用 zookeeper 协议的，将此 registry 的协议和地址填充到 ConfigCenterConfig 中，然后将这个配置中心填充到当前 reference 实例中，启动配置中心
+        // 检查并填充 registries 属性，找到 registries 中第一个使用 zookeeper 协议的，将此 registry 的协议和地址填充到 ConfigCenterConfig 中，然后将这个配置中心填充到当前 reference 实例中，启动配置中心
+        // 启动配置中心核心就是获取 ZookeeperDynamicConfiguration，然后还会根据 configCenter 和 application 的相关属性从 zookeeper 的对应路径下获取配置信息，并更新到四种配置项中，最后刷新各种 ConfigBean
         useRegistryForConfigIfNecessary();
     }
 
@@ -296,13 +296,14 @@ public abstract class AbstractInterfaceConfig extends AbstractMethodConfig {
         if (this.configCenter != null) {
             // TODO there may have duplicate refresh
             this.configCenter.refresh();    // 刷新 configCenter 的属性信息
-            // 准备运行环境
+            // 核心就是获取 ZookeeperDynamicConfiguration，然后还会根据 configCenter 和 application 的相关属性从 zookeeper 的对应路径下获取配置信息，并更新到四种配置项中
             prepareEnvironment();
         }
         // 单例获取 ConfigManager，依据具体的配置信息对相应的 config 进行属性的更新（这里 ConfigManager 持有了全部的配置信息）
-        ConfigManager.getInstance().refreshAll();
+        ConfigManager.getInstance().refreshAll(); // 因为可能从 zookeeper 指定路径下获取了新的配置信息，需要将这部分信息更新到相关的 ConfigBean 中
     }
 
+    // 核心就是获取 ZookeeperDynamicConfiguration，然后还会根据 configCenter 和 application 的相关属性从 zookeeper 的对应路径下获取配置信息，并更新到四种配置项中
     private void prepareEnvironment() {
         if (configCenter.isValid()) {
             // 通过 cas 操作，将 init 状态从 false 修改为 true
@@ -370,7 +371,7 @@ public abstract class AbstractInterfaceConfig extends AbstractMethodConfig {
      *
      * @param provider whether it is the provider side
      * @return
-     */
+     */ // 通过 registries 的 address 属性获取到地址链，通过 application、registry 等信息得到参数 map，将地址链和 map 构建成新的地址，修改协议为 registry，将原协议保存到 registry 参数中
     protected List<URL> loadRegistries(boolean provider) {
         // check && override if necessary
         List<URL> registryList = new ArrayList<URL>();
@@ -408,7 +409,7 @@ public abstract class AbstractInterfaceConfig extends AbstractMethodConfig {
                     for (URL url : urls) {
                         // 修改 url 的 protocol，并添加一个 registry 参数
                         url = URLBuilder.from(url)
-                                .addParameter(REGISTRY_KEY, url.getProtocol())
+                                .addParameter(REGISTRY_KEY, url.getProtocol())  // registry -> zookeeper
                                 .setProtocol(REGISTRY_PROTOCOL)
                                 .build();
 
@@ -433,12 +434,14 @@ public abstract class AbstractInterfaceConfig extends AbstractMethodConfig {
      * @param registryURL
      * @return
      */
+    // 如果 monitor 的 address 属性存在，那么就用这个 address 加 map 构建 monitor url，否则如果 monitor 的 protocol 属性为 registry，
+    // 那么用 registryURL 构建 monitor url，需要改变它的协议为 dubbo，同时 map 转换为字符串作为 refer 属性添加到 url 中
     protected URL loadMonitor(URL registryURL) {
         // 检查 monitor 属性是否存在且有效
         checkMonitor();
         Map<String, String> map = new HashMap<String, String>();
         // interface -> org.apache.dubbo.monitor.MonitorService
-        map.put(INTERFACE_KEY, MonitorService.class.getName());
+        map.put(INTERFACE_KEY, MonitorService.class.getName()); // interface -> org.apache.dubbo.monitor.MonitorService
         // 添加一些运行时的参数信息，比如：
         // dubbo -> dubbo 协议版本
         // release -> dubbo 版本
@@ -456,11 +459,11 @@ public abstract class AbstractInterfaceConfig extends AbstractMethodConfig {
                     DUBBO_IP_TO_REGISTRY + ", value:" + hostToRegistry);
         }
         // ip 键值对
-        map.put(REGISTER_IP_KEY, hostToRegistry);
+        map.put(REGISTER_IP_KEY, hostToRegistry);   // register.ip -> 本机 ip
         // 从 config 中获取相关参数，添加到 parameters 中
         appendParameters(map, monitor);
         appendParameters(map, application);
-        String address = monitor.getAddress();
+        String address = monitor.getAddress();  // 如果 monitor 没有指定 address，使用 dubbo.monitor.address 系统属性的值
         String sysaddress = System.getProperty("dubbo.monitor.address");
         if (sysaddress != null && sysaddress.length() > 0) {
             // dubbo.monitor.address 系统属性优先
@@ -480,7 +483,7 @@ public abstract class AbstractInterfaceConfig extends AbstractMethodConfig {
             }
             // 为 address 拼接相关属性
             return UrlUtils.parseURL(address, map);
-        } else if (REGISTRY_PROTOCOL.equals(monitor.getProtocol()) && registryURL != null) {
+        } else if (REGISTRY_PROTOCOL.equals(monitor.getProtocol()) && registryURL != null) {    // registry
             // 如果 monitor 的协议属性为 registry，registryURL 不为空
             // 根据 registryURL 重构 URL
             return URLBuilder.from(registryURL)
@@ -722,7 +725,9 @@ public abstract class AbstractInterfaceConfig extends AbstractMethodConfig {
     /**
      * For compatibility purpose, use registry as the default config center if the registry protocol is zookeeper and
      * there's no config center specified explicitly.
-     */ // 找到 registries 中第一个使用 zookeeper 协议的，将此 registry 的协议和地址填充到 ConfigCenterConfig 中，然后将这个配置中心填充到当前 reference 实例中，启动配置中心
+     */
+    // 找到 registries 中第一个使用 zookeeper 协议的，将此 registry 的协议和地址填充到 ConfigCenterConfig 中，然后将这个配置中心填充到当前 reference 实例中，启动配置中心
+    // 启动配置中心核心就是获取 ZookeeperDynamicConfiguration，然后还会根据 configCenter 和 application 的相关属性从 zookeeper 的对应路径下获取配置信息，并更新到四种配置项中，最后刷新各种 ConfigBean
     private void useRegistryForConfigIfNecessary() {
         // 从所有的 registries 中查找第一个使用 zookeeper 协议的，如果找到了，就获取 ConfigCenterConfig，并将该 registry 的相关信息添加到 ConfigCenterConfig 中
         registries.stream().filter(RegistryConfig::isZookeeperProtocol).findFirst().ifPresent(rc -> {
@@ -737,6 +742,7 @@ public abstract class AbstractInterfaceConfig extends AbstractMethodConfig {
                 cc.setHighestPriority(false);
                 // 将配置中心分别保存到 ConfigManager 和 ServiceBean 中各一份
                 setConfigCenter(cc);
+                // 核心就是获取 ZookeeperDynamicConfiguration，然后还会根据 configCenter 和 application 的相关属性从 zookeeper 的对应路径下获取配置信息，并更新到四种配置项中，最后刷新各种 ConfigBean
                 startConfigCenter();
                 return null;
             });

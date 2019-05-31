@@ -88,15 +88,15 @@ public abstract class AbstractRegistryFactory implements RegistryFactory {
             LOCK.unlock();
         }
     }
-
-    @Override
+                // zookeeper://127.0.0.1:2181/org.apache.dubbo.registry.RegistryService?application=demo-consumer&dubbo=2.0.2&pid=80227&refer=application=demo-consumer&check=false&dubbo=2.0.2&interface=org.apache.dubbo.demo.DemoService&lazy=false&methods=sayHello&pid=80227&register.ip=192.168.1.102&side=consumer&sticky=false&timestamp=1559307993994&timestamp=1559307994695
+    @Override   // zookeeper://127.0.0.1:2181/org.apache.dubbo.registry.RegistryService?application=demo-consumer&dubbo=2.0.2&interface=org.apache.dubbo.registry.RegistryService&pid=80227&timestamp=1559307994695
     public Registry getRegistry(URL url) {
         url = URLBuilder.from(url)
                 .setPath(RegistryService.class.getName())
                 .addParameter(INTERFACE_KEY, RegistryService.class.getName())   // interface -> org.apache.dubbo.registry.RegistryService
                 .removeParameters(EXPORT_KEY, REFER_KEY)    // 移除 export 和 refer
                 .build();
-        String key = url.toServiceStringWithoutResolving();
+        String key = url.toServiceStringWithoutResolving(); // zookeeper://127.0.0.1:2181/org.apache.dubbo.registry.RegistryService
         // Lock the registry access process to ensure a single instance of the registry
         LOCK.lock();
         try {
@@ -104,7 +104,7 @@ public abstract class AbstractRegistryFactory implements RegistryFactory {
             if (registry != null) {
                 return registry;
             }
-            //create registry by spi/ioc
+            //create registry by spi/ioc，父类完成附加功能，子类完成真正的 registry 构建工作
             registry = createRegistry(url);
             if (registry == null) {
                 throw new IllegalStateException("Can not create registry " + url);

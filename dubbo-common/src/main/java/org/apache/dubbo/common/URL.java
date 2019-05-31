@@ -1355,7 +1355,7 @@ class URL implements Serializable {
         if (appendParameter) {
             // dubbo://username:password@127.0.0.1:8888/path?key1=value1&key2=value2
             buildParameters(buf, true, parameters);
-        }
+        }   // zookeeper://127.0.0.1:2181/org.apache.dubbo.registry.RegistryService
         return buf.toString();
     }
 
@@ -1390,7 +1390,7 @@ class URL implements Serializable {
     public String getServiceKey() {
         // url interface 参数的值
         // inf -> org.apache.dubbo.demo.DemoService
-        String inf = getServiceInterface();
+        String inf = getServiceInterface(); // 优先 interface 参数，次之路径
         if (inf == null) {
             return null;
         }
@@ -1428,7 +1428,7 @@ class URL implements Serializable {
     }
 
     public String toServiceStringWithoutResolving() {
-        return buildString(true, false, false, true);
+        return buildString(true, false, false, true);   // zookeeper://127.0.0.1:2181/org.apache.dubbo.registry.RegistryService
     }
 
     public String toServiceString() {
