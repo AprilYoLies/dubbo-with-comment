@@ -87,13 +87,13 @@ public abstract class AbstractRegistry implements Registry {
     private URL registryUrl;
     // Local disk cache file
     private File file;
-
+    // 在指定目录构建了 /Users/eva/.dubbo/dubbo-registry-demo-consumer-127.0.0.1:2181.cache，将文件中的内容填充到了 properties 中， 遍历 url 对 Set<NotifyListener> 集合，对于每一个 listener，逐个通知分类的 url 链信息
     public AbstractRegistry(URL url) {
         setUrl(url);    // 保存 url 到父类中
         // Start file save timer
         syncSaveFile = url.getParameter(REGISTRY_FILESAVE_SYNC_KEY, false); // save.file    url 的 file 或者 /Users/eva/.dubbo/dubbo-registry-demo-consumer-127.0.0.1:2181.cache
         String filename = url.getParameter(FILE_KEY, System.getProperty("user.home") + "/.dubbo/dubbo-registry-" + url.getParameter(APPLICATION_KEY) + "-" + url.getAddress() + ".cache");  // /Users/eva/.dubbo/dubbo-registry-demo-consumer-127.0.0.1:2181.cache
-        File file = null;
+        File file = null;   // /Users/eva/.dubbo/dubbo-registry-demo-consumer-127.0.0.1:2181.cache
         if (ConfigUtils.isNotEmpty(filename)) { // 文件属性值不为空
             file = new File(filename);
             if (!file.exists() && file.getParentFile() != null && !file.getParentFile().exists()) {
@@ -106,7 +106,7 @@ public abstract class AbstractRegistry implements Registry {
         // When starting the subscription center,
         // we need to read the local cache file for future Registry fault tolerance processing.
         loadProperties();   // 将 this.file 中的属性添加到 this.properties 中
-        notify(url.getBackupUrls());
+        notify(url.getBackupUrls());    // 遍历 url 对 Set<NotifyListener> 集合，对于每一个 listener，逐个通知分类的 url 链信息
     }
 
     protected static List<URL> filterEmpty(URL url, List<URL> urls) {
@@ -155,7 +155,7 @@ public abstract class AbstractRegistry implements Registry {
     }
 
     public void doSaveProperties(long version) {
-        if (version < lastCacheChanged.get()) {
+        if (version < lastCacheChanged.get()) { // 类似于 cas
             return;
         }
         if (file == null) {
@@ -169,7 +169,7 @@ public abstract class AbstractRegistry implements Registry {
             }
             try (RandomAccessFile raf = new RandomAccessFile(lockfile, "rw");
                  FileChannel channel = raf.getChannel()) {
-                FileLock lock = channel.tryLock();
+                FileLock lock = channel.tryLock();  // 写入的过程需要持有文件锁
                 if (lock == null) {
                     throw new IOException("Can not lock the registry cache file " + file.getAbsolutePath() + ", ignore and retry later, maybe multi java process use the file, please config: dubbo.registry.file=xxx.properties");
                 }
@@ -179,7 +179,7 @@ public abstract class AbstractRegistry implements Registry {
                         file.createNewFile();
                     }
                     try (FileOutputStream outputFile = new FileOutputStream(file)) {
-                        properties.store(outputFile, "Dubbo Registry Cache");
+                        properties.store(outputFile, "Dubbo Registry Cache");   // 就是往文件中写入数据
                     }
                 } finally {
                     lock.release();
@@ -351,11 +351,12 @@ public abstract class AbstractRegistry implements Registry {
         }
     }
 
+    // 遍历 url 对 Set<NotifyListener> 集合，对于每一个 listener，逐个通知分类的 url 链信息
     protected void notify(List<URL> urls) {
         if (CollectionUtils.isEmpty(urls)) {
             return;
         }
-
+        // subscribed -> ConcurrentMap<URL, Set<NotifyListener>>
         for (Map.Entry<URL, Set<NotifyListener>> entry : getSubscribed().entrySet()) {  // 遍历 subscribed，即订阅者
             URL url = entry.getKey();
 
@@ -366,8 +367,8 @@ public abstract class AbstractRegistry implements Registry {
             Set<NotifyListener> listeners = entry.getValue();   // 通知 url 对应的全部 listener
             if (listeners != null) {
                 for (NotifyListener listener : listeners) { // 遍历监听器，逐个进行通知
-                    try {
-                        notify(url, listener, filterEmpty(url, urls));
+                    try {   // 将 urls 进行分类，获取 url 对应的分类 url 链，将这个链通知给 listener，同时保存一些 serviceKey 和 url 信息到文件中
+                        notify(url, listener, filterEmpty(url, urls));  // filterEmpty 如果 urls 为空，手动构建一个空协议的 url
                     } catch (Throwable t) {
                         logger.error("Failed to notify registry event, urls: " + urls + ", cause: " + t.getMessage(), t);
                     }
@@ -384,7 +385,7 @@ public abstract class AbstractRegistry implements Registry {
      * @param urls     provider latest urls
      */
     protected void notify(URL url, NotifyListener listener, List<URL> urls) {
-        if (url == null) {
+        if (url == null) {  // 将 urls 进行分类，获取 url 对应的分类 url 链，将这个链通知给 listener，同时保存一些 serviceKey 和 url 信息到文件中
             throw new IllegalArgumentException("notify url == null");
         }
         if (listener == null) {
@@ -400,7 +401,7 @@ public abstract class AbstractRegistry implements Registry {
         }
         // keep every provider's category.
         Map<String, List<URL>> result = new HashMap<>();
-        for (URL u : urls) {
+        for (URL u : urls) {    // 这里的意思就是将 url 分类，然后添加到 result 中，类别由 url 的 category 参数指定
             if (UrlUtils.isMatch(url, u)) {
                 String category = u.getParameter(CATEGORY_KEY, DEFAULT_CATEGORY);   // category 默认 providers
                 List<URL> categoryList = result.computeIfAbsent(category, k -> new ArrayList<>());
@@ -411,11 +412,11 @@ public abstract class AbstractRegistry implements Registry {
             return;
         } // notified -> (url -> (category -> url 的 list))
         Map<String, List<URL>> categoryNotified = notified.computeIfAbsent(url, u -> new ConcurrentHashMap<>());
-        for (Map.Entry<String, List<URL>> entry : result.entrySet()) {
-            String category = entry.getKey();
-            List<URL> categoryList = entry.getValue();
-            categoryNotified.put(category, categoryList);   // 将上边得到的 result 也添加到 notified 的 url-key 所对应的 map 中
-            listener.notify(categoryList);
+        for (Map.Entry<String, List<URL>> entry : result.entrySet()) {  // result 存放着分类集合
+            String category = entry.getKey();   // 分类
+            List<URL> categoryList = entry.getValue();  // 分类对应的 url 集合
+            categoryNotified.put(category, categoryList);   // 将上边得到的 result 也添加到 notified 的 url-key 所对应的 map 中，也就是说 url 持有了全部的分类集合
+            listener.notify(categoryList);  // 通知 url，具体的实现看 listener 类实现
             // We will update our cache file after each notification.
             // When our Registry has a subscribe failure due to network jitter, we can return at least the existing cache URL.
             saveProperties(url);
@@ -429,7 +430,7 @@ public abstract class AbstractRegistry implements Registry {
 
         try {
             StringBuilder buf = new StringBuilder();
-            Map<String, List<URL>> categoryNotified = notified.get(url);
+            Map<String, List<URL>> categoryNotified = notified.get(url);    // 就是获取的 url 对应的全部分类集合
             if (categoryNotified != null) {
                 for (List<URL> us : categoryNotified.values()) {
                     for (URL u : us) {
@@ -439,11 +440,11 @@ public abstract class AbstractRegistry implements Registry {
                         buf.append(u.toFullString());
                     }
                 }
-            }
+            }   // 应该就是 key -> 备用地址链
             properties.setProperty(url.getServiceKey(), buf.toString());    // 这里是将 url 的 interface 作为 key，拼接结果作为 value 保存到 properties 中
-            long version = lastCacheChanged.incrementAndGet();
+            long version = lastCacheChanged.incrementAndGet();  // 版本记录
             if (syncSaveFile) { // 采用同步或者异步的方式进行 properties 的保存
-                doSaveProperties(version);
+                doSaveProperties(version);  // version 仅仅起到 cas 比较作用，本方法就是往文件中写了一句 key -> 备用地址链
             } else {
                 registryCacheExecutor.execute(new SaveProperties(version));
             }

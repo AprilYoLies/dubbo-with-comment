@@ -66,9 +66,9 @@ public abstract class FailbackRegistry extends AbstractRegistry {
 
     // Timer for failure retry, regular check if there is a request for failure, and if there is, an unlimited retry
     private final HashedWheelTimer retryTimer;
-
+    // 记录了 retryPeriod 和 retryTimer 信息，所以被称为 FailBAckRegistry 吧
     public FailbackRegistry(URL url) {
-        super(url);
+        super(url); // 在指定目录构建了 /Users/eva/.dubbo/dubbo-registry-demo-consumer-127.0.0.1:2181.cache，将文件中的内容填充到了 properties 中， 遍历 url 对 Set<NotifyListener> 集合，对于每一个 listener，逐个通知分类的 url 链信息
         this.retryPeriod = url.getParameter(REGISTRY_RETRY_PERIOD_KEY, DEFAULT_REGISTRY_RETRY_PERIOD);  // retry.period 默认 5000
 
         // since the retry task will not be very much. 128 ticks is enough.

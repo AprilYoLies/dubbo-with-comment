@@ -557,10 +557,10 @@ public class RegistryProtocol implements Protocol {
         //             throw new IllegalStateException("Failed to get extension (org.apache.dubbo.registry.RegistryFactory) name from url (" + url.toString() + ") use keys([protocol])");
         // 获取到的 RegistryFactory 实际是 ZookeeperRegistryFactory
         //         org.apache.dubbo.registry.RegistryFactory extension = (org.apache.dubbo.registry.RegistryFactory) ExtensionLoader.getExtensionLoader(org.apache.dubbo.registry.RegistryFactory.class).getExtension(extName);
-        //         return extension.getRegistry(arg0);
+        //         return extension.getRegistry(arg0);  // ZookeeperRegistryFactory 的父类方法，重构了 url，缓存了 serviceKey 与 registry 的关系
         //     }
         // }
-        Registry registry = registryFactory.getRegistry(url);
+        Registry registry = registryFactory.getRegistry(url);   // 拿到的是 ZookeeperRegistry
         if (RegistryService.class.equals(type)) {
             return proxyFactory.getInvoker((T) registry, type, url);
         }

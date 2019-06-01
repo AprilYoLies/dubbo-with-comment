@@ -446,8 +446,8 @@ class URL implements Serializable {
 
     public List<URL> getBackupUrls() {  // 即获取 backup 参数
         List<URL> urls = new ArrayList<>();
-        urls.add(this);
-        String[] backups = getParameter(RemotingConstants.BACKUP_KEY, new String[0]);
+        urls.add(this); // 自身
+        String[] backups = getParameter(RemotingConstants.BACKUP_KEY, new String[0]);   // backup
         if (backups != null && backups.length > 0) {
             for (String backup : backups) {
                 urls.add(this.setAddress(backup));

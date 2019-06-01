@@ -72,7 +72,7 @@ public class ZookeeperRegistry extends FailbackRegistry {
     private final ZookeeperClient zkClient;
 
     public ZookeeperRegistry(URL url, ZookeeperTransporter zookeeperTransporter) {
-        super(url);
+        super(url); // 记录了 retryPeriod 和 retryTimer 信息
         if (url.isAnyHost()) {  // host 为 0.0.0.0 或者 anyhost 参数为 true
             throw new IllegalStateException("registry address == null");
         }
