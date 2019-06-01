@@ -87,6 +87,7 @@ public abstract class AbstractRegistry implements Registry {
     private URL registryUrl;
     // Local disk cache file
     private File file;
+
     // 在指定目录构建了 /Users/eva/.dubbo/dubbo-registry-demo-consumer-127.0.0.1:2181.cache，将文件中的内容填充到了 properties 中， 遍历 url 对 Set<NotifyListener> 集合，对于每一个 listener，逐个通知分类的 url 链信息
     public AbstractRegistry(URL url) {
         setUrl(url);    // 保存 url 到父类中
@@ -278,7 +279,7 @@ public abstract class AbstractRegistry implements Registry {
         }
         if (logger.isInfoEnabled()) {
             logger.info("Register: " + url);
-        }
+        }   // 缓存了 registered 的 url 信息
         registered.add(url);
     }
 

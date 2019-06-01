@@ -38,13 +38,13 @@ public abstract class AbstractConfiguratorListener implements ConfigurationListe
 
     protected List<Configurator> configurators = Collections.emptyList();
 
-
-    protected final void initWith(String key) {
-        DynamicConfiguration dynamicConfiguration = DynamicConfiguration.getDynamicConfiguration();
-        dynamicConfiguration.addListener(key, this);
-        String rawConfig = dynamicConfiguration.getConfig(key, CommonConstants.DUBBO);
+    // 为提前构建的 DynamicConfiguration 添加一个监听器（自身），同时获取指定路径下的配置信息进行处理
+    protected final void initWith(String key) { // demo-consumer.configurators
+        DynamicConfiguration dynamicConfiguration = DynamicConfiguration.getDynamicConfiguration(); // 这里获取到的就是提前初始化好的 ZookeeperDynamicConfiguration
+        dynamicConfiguration.addListener(key, this);    // 将 key 和 this 对缓存到 ZookeeperDynamicConfiguration 的 cacheListener 中
+        String rawConfig = dynamicConfiguration.getConfig(key, CommonConstants.DUBBO);  // 根据参数获取 zookeeper 中的配置信息，构成的路径是 /dubbo/config/dubbo/demo-consumer.configurators
         if (!StringUtils.isEmpty(rawConfig)) {
-            process(new ConfigChangeEvent(key, rawConfig));
+            process(new ConfigChangeEvent(key, rawConfig)); // 暂不做深入了解
         }
     }
 
@@ -61,14 +61,14 @@ public abstract class AbstractConfiguratorListener implements ConfigurationListe
             try {
                 // parseConfigurators will recognize app/service config automatically.
                 configurators = Configurator.toConfigurators(ConfigParser.parseConfigurators(event.getValue()))
-                        .orElse(configurators);
+                        .orElse(configurators); // 将获取的配置更新到 configurators 中
             } catch (Exception e) {
                 logger.error("Failed to parse raw dynamic config and it will not take effect, the raw config is: " +
                         event.getValue(), e);
                 return;
             }
         }
-
+        // 通过监听器告知主监者刷新 Invoker 信息
         notifyOverrides();
     }
 

@@ -225,12 +225,12 @@ public abstract class FailbackRegistry extends AbstractRegistry {
     public ConcurrentMap<Holder, FailedNotifiedTask> getFailedNotified() {
         return failedNotified;
     }
-
-    @Override
+    // 缓存了 url 到 registered 结合中，同时根据 url 在 zookeeper 中创建了 /root/url的interface参数/url的category参数/url的全字符串编码路径
+    @Override   // consumer://192.168.1.101/org.apache.dubbo.demo.DemoService?application=demo-consumer&category=consumers&check=false&dubbo=2.0.2&interface=org.apache.dubbo.demo.DemoService&lazy=false&methods=sayHello&pid=83276&side=consumer&sticky=false&timestamp=1559352722835
     public void register(URL url) {
-        super.register(url);
-        removeFailedRegistered(url);
-        removeFailedUnregistered(url);
+        super.register(url);    // 缓存了 registered 的 url 信息
+        removeFailedRegistered(url);    // 移除并取消 url 对应的 FailedRegisteredTask
+        removeFailedUnregistered(url);  // 移除并取消 url 对应的 FailedUnregisteredTask
         try {
             // Sending a registration request to the server side
             doRegister(url);
@@ -238,9 +238,9 @@ public abstract class FailbackRegistry extends AbstractRegistry {
             Throwable t = e;
 
             // If the startup detection is opened, the Exception is thrown directly.
-            boolean check = getUrl().getParameter(RemotingConstants.CHECK_KEY, true)
+            boolean check = getUrl().getParameter(RemotingConstants.CHECK_KEY, true)    // check
                     && url.getParameter(RemotingConstants.CHECK_KEY, true)
-                    && !CONSUMER_PROTOCOL.equals(url.getProtocol());
+                    && !CONSUMER_PROTOCOL.equals(url.getProtocol());    // url 的协议非 consumer
             boolean skipFailback = t instanceof SkipFailbackWrapperException;
             if (check || skipFailback) {
                 if (skipFailback) {

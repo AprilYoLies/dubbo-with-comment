@@ -168,13 +168,13 @@ public class RegistryDirectory<T> extends AbstractDirectory<T> implements Notify
 
     // Set<invokerUrls> cache invokeUrls to invokers mapping.
     private volatile Set<URL> cachedInvokerUrls; // The initial value is null and the midway may be assigned to null, please use the local variable reference
-
+    // 构建 ConsumerConfigurationListener，同时为提前构建的 DynamicConfiguration 添加一个监听器（自身），同时获取指定路径下的配置信息进行处理
     private static final ConsumerConfigurationListener CONSUMER_CONFIGURATION_LISTENER = new ConsumerConfigurationListener();
     private ReferenceConfigurationListener serviceConfigurationListener;
 
-
+    // url 带 refer 参数，zookeeper://127.0.0.1:2181/org.apache.dubbo.registry.RegistryService?application=demo-consumer&dubbo=2.0.2&pid=83276&refer=application%3Ddemo-consumer%26check%3Dfalse%26dubbo%3D2.0.2%26interface%3Dorg.apache.dubbo.demo.DemoService%26lazy%3Dfalse%26methods%3DsayHello%26pid%3D83276%26register.ip%3D192.168.1.101%26side%3Dconsumer%26sticky%3Dfalse%26timestamp%3D1559352722835&timestamp=1559352730532
     public RegistryDirectory(Class<T> serviceType, URL url) {
-        super(url); // 主要是保存了 url、consumerUrl 和 routerChain
+        super(url); // 保存了 url，consumerUrl 和 routerChain 信息，对于 url 如果是 registry 协议，有特殊处理方式
         if (serviceType == null) {
             throw new IllegalArgumentException("service type is null.");
         }
@@ -184,7 +184,7 @@ public class RegistryDirectory<T> extends AbstractDirectory<T> implements Notify
         this.serviceType = serviceType; // org.apache.dubbo.demo.DemoService
         this.serviceKey = url.getServiceKey();  // org.apache.dubbo.registry.RegistryService
         this.queryMap = StringUtils.parseQueryString(url.getParameterAndDecoded(REFER_KEY));    // 将 refer 属性值映射为 map
-        this.overrideDirectoryUrl = this.directoryUrl = turnRegistryUrlToConsumerUrl(url);  // overrideDirectoryUrl 和 directoryUrl 都使用 consumerUrl
+        this.overrideDirectoryUrl = this.directoryUrl = turnRegistryUrlToConsumerUrl(url);  // 就是将 registryUrl 路径修改为 interface 参数，清除全部参数，只要 refer 对应的参数，移除 monitor 属性
         String group = directoryUrl.getParameter(GROUP_KEY, "");
         this.multiGroup = group != null && (ANY_VALUE.equals(group) || group.contains(","));    // group 为 * 或包含 ，
     }
@@ -689,7 +689,7 @@ public class RegistryDirectory<T> extends AbstractDirectory<T> implements Notify
         }
         return false;
     }
-
+    // 构建 RouterChain 的过程中还会获取全部的 RouterFactory，然后得到对应的 Router，最后将这些 Router 保存到实例字段中
     public void buildRouterChain(URL url) {
         this.setRouterChain(RouterChain.buildChain(url));   // 构建 RouterChain 并填充属性
     }
@@ -781,7 +781,7 @@ public class RegistryDirectory<T> extends AbstractDirectory<T> implements Notify
     private static class ConsumerConfigurationListener extends AbstractConfiguratorListener {
         List<RegistryDirectory> listeners = new ArrayList<>();
 
-        ConsumerConfigurationListener() {
+        ConsumerConfigurationListener() {   // 为提前构建的 DynamicConfiguration 添加一个监听器（自身），同时获取指定路径下的配置信息进行处理
             this.initWith(ApplicationModel.getApplication() + CONFIGURATORS_SUFFIX);
         }
 
@@ -790,7 +790,7 @@ public class RegistryDirectory<T> extends AbstractDirectory<T> implements Notify
         }
 
         @Override
-        protected void notifyOverrides() {
+        protected void notifyOverrides() {  // 通过监听器告知主监者刷新 Invoker 信息
             listeners.forEach(listener -> listener.refreshInvoker(Collections.emptyList()));
         }
     }

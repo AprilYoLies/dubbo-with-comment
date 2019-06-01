@@ -32,9 +32,9 @@ public interface DynamicConfiguration extends Configuration {
     /**
      * {@link #addListener(String, String, ConfigurationListener)}
      *
-     * @param key      the key to represent a configuration
-     * @param listener configuration listener
-     */
+     * @param key      the key to represent a configuration 实际是 demo-consumer.configurators
+     * @param listener configuration listener   实际是 RegistryDirectory$ConsumerConfigurationListener
+     */ // 将 key 和 listener 对缓存到 ZookeeperDynamicConfiguration 的 cacheListener 中
     default void addListener(String key, ConfigurationListener listener) {
         addListener(key, DEFAULT_GROUP, listener);
     }

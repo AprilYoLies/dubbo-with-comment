@@ -105,7 +105,7 @@ public abstract class AbstractRegistryFactory implements RegistryFactory {
                 return registry;
             }
             //create registry by spi/ioc，父类完成附加功能，子类完成真正的 registry 构建工作
-            registry = createRegistry(url);
+            registry = createRegistry(url); // 获得的是 ZookeeperRegistry
             if (registry == null) {
                 throw new IllegalStateException("Can not create registry " + url);
             }

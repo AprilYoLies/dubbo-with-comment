@@ -54,7 +54,7 @@ public abstract class AbstractZookeeperClient<TargetDataListener, TargetChildLis
         return url;
     }
 
-    @Override
+    @Override   // 这就是一个递归创建路径的过程，就是要保证 path 对应的父路径存在
     public void create(String path, boolean ephemeral) {
         if (!ephemeral) {
             if (checkExists(path)) {

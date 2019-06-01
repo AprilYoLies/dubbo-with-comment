@@ -520,7 +520,7 @@ public class RegistryProtocol implements Protocol {
     }
 
     @Override
-    @SuppressWarnings("unchecked")
+    @SuppressWarnings("unchecked")  // 此方法主要就是干了两件事情，根据 url 获取对应的 registry，然后根据 url 和获得的 registry 进行真正的 refer 操作
     public <T> Invoker<T> refer(Class<T> type, URL url) throws RpcException {
         // registry://127.0.0.1:2181/org.apache.dubbo.registry.RegistryService?
         // application=demo-consumer&
@@ -560,7 +560,7 @@ public class RegistryProtocol implements Protocol {
         //         return extension.getRegistry(arg0);  // ZookeeperRegistryFactory 的父类方法，重构了 url，缓存了 serviceKey 与 registry 的关系
         //     }
         // }
-        Registry registry = registryFactory.getRegistry(url);   // 拿到的是 ZookeeperRegistry
+        Registry registry = registryFactory.getRegistry(url);   // 拿到的是 ZookeeperRegistry，持有了 zkClient
         if (RegistryService.class.equals(type)) {
             return proxyFactory.getInvoker((T) registry, type, url);
         }
@@ -577,11 +577,11 @@ public class RegistryProtocol implements Protocol {
         // side=consumer&
         // sticky=false&
         // timestamp=1558921722520
-        Map<String, String> qs = StringUtils.parseQueryString(url.getParameterAndDecoded(REFER_KEY));   // 将
+        Map<String, String> qs = StringUtils.parseQueryString(url.getParameterAndDecoded(REFER_KEY));   // 将 refer 参数的值转换为 map
         String group = qs.get(GROUP_KEY);
         if (group != null && group.length() > 0) {
             if ((COMMA_SPLIT_PATTERN.split(group)).length > 1 || "*".equals(group)) {
-                return doRefer(getMergeableCluster(), registry, type, url);
+                return doRefer(getMergeableCluster(), registry, type, url); // 这里是多个 group 的处理方式
             }
         }
         // 得到的是 MockClusterInvoker
@@ -629,7 +629,7 @@ public class RegistryProtocol implements Protocol {
         directory.setProtocol(protocol);
         // all attributes of REFER_KEY，存储的是 directory 的 overrideDirectoryUrl 的参数，在构造函数中进行初始化
         Map<String, String> parameters = new HashMap<String, String>(directory.getUrl().getParameters());
-        // consumer://192.168.1.104/org.apache.dubbo.demo.DemoService?
+        // consumer://192.168.1.101/org.apache.dubbo.demo.DemoService?application=demo-consumer&check=false&dubbo=2.0.2&interface=org.apache.dubbo.demo.DemoService&lazy=false&methods=sayHello&pid=83276&side=consumer&sticky=false&timestamp=1559352722835
         // application=demo-consumer&
         // check=false&
         // dubbo=2.0.2&
@@ -640,11 +640,11 @@ public class RegistryProtocol implements Protocol {
         // side=consumer&
         // sticky=false&
         // timestamp=1558925222997
-        URL subscribeUrl = new URL(CONSUMER_PROTOCOL, parameters.remove(REGISTER_IP_KEY), 0, type.getName(), parameters);
+        URL subscribeUrl = new URL(CONSUMER_PROTOCOL, parameters.remove(REGISTER_IP_KEY), 0, type.getName(), parameters);   // registry.ip
         if (!ANY_VALUE.equals(url.getServiceInterface()) && url.getParameter(REGISTER_KEY, true)) {
-            directory.setRegisteredConsumerUrl(getRegisteredConsumerUrl(subscribeUrl, url));    // 在其中设置
-            registry.register(directory.getRegisteredConsumerUrl());
-        }
+            directory.setRegisteredConsumerUrl(getRegisteredConsumerUrl(subscribeUrl, url));    // 为 subscribeUrl 添加了 category 和 check 属性，填充到 directory 中
+            registry.register(directory.getRegisteredConsumerUrl());    // 缓存了 url 到 registered 结合中，同时根据 url 在 zookeeper 中创建了 /root/url的interface参数/url的category参数/url的全字符串编码路径
+        }   // 构建 RouterChain 的过程中还会获取全部的 RouterFactory，然后得到对应的 Router，最后将这些 Router 保存到实例字段中
         directory.buildRouterChain(subscribeUrl);   // 构建了 routerChain 并填充了属性
         directory.subscribe(subscribeUrl.addParameter(CATEGORY_KEY, // category -> providers
                 PROVIDERS_CATEGORY + "," + CONFIGURATORS_CATEGORY + "," + ROUTERS_CATEGORY));   // configurators -> routers

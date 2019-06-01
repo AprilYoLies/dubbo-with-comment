@@ -124,8 +124,8 @@ public class ZookeeperRegistry extends FailbackRegistry {
     }
 
     @Override
-    public void doRegister(URL url) {
-        try {
+    public void doRegister(URL url) {   // 模式为： /root/url的interface参数/url的category参数/url的全字符串编码
+        try {   // /dubbo/org.apache.dubbo.demo.DemoService/consumers/consumer%3A%2F%2F192.168.1.101%2Forg.apache.dubbo.demo.DemoService%3Fapplication%3Ddemo-consumer%26category%3Dconsumers%26check%3Dfalse%26dubbo%3D2.0.2%26interface%3Dorg.apache.dubbo.demo.DemoService%26lazy%3Dfalse%26methods%3DsayHello%26pid%3D83276%26side%3Dconsumer%26sticky%3Dfalse%26timestamp%3D1559352722835
             zkClient.create(toUrlPath(url), url.getParameter(DYNAMIC_KEY, true));
         } catch (Throwable e) {
             throw new RpcException("Failed to register " + url + " to zookeeper " + getUrl() + ", cause: " + e.getMessage(), e);

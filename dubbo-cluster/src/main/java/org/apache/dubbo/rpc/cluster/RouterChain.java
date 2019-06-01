@@ -41,11 +41,11 @@ public class RouterChain<T> {
     // Fixed router instances: ConfigConditionRouter, TagRouter, e.g., the rule for each instance may change but the
     // instance will never delete or recreate.
     private List<Router> builtinRouters = Collections.emptyList();
-
+    // 构建 RouterChain 的过程中还会获取全部的 RouterFactory，然后得到对应的 Router，最后将这些 Router 保存到实例字段中
     public static <T> RouterChain<T> buildChain(URL url) {
-        return new RouterChain<>(url);
+        return new RouterChain<>(url);  // 构建 RouterChain 的过程中还会获取全部的 RouterFactory，然后得到对应的 Router，最后将这些 Router 保存到实例字段中
     }
-
+    // 构建 RouterChain 的过程中还会获取全部的 RouterFactory，然后得到对应的 Router，最后将这些 Router 保存到实例字段中
     private RouterChain(URL url) {
         List<RouterFactory> extensionFactories = ExtensionLoader.getExtensionLoader(RouterFactory.class)
                 .getActivateExtension(url, (String[]) null);
@@ -53,7 +53,7 @@ public class RouterChain<T> {
         List<Router> routers = extensionFactories.stream()
                 .map(factory -> factory.getRouter(url))
                 .collect(Collectors.toList());
-
+        // 上边根据 RouterFactory 得到了全部的 Router，然后将这些 router 保存到字段 builtinRouters 和 routers 中
         initWithRouters(routers);   // 填充 builtinRouters 和 routers 属性
     }
 

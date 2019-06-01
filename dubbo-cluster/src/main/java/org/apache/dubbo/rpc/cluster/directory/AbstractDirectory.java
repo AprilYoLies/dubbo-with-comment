@@ -59,7 +59,7 @@ public abstract class AbstractDirectory<T> implements Directory<T> {
         this(url, url, routerChain);
     }
 
-    // 此处 url 和 consumerUrl 一致，routerChain 为 null
+    // 此处 url 和 consumerUrl 一致，routerChain 为 null，保存了 url，consumerUrl 和 routerChain 信息，对于 url 如果是 registry 协议，有特殊处理方式
     public AbstractDirectory(URL url, URL consumerUrl, RouterChain<T> routerChain) {
         if (url == null) {
             throw new IllegalArgumentException("url == null");
