@@ -412,7 +412,7 @@ public class DubboProtocol extends AbstractProtocol {
 
         return server;
     }
-
+    // 根据 url 获取 optimizer 参数对应的 class，进行相关的 className 和 class 的缓存
     private void optimizeSerialization(URL url) throws RpcException {
         String className = url.getParameter(OPTIMIZER_KEY, "");
         if (StringUtils.isEmpty(className) || optimizers.contains(className)) {
@@ -421,9 +421,9 @@ public class DubboProtocol extends AbstractProtocol {
 
         logger.info("Optimizing the serialization process for Kryo, FST, etc...");
 
-        try {
+        try {   // 获取 url 的 optimizer 参数指定的 class
             Class clazz = Thread.currentThread().getContextClassLoader().loadClass(className);
-            if (!SerializationOptimizer.class.isAssignableFrom(clazz)) {
+            if (!SerializationOptimizer.class.isAssignableFrom(clazz)) {    // 要求此 class 为 SerializationOptimizer 的子类或者一致
                 throw new RpcException("The serialization optimizer " + className + " isn't an instance of " + SerializationOptimizer.class.getName());
             }
 
@@ -434,10 +434,10 @@ public class DubboProtocol extends AbstractProtocol {
             }
 
             for (Class c : optimizer.getSerializableClasses()) {
-                SerializableClassRegistry.registerClass(c);
+                SerializableClassRegistry.registerClass(c); // 缓存对应的 class
             }
 
-            optimizers.add(className);
+            optimizers.add(className);  // 缓存
 
         } catch (ClassNotFoundException e) {
             throw new RpcException("Cannot find the serialization optimizer class: " + className, e);
@@ -453,8 +453,8 @@ public class DubboProtocol extends AbstractProtocol {
     // dubbo://192.168.1.101:20880/org.apache.dubbo.demo.DemoService?anyhost=true&application=demo-consumer&bean.name=org.apache.dubbo.demo.DemoService&check=false&deprecated=false&dubbo=2.0.2&dynamic=true&generic=false&interface=org.apache.dubbo.demo.DemoService&lazy=false&methods=sayHello&pid=9095&register=true&register.ip=192.168.1.101&remote.application=demo-provider&side=consumer&sticky=false&timestamp=1559010937536
     @Override   // interface org.apache.dubbo.demo.DemoService
     public <T> Invoker<T> refer(Class<T> serviceType, URL url) throws RpcException {
+        // 根据 url 获取 optimizer 参数对应的 class，进行相关的 className 和 class 的缓存
         optimizeSerialization(url);
-
         // create rpc invoker.
         DubboInvoker<T> invoker = new DubboInvoker<T>(serviceType, url, getClients(url), invokers);
         invokers.add(invoker);  // 构建的 invoker 缓存到 DubboProtocol 的 invokers 属性中
@@ -468,7 +468,7 @@ public class DubboProtocol extends AbstractProtocol {
 
         boolean useShareConnect = false;
 
-        int connections = url.getParameter(CONNECTIONS_KEY, 0); // connections
+        int connections = url.getParameter(CONNECTIONS_KEY, 0); // connections 这个参数用于指定可连接客户端的数量
         List<ReferenceCountExchangeClient> shareClients = null;
         // if not configured, connection is shared, otherwise, one connection for one service
         if (connections == 0) {

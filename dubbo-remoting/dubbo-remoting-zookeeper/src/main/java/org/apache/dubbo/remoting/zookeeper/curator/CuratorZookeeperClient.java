@@ -209,7 +209,7 @@ public class CuratorZookeeperClient extends AbstractZookeeperClient<CuratorZooke
         return new CuratorZookeeperClient.CuratorWatcherImpl(client, listener);
     }
 
-    @Override
+    @Override   // 真正的为 path 应用 listener
     public List<String> addTargetChildListener(String path, CuratorWatcherImpl listener) {
         try {
             return client.getChildren().usingWatcher(listener).forPath(path);

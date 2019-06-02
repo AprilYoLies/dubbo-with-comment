@@ -168,7 +168,7 @@ public class RegistryDirectory<T> extends AbstractDirectory<T> implements Notify
 
     // Set<invokerUrls> cache invokeUrls to invokers mapping.
     private volatile Set<URL> cachedInvokerUrls; // The initial value is null and the midway may be assigned to null, please use the local variable reference
-    // 构建 ConsumerConfigurationListener，同时为提前构建的 DynamicConfiguration 添加一个监听器（自身），同时获取指定路径下的配置信息进行处理
+    // 构建 ConsumerConfigurationListener，同时为提前构建的 DynamicConfiguration 添加一个监听器（自身），获取指定路径下的配置信息进行处理
     private static final ConsumerConfigurationListener CONSUMER_CONFIGURATION_LISTENER = new ConsumerConfigurationListener();
     private ReferenceConfigurationListener serviceConfigurationListener;
 
@@ -213,10 +213,10 @@ public class RegistryDirectory<T> extends AbstractDirectory<T> implements Notify
     }
 
     public void subscribe(URL url) {
-        setConsumerUrl(url);
+        setConsumerUrl(url);    // 此 url 添加了 category -> providers,configurators,routers 属性
         CONSUMER_CONFIGURATION_LISTENER.addNotifyListener(this);    // 以 listener 身份添加 RegistryDirectory 到 CONSUMER_CONFIGURATION_LISTENER
         serviceConfigurationListener = new ReferenceConfigurationListener(this, url);   // 将 RegistryDirectory 包装为 ReferenceConfigurationListener，填充到属性中
-        registry.subscribe(url, this);
+        registry.subscribe(url, this);   // 构建 ReferenceConfigurationListener，同时为提前构建的 DynamicConfiguration 添加一个监听器（自身），同时获取指定路径下的配置信息进行处理
     }
 
 
@@ -252,7 +252,7 @@ public class RegistryDirectory<T> extends AbstractDirectory<T> implements Notify
         }
     }
 
-    @Override
+    @Override   // 此方法就是对 urls 进行分类，将不同类的 url 转换成为对应的配置类，添加到字段中
     public synchronized void notify(List<URL> urls) {
         Map<String, List<URL>> categoryUrls = urls.stream() // 这里是分组的结果，如 routers -> url 的 list
                 .filter(Objects::nonNull)   // 如果 url 不为空
@@ -317,14 +317,14 @@ public class RegistryDirectory<T> extends AbstractDirectory<T> implements Notify
             destroyAllInvokers(); // Close all invokers
         } else {
             this.forbidden = false; // Allow to access 修改状态
-            Map<String, Invoker<T>> oldUrlInvokerMap = this.urlInvokerMap; // local reference
+            Map<String, Invoker<T>> oldUrlInvokerMap = this.urlInvokerMap; // local reference，此 map 保存着 url 这 invoker 的关系
             if (invokerUrls == Collections.<URL>emptyList()) {
                 invokerUrls = new ArrayList<>();
             }
             if (invokerUrls.isEmpty() && this.cachedInvokerUrls != null) {
                 invokerUrls.addAll(this.cachedInvokerUrls); // 添加别人
             } else {
-                this.cachedInvokerUrls = new HashSet<>();   // 或者被添加
+                this.cachedInvokerUrls = new HashSet<>();   // 或者被添加，cachedInvokerUrls 用于缓存 invokerUrls
                 this.cachedInvokerUrls.addAll(invokerUrls);//Cached invoker urls, convenient for comparison
             }
             if (invokerUrls.isEmpty()) {
@@ -392,7 +392,7 @@ public class RegistryDirectory<T> extends AbstractDirectory<T> implements Notify
      * else :routers list
      */
     private Optional<List<Router>> toRouters(List<URL> urls) {
-        if (urls == null || urls.isEmpty()) {
+        if (urls == null || urls.isEmpty()) {   // 获取 urls 中协议不为空的 url，修改协议为 router 参数值，通过 url 获取对应的 router，添加到 routers 中返回
             return Optional.empty();
         }
 
@@ -433,8 +433,8 @@ public class RegistryDirectory<T> extends AbstractDirectory<T> implements Notify
         String queryProtocols = this.queryMap.get(PROTOCOL_KEY);
         for (URL providerUrl : urls) {
             // If protocol is configured at the reference side, only the matching protocol is selected
-            if (queryProtocols != null && queryProtocols.length() > 0) {
-                boolean accept = false;
+            if (queryProtocols != null && queryProtocols.length() > 0) {    // 如果 consumer 指定的 protocol 不为空，那么从 provider url 中找到一个
+                boolean accept = false;                                     // 使用 consumer 指定协议的 url
                 String[] acceptProtocols = queryProtocols.split(",");   // 得到支持的协议数组
                 for (String acceptProtocol : acceptProtocols) {
                     if (providerUrl.getProtocol().equals(acceptProtocol)) { // 如果当前 url 支持协议数组之一
@@ -474,7 +474,7 @@ public class RegistryDirectory<T> extends AbstractDirectory<T> implements Notify
                     } else {
                         enabled = url.getParameter(ENABLED_KEY, true);
                     }
-                    if (enabled) {  // 如果 url 对应的 invoker 不存在，那么就直接根据 protocol 等信息新建一个
+                    if (enabled) {  // 如果 url 对应的 invoker 不存在，那么就直接根据 protocol 等信息新建一个，这是 invoker 构建的核心代码
                         invoker = new InvokerDelegate<>(protocol.refer(serviceType, url), url, providerUrl);
                     }
                 } catch (Throwable t) {
@@ -689,6 +689,7 @@ public class RegistryDirectory<T> extends AbstractDirectory<T> implements Notify
         }
         return false;
     }
+
     // 构建 RouterChain 的过程中还会获取全部的 RouterFactory，然后得到对应的 Router，最后将这些 Router 保存到实例字段中
     public void buildRouterChain(URL url) {
         this.setRouterChain(RouterChain.buildChain(url));   // 构建 RouterChain 并填充属性
@@ -765,10 +766,11 @@ public class RegistryDirectory<T> extends AbstractDirectory<T> implements Notify
         private RegistryDirectory directory;
         private URL url;
 
+        // 构建 ReferenceConfigurationListener，同时为提前构建的 DynamicConfiguration 添加一个监听器（自身），同时获取指定路径下的配置信息进行处理
         ReferenceConfigurationListener(RegistryDirectory directory, URL url) {
             this.directory = directory;
-            this.url = url;
-            this.initWith(url.getEncodedServiceKey() + CONFIGURATORS_SUFFIX);
+            this.url = url; // org.apache.dubbo.demo.DemoService.configurators
+            this.initWith(url.getEncodedServiceKey() + CONFIGURATORS_SUFFIX);   // 为提前构建的 DynamicConfiguration 添加一个监听器（自身），同时获取指定路径下的配置信息进行处理
         }
 
         @Override

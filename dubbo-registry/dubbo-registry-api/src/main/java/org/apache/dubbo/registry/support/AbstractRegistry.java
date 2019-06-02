@@ -304,7 +304,7 @@ public abstract class AbstractRegistry implements Registry {
         }
         if (logger.isInfoEnabled()) {
             logger.info("Subscribe: " + url);
-        }   // 在 subscribed 中是 url -> NotifyListener 集合
+        }   // 在 subscribed 中是 url -> NotifyListener 集合（就是 RegistryDirectory）
         Set<NotifyListener> listeners = subscribed.computeIfAbsent(url, n -> new ConcurrentHashSet<>());
         listeners.add(listener);
     }
@@ -386,7 +386,7 @@ public abstract class AbstractRegistry implements Registry {
      * @param urls     provider latest urls
      */
     protected void notify(URL url, NotifyListener listener, List<URL> urls) {
-        if (url == null) {  // 将 urls 进行分类，获取 url 对应的分类 url 链，将这个链通知给 listener，同时保存一些 serviceKey 和 url 信息到文件中
+        if (url == null) {  // 将 urls 进行分类，获取 url 对应的分类 url 链，将这个链通知给 listener（就是将 url 转换为配置类，然后保存到字段中），同时保存一些 serviceKey 和 url 信息到文件中
             throw new IllegalArgumentException("notify url == null");
         }
         if (listener == null) {
@@ -411,13 +411,13 @@ public abstract class AbstractRegistry implements Registry {
         }
         if (result.size() == 0) {
             return;
-        } // notified -> (url -> (category -> url 的 list))
+        } // notified -> (url -> (category -> url 的 list))，即 notified 中，一个 consumer url 对应着不同分类的 url
         Map<String, List<URL>> categoryNotified = notified.computeIfAbsent(url, u -> new ConcurrentHashMap<>());
         for (Map.Entry<String, List<URL>> entry : result.entrySet()) {  // result 存放着分类集合
             String category = entry.getKey();   // 分类
             List<URL> categoryList = entry.getValue();  // 分类对应的 url 集合
             categoryNotified.put(category, categoryList);   // 将上边得到的 result 也添加到 notified 的 url-key 所对应的 map 中，也就是说 url 持有了全部的分类集合
-            listener.notify(categoryList);  // 通知 url，具体的实现看 listener 类实现
+            listener.notify(categoryList);  // 通知 url，具体的实现看 listener 类实现，比如将分类的 url 转换为对应的配置类，保存到字段中
             // We will update our cache file after each notification.
             // When our Registry has a subscribe failure due to network jitter, we can return at least the existing cache URL.
             saveProperties(url);

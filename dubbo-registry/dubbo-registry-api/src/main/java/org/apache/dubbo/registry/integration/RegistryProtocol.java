@@ -646,8 +646,8 @@ public class RegistryProtocol implements Protocol {
             registry.register(directory.getRegisteredConsumerUrl());    // 缓存了 url 到 registered 结合中，同时根据 url 在 zookeeper 中创建了 /root/url的interface参数/url的category参数/url的全字符串编码路径
         }   // 构建 RouterChain 的过程中还会获取全部的 RouterFactory，然后得到对应的 Router，最后将这些 Router 保存到实例字段中
         directory.buildRouterChain(subscribeUrl);   // 构建了 routerChain 并填充了属性
-        directory.subscribe(subscribeUrl.addParameter(CATEGORY_KEY, // category -> providers
-                PROVIDERS_CATEGORY + "," + CONFIGURATORS_CATEGORY + "," + ROUTERS_CATEGORY));   // configurators -> routers
+        directory.subscribe(subscribeUrl.addParameter(CATEGORY_KEY, // category -> providers,configurators,routers
+                PROVIDERS_CATEGORY + "," + CONFIGURATORS_CATEGORY + "," + ROUTERS_CATEGORY));
         // 此 cluster.adaptive 获得的 extension 为 MockClusterWrapper 包含了 FailoverCluster，然后调用它的 join 方法得到 MockClusterInvoker
         Invoker invoker = cluster.join(directory);  // 得到 MockClusterInvoker
         // 根本就是将参数包装成为 ConsumerInvokerWrapper，然后保存到 consumerInvokers 的 serviceUniqueName key 对应的 set 集合中

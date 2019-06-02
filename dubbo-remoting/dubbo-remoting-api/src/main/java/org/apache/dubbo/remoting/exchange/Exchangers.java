@@ -110,10 +110,11 @@ public class Exchangers {
             throw new IllegalArgumentException("handler == null");
         }
         url = url.addParameterIfAbsent(RemotingConstants.CODEC_KEY, "exchange");    // codec -> exchange
+        // 根据 url 的 exchanger 参数获取 Exchanger，如果 exchanger 参数为空，那么获取的 Exchanger 就是 HeaderExchanger
         return getExchanger(url).connect(url, handler);
     }
 
-    // 获取的 Exchanger 就是 HeaderExchanger
+    // 根据 url 的 exchanger 参数获取 Exchanger，如果 exchanger 参数为空，那么获取的 Exchanger 就是 HeaderExchanger
     public static Exchanger getExchanger(URL url) {
         // 获取 url 中的 exchanger，没有的话就使用默认的 header
         String type = url.getParameter(RemotingConstants.EXCHANGER_KEY, RemotingConstants.DEFAULT_EXCHANGER);   // exchanger 默认 header

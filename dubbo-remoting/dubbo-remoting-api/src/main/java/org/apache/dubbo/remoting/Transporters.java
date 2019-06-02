@@ -89,7 +89,7 @@ public class Transporters {
     public static Client connect(String url, ChannelHandler... handler) throws RemotingException {
         return connect(URL.valueOf(url), handler);
     }
-
+    // handlers 即 DecodeHandler -> HeaderExchangeHandler -> DubboProtocol$1
     public static Client connect(URL url, ChannelHandler... handlers) throws RemotingException {
         if (url == null) {
             throw new IllegalArgumentException("url == null");

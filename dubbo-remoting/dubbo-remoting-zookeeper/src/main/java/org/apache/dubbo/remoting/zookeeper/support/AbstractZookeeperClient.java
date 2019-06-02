@@ -102,7 +102,7 @@ public abstract class AbstractZookeeperClient<TargetDataListener, TargetChildLis
             listeners.putIfAbsent(listener, createTargetChildListener(path, listener));
             targetListener = listeners.get(listener);
         }
-        return addTargetChildListener(path, targetListener);
+        return addTargetChildListener(path, targetListener);    // 真正的为 path 应用 listener
     }
 
     @Override

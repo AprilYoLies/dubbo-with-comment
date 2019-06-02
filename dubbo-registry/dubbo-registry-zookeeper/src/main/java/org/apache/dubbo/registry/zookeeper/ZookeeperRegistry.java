@@ -139,12 +139,12 @@ public class ZookeeperRegistry extends FailbackRegistry {
         } catch (Throwable e) {
             throw new RpcException("Failed to unregister " + url + " to zookeeper " + getUrl() + ", cause: " + e.getMessage(), e);
         }
-    }
-
-    @Override
+    }       // 此方法只看 else 代码块，先是根据 url 获取不同分类的 path，然后根据 url 获取 zkListeners 中 listener 参数对应的 ChildListener
+            // 然后将此 listener 注册到 path 对应的路径下，得到 provider 地址信息，最后将这个地址信息进行通知
+    @Override   // 所谓的通知就是将 urls 进行分类，获取 url 对应的分类 url 链，将这个链通知给 listener（就是将 url 转换为配置类，然后保存到字段中），同时保存一些 serviceKey 和 url 信息到文件中
     public void doSubscribe(final URL url, final NotifyListener listener) {
         try {
-            if (ANY_VALUE.equals(url.getServiceInterface())) {  // url 的 interface 属性为 *
+            if (ANY_VALUE.equals(url.getServiceInterface())) {  // url 的 interface 属性为 *，暂时不研究这个分支
                 String root = toRootPath();
                 ConcurrentMap<NotifyListener, ChildListener> listeners = zkListeners.get(url); // url -> (notifyListener, childListener)
                 if (listeners == null) {
@@ -173,29 +173,29 @@ public class ZookeeperRegistry extends FailbackRegistry {
                         anyServices.add(service);
                         subscribe(url.setPath(service).addParameters(INTERFACE_KEY, service,
                                 RemotingConstants.CHECK_KEY, String.valueOf(false)), listener);
-                    }
-                }                                               // toCategoriesPath 函数的结果
+                    }   // else 的代码，就是在 zkListeners 的 categoriesPath 对应的 map 中添加 NotifyListener（RegistryDirectory）, ChildListener（lambda 表达式的内容），并在 zk 中创建 path，添加了监听器，然后处理了返回的 list 并通知
+                }                                               // toCategoriesPath 函数的结果，模式为 /root/url的interface参数或者path/url的category
             } else {                                            // /dubbo/org.apache.dubbo.demo.DemoService/providers
                 List<URL> urls = new ArrayList<>();             // /dubbo/org.apache.dubbo.demo.DemoService/configurators
                 for (String path : toCategoriesPath(url)) {     // /dubbo/org.apache.dubbo.demo.DemoService/routers
                     ConcurrentMap<NotifyListener, ChildListener> listeners = zkListeners.get(url);
-                    if (listeners == null) {
+                    if (listeners == null) {    // 在 zkListeners 中，url 对应的是 listener 链
                         zkListeners.putIfAbsent(url, new ConcurrentHashMap<>());    // 没有则新建
                         listeners = zkListeners.get(url);
-                    }
-                    ChildListener zkListener = listeners.get(listener);
+                    }   // 在 listener 链中尝试获取 listener
+                    ChildListener zkListener = listeners.get(listener); // 也就是说 NotifyListener（这里指 RegistryDirectory）对应多个 ChildListener
                     if (zkListener == null) {                   // 没有则新建
                         listeners.putIfAbsent(listener, (parentPath, currentChilds) -> ZookeeperRegistry.this.notify(url, listener, toUrlsWithEmpty(url, parentPath, currentChilds)));
                         zkListener = listeners.get(listener);
                     }
-                    zkClient.create(path, false);
+                    zkClient.create(path, false);   // /dubbo/org.apache.dubbo.demo.DemoService/providers
                     List<String> children = zkClient.addChildListener(path, zkListener);    // 为指定路径添加一个 ChildListener 监听器
-                    if (children != null) {
+                    if (children != null) { // 返回的 children 类似于 dubbo%3A%2F%2F192.168.1.101%3A20880%2Forg.apache.dubbo.demo.DemoService%3Fanyhost%3Dtrue%26application%3Ddemo-provider%26bean.name%3Dorg.apache.dubbo.demo.DemoService%26deprecated%3Dfalse%26dubbo%3D2.0.2%26dynamic%3Dtrue%26generic%3Dfalse%26interface%3Dorg.apache.dubbo.demo.DemoService%26methods%3DsayHello%26pid%3D95332%26register%3Dtrue%26release%3D%26side%3Dprovider%26timestamp%3D1559390395469
                         urls.addAll(toUrlsWithEmpty(url, path, children));  // 尝试将 children 转换为 URL 返回
-                    }
-                }
-                notify(url, listener, urls);
-            }
+                    }   // 重要：这里关于 listener 的关系整理，zkListeners（ZookeeperRegistry 的字段） ->(url,ConcurrentMap<NotifyListener, ChildListener>)
+                }       // childListeners（CuratorZookeeperClient 的父类 AbstractZookeeperClient 持有） -> (path，ConcurrentMap<ChildListener, TargetChildListener> )
+                notify(url, listener, urls);    // 实际向 zookeeper 路径注册的监听器是 TargetChildListener
+            }   // 将 urls 进行分类，获取 url 对应的分类 url 链，将这个链通知给 listener（就是将 url 转换为配置类，然后保存到字段中），同时保存一些 serviceKey 和 url 信息到文件中
         } catch (Throwable e) {
             throw new RpcException("Failed to subscribe " + url + " to zookeeper " + getUrl() + ", cause: " + e.getMessage(), e);
         }
@@ -257,6 +257,7 @@ public class ZookeeperRegistry extends FailbackRegistry {
         return toRootDir() + URL.encode(name);
     }
 
+    // 模式为 /root/url的interface参数或者path/url的category
     private String[] toCategoriesPath(URL url) {
         String[] categories;
         if (ANY_VALUE.equals(url.getParameter(CATEGORY_KEY))) {
@@ -277,12 +278,13 @@ public class ZookeeperRegistry extends FailbackRegistry {
 
     private String toUrlPath(URL url) {
         return toCategoryPath(url) + PATH_SEPARATOR + URL.encode(url.toFullString());
-    }
+    }   // consumer -> consumer://192.168.1.101/org.apache.dubbo.demo.DemoService?application=demo-consumer&category=providers,configurators,routers&check=false&dubbo=2.0.2&interface=org.apache.dubbo.demo.DemoService&lazy=false&methods=sayHello&pid=95339&side=consumer&sticky=false&timestamp=1559390405986
 
+    // providers -> dubbo%3A%2F%2F192.168.1.101%3A20880%2Forg.apache.dubbo.demo.DemoService%3Fanyhost%3Dtrue%26application%3Ddemo-provider%26bean.name%3Dorg.apache.dubbo.demo.DemoService%26deprecated%3Dfalse%26dubbo%3D2.0.2%26dynamic%3Dtrue%26generic%3Dfalse%26interface%3Dorg.apache.dubbo.demo.DemoService%26methods%3DsayHello%26pid%3D95332%26register%3Dtrue%26release%3D%26side%3Dprovider%26timestamp%3D1559390395469
     private List<URL> toUrlsWithoutEmpty(URL consumer, List<String> providers) {    // 就是将 providers 转换为 URL 后返回
         List<URL> urls = new ArrayList<>();
         if (CollectionUtils.isNotEmpty(providers)) {
-            for (String provider : providers) {
+            for (String provider : providers) { // 服务发布者的集合
                 provider = URL.decode(provider);
                 if (provider.contains(PROTOCOL_SEPARATOR)) {
                     URL url = URL.valueOf(provider);
@@ -297,12 +299,12 @@ public class ZookeeperRegistry extends FailbackRegistry {
 
     // consumer://192.168.1.104/org.apache.dubbo.demo.DemoService?application=demo-consumer&category=providers,configurators,routers&check=false&dubbo=2.0.2&interface=org.apache.dubbo.demo.DemoService&lazy=false&methods=sayHello&pid=51672&side=consumer&sticky=false&timestamp=1558927288895
     private List<URL> toUrlsWithEmpty(URL consumer, String path, List<String> providers) {
-        List<URL> urls = toUrlsWithoutEmpty(consumer, providers);   // 就是将 providers 转换为 URL 后返回
+        List<URL> urls = toUrlsWithoutEmpty(consumer, providers);   // 就是将 providers 转换为 URL 后返回，只要 consumer 消费的 provider 地址
         if (urls == null || urls.isEmpty()) {
             int i = path.lastIndexOf(PATH_SEPARATOR);
             String category = i < 0 ? path : path.substring(i + 1);
             URL empty = URLBuilder.from(consumer)   // 如果 providers 转换为 URL 为空，那么就直接通过 consumer 进行构造
-                    .setProtocol(EMPTY_PROTOCOL)
+                    .setProtocol(EMPTY_PROTOCOL)    // 如果返回了 empty 协议的 url，那么就说明没有对应的服务
                     .addParameter(CATEGORY_KEY, category)
                     .build();
             urls.add(empty);

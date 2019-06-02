@@ -288,8 +288,8 @@ public abstract class FailbackRegistry extends AbstractRegistry {
 
     @Override
     public void subscribe(URL url, NotifyListener listener) {
-        super.subscribe(url, listener); // 在 subscribed 中是 url -> NotifyListener 集合
-        removeFailedSubscribed(url, listener);
+        super.subscribe(url, listener); // 在 subscribed 中是 url -> NotifyListener 集合，也就是进行缓存
+        removeFailedSubscribed(url, listener);  // 执行清理相关的工作
         try {
             // Sending a subscription request to the server side
             doSubscribe(url, listener);
@@ -348,14 +348,14 @@ public abstract class FailbackRegistry extends AbstractRegistry {
         }
     }
 
-    @Override
+    @Override   // urls 为 provider 相关信息，url 为 consumer url，listener 为 registry-directory
     protected void notify(URL url, NotifyListener listener, List<URL> urls) {
         if (url == null) {
             throw new IllegalArgumentException("notify url == null");
         }
         if (listener == null) {
             throw new IllegalArgumentException("notify listener == null");
-        }
+        }       // 将 urls 进行分类，获取 url 对应的分类 url 链，将这个链通知给 listener（就是将 url 转换为配置类，然后保存到字段中），同时保存一些 serviceKey 和 url 信息到文件中
         try {   // 进行完参数验证后执行真正的 notify
             doNotify(url, listener, urls);
         } catch (Exception t) {
@@ -364,7 +364,7 @@ public abstract class FailbackRegistry extends AbstractRegistry {
             logger.error("Failed to notify for subscribe " + url + ", waiting for retry, cause: " + t.getMessage(), t);
         }
     }
-
+    // 将 urls 进行分类，获取 url 对应的分类 url 链，将这个链通知给 listener（就是将 url 转换为配置类，然后保存到字段中），同时保存一些 serviceKey 和 url 信息到文件中
     protected void doNotify(URL url, NotifyListener listener, List<URL> urls) {
         super.notify(url, listener, urls);
     }

@@ -395,16 +395,16 @@ public class UrlUtils {
                 + (group == null ? "" : "&" + GROUP_KEY + "=" + group)
                 + (version == null ? "" : "&" + VERSION_KEY + "=" + version));
     }
-
+    // category 来自 providerUrl，categories 来自 consumerUrl
     public static boolean isMatchCategory(String category, String categories) {
-        if (categories == null || categories.length() == 0) {
+        if (categories == null || categories.length() == 0) {   // consumerUrl 没有指定 category 情况下，就看 providerUrl 的 category 是否为 provider
             return DEFAULT_CATEGORY.equals(category);
         } else if (categories.contains(ANY_VALUE)) {
             return true;
-        } else if (categories.contains(REMOVE_VALUE_PREFIX)) {
+        } else if (categories.contains(REMOVE_VALUE_PREFIX)) {  // 排除法
             return !categories.contains(REMOVE_VALUE_PREFIX + category);
         } else {
-            return categories.contains(category);
+            return categories.contains(category);   // categories 包含 category 也行
         }
     }
 
@@ -412,21 +412,21 @@ public class UrlUtils {
         String consumerInterface = consumerUrl.getServiceInterface();
         String providerInterface = providerUrl.getServiceInterface();
         //FIXME accept providerUrl with '*' as interface name, after carefully thought about all possible scenarios I think it's ok to add this condition.
-        if (!(ANY_VALUE.equals(consumerInterface)
+        if (!(ANY_VALUE.equals(consumerInterface)   // consumerUrl 和 providerUrl 的 interface 参数一致
                 || ANY_VALUE.equals(providerInterface)
                 || StringUtils.isEquals(consumerInterface, providerInterface))) {   // 两个 serviceInterface 非 * 下的不相等，直接返回 false
             return false;
         }
 
-        if (!isMatchCategory(providerUrl.getParameter(CATEGORY_KEY, DEFAULT_CATEGORY),
+        if (!isMatchCategory(providerUrl.getParameter(CATEGORY_KEY, DEFAULT_CATEGORY),  // consumerUrl 和 providerUrl 的 category 要匹配
                 consumerUrl.getParameter(CATEGORY_KEY, DEFAULT_CATEGORY))) {
             return false;
         }
-        if (!providerUrl.getParameter(ENABLED_KEY, true)
+        if (!providerUrl.getParameter(ENABLED_KEY, true)    // provider 的 url 包含 enable 参数为 false，consumer 的 url 不是通配 *，返回 false
                 && !ANY_VALUE.equals(consumerUrl.getParameter(ENABLED_KEY))) {
             return false;
         }
-
+        // 比较 group、version、classifier 餐厨是否匹配
         String consumerGroup = consumerUrl.getParameter(GROUP_KEY);
         String consumerVersion = consumerUrl.getParameter(VERSION_KEY);
         String consumerClassifier = consumerUrl.getParameter(CLASSIFIER_KEY, ANY_VALUE);
