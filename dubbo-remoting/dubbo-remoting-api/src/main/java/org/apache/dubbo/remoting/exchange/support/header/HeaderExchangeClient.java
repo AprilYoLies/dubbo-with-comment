@@ -48,7 +48,7 @@ public class HeaderExchangeClient implements ExchangeClient {
             new NamedThreadFactory("dubbo-client-idleCheck", true), 1, TimeUnit.SECONDS, RemotingConstants.TICKS_PER_WHEEL);
     private HeartbeatTimerTask heartBeatTimerTask;
     private ReconnectTimerTask reconnectTimerTask;
-
+    // client 是通过 Transporters.connect 方法拿到的 NettyClient
     public HeaderExchangeClient(Client client, boolean startTimer) {
         Assert.notNull(client, "Client can't be null");
         this.client = client;

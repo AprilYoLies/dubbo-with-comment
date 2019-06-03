@@ -277,17 +277,17 @@ public class RegistryDirectory<T> extends AbstractDirectory<T> implements Notify
 
         // 尝试获取 providers 分组的 urls，默认返回空集合，然后将 url 根据 router 参数修改协议，再将其转换为 router 添加到 routers 中，用 Optional 包装返回
         List<URL> providerURLs = categoryUrls.getOrDefault(PROVIDERS_CATEGORY, Collections.emptyList());
-        refreshOverrideAndInvoker(providerURLs);
-    }
-
+        refreshOverrideAndInvoker(providerURLs);    // 就是在这个方法中，根据 provider url 获取了 invoker 信息
+    }   // 通过各个配置项的 Configurator 来对 overrideDirectoryUrl 进行配置，根据 invokerUrls 参数和 cachedInvokerUrls 得到对应的 newUrlInvokerMap，
+        // 根据 oldUrlInvokerMap, newUrlInvokerMap 确定相应的待移除项目，然后执行待移除项的 destroy 方法
     private void refreshOverrideAndInvoker(List<URL> urls) {
         // mock zookeeper://xxx?mock=return null
         overrideDirectoryUrl();  // 这个方法即通过各个配置项的 Configurator 来对 overrideDirectoryUrl 进行配置
         // 如果 invokerUrls 大小为 1 且协议为 empty，进行一些禁止访问的属性的设置
         // 如果 invokerUrls 为空，尝试获取 cachedInvokerUrls，还是为空直接返回
         // 其他情况，将通过 invokerUrls 获取 urls 和 invokers 关系的 map，完成分组，并进行一些允许访问相关的属性设置
-        refreshInvoker(urls);
-    }
+        refreshInvoker(urls);   // 根据 invokerUrls 参数和 cachedInvokerUrls 得到对应的 newUrlInvokerMap，根据 oldUrlInvokerMap, newUrlInvokerMap
+    }                           // 确定相应的待移除项目，然后执行待移除项的 destroy 方法
 
     /**
      * Convert the invokerURL list to the Invoker Map. The rules of the conversion are as follows:
@@ -305,8 +305,8 @@ public class RegistryDirectory<T> extends AbstractDirectory<T> implements Notify
     // 如果 invokerUrls 大小为 1 且协议为 empty，进行一些禁止访问的属性的设置
     // 如果 invokerUrls 为空，尝试获取 cachedInvokerUrls，还是为空直接返回
     // 其他情况，将通过 invokerUrls 获取 urls 和 invokers 关系的 map，完成分组，并进行一些允许访问相关的属性设置
-    private void refreshInvoker(List<URL> invokerUrls) {    //
-        Assert.notNull(invokerUrls, "invokerUrls should not be null");
+    private void refreshInvoker(List<URL> invokerUrls) {    // 根据 invokerUrls 参数和 cachedInvokerUrls 得到对应的 newUrlInvokerMap，根据 oldUrlInvokerMap, newUrlInvokerMap
+        Assert.notNull(invokerUrls, "invokerUrls should not be null");  // 确定相应的待移除项目，然后执行待移除项的 destroy 方法
 
         if (invokerUrls.size() == 1
                 && invokerUrls.get(0) != null
@@ -329,7 +329,7 @@ public class RegistryDirectory<T> extends AbstractDirectory<T> implements Notify
             }
             if (invokerUrls.isEmpty()) {
                 return;
-            }    // 此方法用于获取 url 和 invoker 对应关系的 map
+            }    // 此方法用于获取 url 和 invoker 对应关系的 map，在那之前需要先进行 url 协议的验证，也就是说 provider 的协议需要是使用的请求者指定的协议类型，另外 provider url 的使能参数要正确
             Map<String, Invoker<T>> newUrlInvokerMap = toInvokers(invokerUrls);// Translate url list to Invoker map
 
             /**
@@ -349,12 +349,12 @@ public class RegistryDirectory<T> extends AbstractDirectory<T> implements Notify
             List<Invoker<T>> newInvokers = Collections.unmodifiableList(new ArrayList<>(newUrlInvokerMap.values()));
             // pre-route and build cache, notice that route cache should build on original Invoker list.
             // toMergeMethodInvokerMap() will wrap some invokers having different groups, those wrapped invokers not should be routed.
-            routerChain.setInvokers(newInvokers);   // 将通过 urls 获取的 invoker 添加到 routerChain 中
+            routerChain.setInvokers(newInvokers);   // 将通过 urls 获取的 invoker 添加到 routerChain 中，也就是说 routerChain 还持有了根据 urls 获取的 invoker 链
             // 尝试对 invokers 进行分组，然后对每组的 invoker 包装成为一个 invoker 后，返回，如果只有一个分组，那么就原样返回
-            this.invokers = multiGroup ? toMergeInvokerList(newInvokers) : newInvokers;
+            this.invokers = multiGroup ? toMergeInvokerList(newInvokers) : newInvokers; // RegistryDirectory 直接持有 invokers 信息
             this.urlInvokerMap = newUrlInvokerMap;  // 将 url 和 invoker 的映射关系添加到 urlInvokerMap 属性中
 
-            try {   // 后续清理工作
+            try {   // 根据 oldUrlInvokerMap, newUrlInvokerMap 确定待移除的项，执行它的 destroy 方法
                 destroyUnusedInvokers(oldUrlInvokerMap, newUrlInvokerMap); // Close the unused Invoker
             } catch (Exception e) {
                 logger.warn("destroyUnusedInvokers error. ", e);
@@ -423,8 +423,8 @@ public class RegistryDirectory<T> extends AbstractDirectory<T> implements Notify
      *
      * @param urls
      * @return invokers
-     */
-    private Map<String, Invoker<T>> toInvokers(List<URL> urls) {    // 此方法用于获取 url 和 invoker 对应关系的 map
+     */ // 此方法用于获取 url 和 invoker 对应关系的 map，在那之前需要先进行 url 协议的验证，也就是说 provider 的协议需要是使用的请求者指定的协议类型，另外 provider url 的使能参数要正确
+    private Map<String, Invoker<T>> toInvokers(List<URL> urls) {
         Map<String, Invoker<T>> newUrlInvokerMap = new HashMap<>();
         if (urls == null || urls.isEmpty()) {
             return newUrlInvokerMap;
@@ -476,8 +476,8 @@ public class RegistryDirectory<T> extends AbstractDirectory<T> implements Notify
                     }
                     if (enabled) {  // 如果 url 对应的 invoker 不存在，那么就直接根据 protocol 等信息新建一个，这是 invoker 构建的核心代码
                         invoker = new InvokerDelegate<>(protocol.refer(serviceType, url), url, providerUrl);
-                    }
-                } catch (Throwable t) {
+                    }   // RegistryDirectory$InvokerDelegate -> ListenerInvokerWrapper -> ProtocolFilterWrapper$1（过滤器 Invoker 链）-> （Invoker 链的最后一个）DubboInvoker
+                } catch (Throwable t) { //
                     logger.error("Failed to refer invoker for interface:" + serviceType + ",url:(" + url + ")" + t.getMessage(), t);
                 }
                 if (invoker != null) { // Put new invoker in cache
@@ -552,7 +552,7 @@ public class RegistryDirectory<T> extends AbstractDirectory<T> implements Notify
     }
 
     /**
-     * Close all invokers
+     * Close all invokers，此方法就是调用 urlInvokerMap 的 value 集合的每个 invoker 的 destroy 方法
      */
     private void destroyAllInvokers() {
         Map<String, Invoker<T>> localUrlInvokerMap = this.urlInvokerMap; // local reference
@@ -578,7 +578,7 @@ public class RegistryDirectory<T> extends AbstractDirectory<T> implements Notify
      */
     private void destroyUnusedInvokers(Map<String, Invoker<T>> oldUrlInvokerMap, Map<String, Invoker<T>> newUrlInvokerMap) {
         if (newUrlInvokerMap == null || newUrlInvokerMap.size() == 0) {
-            destroyAllInvokers();
+            destroyAllInvokers();   // 此方法就是调用 urlInvokerMap 的 value 集合的每个 invoker 的 destroy 方法
             return;
         }
         // check deleted invoker
@@ -586,7 +586,7 @@ public class RegistryDirectory<T> extends AbstractDirectory<T> implements Notify
         if (oldUrlInvokerMap != null) {
             Collection<Invoker<T>> newInvokers = newUrlInvokerMap.values();
             for (Map.Entry<String, Invoker<T>> entry : oldUrlInvokerMap.entrySet()) {
-                if (!newInvokers.contains(entry.getValue())) {
+                if (!newInvokers.contains(entry.getValue())) {  // 这个 if 块代码就是将 oldUrlInvokerMap 中没有包含在 newUrlInvokerMap 中的 invoker 添加到 deleted 链表中
                     if (deleted == null) {
                         deleted = new ArrayList<>();
                     }
@@ -598,10 +598,10 @@ public class RegistryDirectory<T> extends AbstractDirectory<T> implements Notify
         if (deleted != null) {
             for (String url : deleted) {
                 if (url != null) {
-                    Invoker<T> invoker = oldUrlInvokerMap.remove(url);
+                    Invoker<T> invoker = oldUrlInvokerMap.remove(url);  // 从 oldUrlInvokerMap 中移除那些将要删除的项
                     if (invoker != null) {
                         try {
-                            invoker.destroy();
+                            invoker.destroy();  // 调用被移除项的 destroy 方法
                             if (logger.isDebugEnabled()) {
                                 logger.debug("destroy invoker[" + invoker.getUrl() + "] success. ");
                             }

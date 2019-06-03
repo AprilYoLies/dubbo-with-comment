@@ -89,7 +89,7 @@ public class Transporters {
     public static Client connect(String url, ChannelHandler... handler) throws RemotingException {
         return connect(URL.valueOf(url), handler);
     }
-    // handlers 即 DecodeHandler -> HeaderExchangeHandler -> DubboProtocol$1
+    // handlers 即 DecodeHandler -> HeaderExchangeHandler -> DubboProtocol$1，这个方法就是通过 NettyTransporter 的 connect 方法，构建 NettyClient，实际在这个构造函数中，完成了 Netty 通信相关的全部设置
     public static Client connect(URL url, ChannelHandler... handlers) throws RemotingException {
         if (url == null) {
             throw new IllegalArgumentException("url == null");
@@ -101,7 +101,7 @@ public class Transporters {
             handler = handlers[0];  // 针对只有一个 handler 的情况
         } else {
             handler = new ChannelHandlerDispatcher(handlers);   // 这里是针对多个 handler 的情况
-        }
+        }   // 这里拿到的 NettyTransporter 的 connect 方法，构建 NettyClient，实际在这个构造函数中，完成了 Netty 通信相关的全部设置
         return getTransporter().connect(url, handler);
     }
 

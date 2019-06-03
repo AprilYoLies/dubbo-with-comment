@@ -150,9 +150,9 @@ public class ProtocolFilterWrapper implements Protocol {    // ProtocolFilterWra
         if (REGISTRY_PROTOCOL.equals(url.getProtocol())) {
             // 得到的是 MockClusterInvoker
             return protocol.refer(type, url);
-        }
+        }   // protocol.refer 主要是通过 getClients 获取到 List<ReferenceCountExchangeClient>，将其封装成为 DubboInvoker 再缓存到 invokers，最后将构建的 DubboInvoker 返回
         return buildInvokerChain(protocol.refer(type, url), REFERENCE_FILTER_KEY, CommonConstants.CONSUMER);
-    }
+    }    // buildInvokerChain 是为 DubboInvoker 加了很多的 FilterInvoker 而构成 invoker 链，最后一个才是 DubboInvoker
 
     @Override
     public void destroy() {

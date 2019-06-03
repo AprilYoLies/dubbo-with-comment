@@ -83,7 +83,7 @@ public abstract class AbstractRegistry implements Registry {
     private final AtomicInteger savePropertiesRetryTimes = new AtomicInteger();
     private final Set<URL> registered = new ConcurrentHashSet<>();
     private final ConcurrentMap<URL, Set<NotifyListener>> subscribed = new ConcurrentHashMap<>();
-    private final ConcurrentMap<URL, Map<String, List<URL>>> notified = new ConcurrentHashMap<>();
+    private final ConcurrentMap<URL, Map<String, List<URL>>> notified = new ConcurrentHashMap<>();  // 就是存储的 url 对应的全部分类集合
     private URL registryUrl;
     // Local disk cache file
     private File file;
@@ -384,7 +384,7 @@ public abstract class AbstractRegistry implements Registry {
      * @param url      consumer side url
      * @param listener listener
      * @param urls     provider latest urls
-     */
+     */ // notified -> (consumerUrl, (category, providerUrl))，将 urls 按照 consumer 进行分组分类保存到 notified 中，并根据 providerUrl 构建对应的 invoker 保存到字段中
     protected void notify(URL url, NotifyListener listener, List<URL> urls) {
         if (url == null) {  // 将 urls 进行分类，获取 url 对应的分类 url 链，将这个链通知给 listener（就是将 url 转换为配置类，然后保存到字段中），同时保存一些 serviceKey 和 url 信息到文件中
             throw new IllegalArgumentException("notify url == null");
@@ -417,13 +417,14 @@ public abstract class AbstractRegistry implements Registry {
             String category = entry.getKey();   // 分类
             List<URL> categoryList = entry.getValue();  // 分类对应的 url 集合
             categoryNotified.put(category, categoryList);   // 将上边得到的 result 也添加到 notified 的 url-key 所对应的 map 中，也就是说 url 持有了全部的分类集合
-            listener.notify(categoryList);  // 通知 url，具体的实现看 listener 类实现，比如将分类的 url 转换为对应的配置类，保存到字段中
+            listener.notify(categoryList);  // 通知 url，具体的实现看 listener 类实现，比如将分类的 url 转换为对应的配置类，保存到字段中，此外该方法还根据 provider url 获取了 invoker 信息
             // We will update our cache file after each notification.
             // When our Registry has a subscribe failure due to network jitter, we can return at least the existing cache URL.
-            saveProperties(url);
+            saveProperties(url);    // 将 notified 的内容转换为 property，保存到对应的文件中
         }
     }
 
+    // 将 notified 的内容转换为 property，保存到对应的文件中
     private void saveProperties(URL url) {
         if (file == null) {
             return;

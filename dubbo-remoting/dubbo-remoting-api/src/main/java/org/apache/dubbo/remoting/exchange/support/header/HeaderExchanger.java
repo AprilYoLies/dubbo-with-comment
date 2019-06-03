@@ -32,8 +32,8 @@ public class HeaderExchanger implements Exchanger {
 
     public static final String NAME = "header";
 
-    // 此方法针对服务的消费端
-    @Override
+    // 此方法针对服务的消费端 HeaderExchangeClient -> NettyClient
+    @Override   // Transporters.connect 方法，构建 NettyClient，实际在这个构造函数中，完成了 Netty 通信相关的全部设置
     public ExchangeClient connect(URL url, ExchangeHandler handler) throws RemotingException {  // DecodeHandler -> HeaderExchangeHandler -> DubboProtocol$1
         return new HeaderExchangeClient(Transporters.connect(url, new DecodeHandler(new HeaderExchangeHandler(handler))), true);
     }

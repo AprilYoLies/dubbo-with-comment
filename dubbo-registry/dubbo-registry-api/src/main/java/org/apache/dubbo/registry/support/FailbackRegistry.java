@@ -357,7 +357,7 @@ public abstract class FailbackRegistry extends AbstractRegistry {
             throw new IllegalArgumentException("notify listener == null");
         }       // 将 urls 进行分类，获取 url 对应的分类 url 链，将这个链通知给 listener（就是将 url 转换为配置类，然后保存到字段中），同时保存一些 serviceKey 和 url 信息到文件中
         try {   // 进行完参数验证后执行真正的 notify
-            doNotify(url, listener, urls);
+            doNotify(url, listener, urls);  // 将 urls 按照 consumer 进行分组分类保存到 notified 中，并根据 providerUrl 构建对应的 invoker 保存到字段中
         } catch (Exception t) {
             // Record a failed registration request to a failed list, retry regularly
             addFailedNotified(url, listener, urls);
@@ -366,7 +366,7 @@ public abstract class FailbackRegistry extends AbstractRegistry {
     }
     // 将 urls 进行分类，获取 url 对应的分类 url 链，将这个链通知给 listener（就是将 url 转换为配置类，然后保存到字段中），同时保存一些 serviceKey 和 url 信息到文件中
     protected void doNotify(URL url, NotifyListener listener, List<URL> urls) {
-        super.notify(url, listener, urls);
+        super.notify(url, listener, urls);  // 将 urls 按照 consumer 进行分组分类保存到 notified 中，并根据 providerUrl 构建对应的 invoker 保存到字段中
     }
 
     @Override

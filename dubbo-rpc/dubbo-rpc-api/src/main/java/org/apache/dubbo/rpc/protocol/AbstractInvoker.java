@@ -62,7 +62,7 @@ public abstract class AbstractInvoker<T> implements Invoker<T> {
     }
 
     public AbstractInvoker(Class<T> type, URL url, String[] keys) {
-        this(type, url, convertAttachment(url, keys));
+        this(type, url, convertAttachment(url, keys));     // convertAttachment 方法从 url 中获取 keys 对应的不为空的参数返回
     }
 
     public AbstractInvoker(Class<T> type, URL url, Map<String, String> attachment) {
@@ -76,7 +76,7 @@ public abstract class AbstractInvoker<T> implements Invoker<T> {
         this.url = url;
         this.attachment = attachment == null ? null : Collections.unmodifiableMap(attachment);
     }
-
+    // 从 url 中获取 keys 对应的不为空的参数返回
     private static Map<String, String> convertAttachment(URL url, String[] keys) {
         if (ArrayUtils.isEmpty(keys)) {
             return null;

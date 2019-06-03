@@ -102,6 +102,8 @@ public class Exchangers {
         return connect(URL.valueOf(url), handler);
     }
 
+    // 也就是通过 Exchangers 的 getExchanger 拿到 Exchanger（实际是 HeaderExchanger），调用它的 connect 方法，它会通过 Transporters.connect 方法得到 NettyClient（实际是
+    // 通过 NettyTransporter 得到），然后将其封装成为 HeaderExchangeClient 返回
     public static ExchangeClient connect(URL url, ExchangeHandler handler) throws RemotingException {
         if (url == null) {
             throw new IllegalArgumentException("url == null");
@@ -111,7 +113,7 @@ public class Exchangers {
         }
         url = url.addParameterIfAbsent(RemotingConstants.CODEC_KEY, "exchange");    // codec -> exchange
         // 根据 url 的 exchanger 参数获取 Exchanger，如果 exchanger 参数为空，那么获取的 Exchanger 就是 HeaderExchanger
-        return getExchanger(url).connect(url, handler);
+        return getExchanger(url).connect(url, handler); // HeaderExchanger.connect 得到的是 HeaderExchangeClient，封装了 NettyClient
     }
 
     // 根据 url 的 exchanger 参数获取 Exchanger，如果 exchanger 参数为空，那么获取的 Exchanger 就是 HeaderExchanger

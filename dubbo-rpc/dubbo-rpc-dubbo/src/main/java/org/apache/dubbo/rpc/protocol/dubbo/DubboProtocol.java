@@ -412,6 +412,7 @@ public class DubboProtocol extends AbstractProtocol {
 
         return server;
     }
+
     // 根据 url 获取 optimizer 参数对应的 class，进行相关的 className 和 class 的缓存
     private void optimizeSerialization(URL url) throws RpcException {
         String className = url.getParameter(OPTIMIZER_KEY, "");
@@ -450,18 +451,20 @@ public class DubboProtocol extends AbstractProtocol {
         }
     }
 
+    // 此方法主要是通过 getClients 获取到 List<ReferenceCountExchangeClient>，将其封装成为 DubboInvoker 再缓存到 invokers，最后将构建的 DubboInvoker 返回
     // dubbo://192.168.1.101:20880/org.apache.dubbo.demo.DemoService?anyhost=true&application=demo-consumer&bean.name=org.apache.dubbo.demo.DemoService&check=false&deprecated=false&dubbo=2.0.2&dynamic=true&generic=false&interface=org.apache.dubbo.demo.DemoService&lazy=false&methods=sayHello&pid=9095&register=true&register.ip=192.168.1.101&remote.application=demo-provider&side=consumer&sticky=false&timestamp=1559010937536
     @Override   // interface org.apache.dubbo.demo.DemoService
     public <T> Invoker<T> refer(Class<T> serviceType, URL url) throws RpcException {
         // 根据 url 获取 optimizer 参数对应的 class，进行相关的 className 和 class 的缓存
         optimizeSerialization(url);
-        // create rpc invoker.
-        DubboInvoker<T> invoker = new DubboInvoker<T>(serviceType, url, getClients(url), invokers);
-        invokers.add(invoker);  // 构建的 invoker 缓存到 DubboProtocol 的 invokers 属性中
+        // create rpc invoker. getClients 方法主要是根据 url 确定连接数，然后根据 url 和连接数构建 List<ReferenceCountExchangeClient>，将结果转存到 clients 后返回
+        DubboInvoker<T> invoker = new DubboInvoker<T>(serviceType, url, getClients(url), invokers); // 用 DubboInvoker 封装了得到的 List<ReferenceCountExchangeClient>，持有了 HeaderExchangeClient -> NettyClient
+        invokers.add(invoker);  // 构建的 invoker 缓存到 DubboProtocol 的 invokers 属性中，同时 DubboInvoker 也引用了 invokers
 
         return invoker;
     }
 
+    // 此方法主要是根据 url 确定连接数，然后根据 url 和连接数构建 List<ReferenceCountExchangeClient>，将结果转存到 clients 后返回
     // dubbo://192.168.1.101:20880/org.apache.dubbo.demo.DemoService?anyhost=true&application=demo-consumer&bean.name=org.apache.dubbo.demo.DemoService&check=false&deprecated=false&dubbo=2.0.2&dynamic=true&generic=false&interface=org.apache.dubbo.demo.DemoService&lazy=false&methods=sayHello&pid=9095&register=true&register.ip=192.168.1.101&remote.application=demo-provider&side=consumer&sticky=false&timestamp=1559010937536
     private ExchangeClient[] getClients(URL url) {
         // whether to share connection
@@ -481,12 +484,11 @@ public class DubboProtocol extends AbstractProtocol {
             connections = Integer.parseInt(StringUtils.isBlank(shareConnectionsStr) ? ConfigUtils.getProperty(SHARE_CONNECTIONS_KEY,
                     DEFAULT_SHARE_CONNECTIONS) : shareConnectionsStr);  // 获取 connections 信息
             shareClients = getSharedClient(url, connections);
-        }
-
+        }   // 此方法主要是优先尝试根据 url 从 referenceClientMap 中获取对应的 ReferenceCountExchangeClient 列表项，如果没有的话，那么就需要构建 ReferenceCountExchangeClient 列表项
         ExchangeClient[] clients = new ExchangeClient[connections];
         for (int i = 0; i < clients.length; i++) {
             if (useShareConnect) {
-                clients[i] = shareClients.get(i);   // 从 Reference 获取真正的 ExchangeClient
+                clients[i] = shareClients.get(i);   // 将 shareClients 内容转存到 clients 中
 
             } else {
                 clients[i] = initClient(url);
@@ -501,13 +503,13 @@ public class DubboProtocol extends AbstractProtocol {
      *
      * @param url        dubbo://192.168.1.101:20880/org.apache.dubbo.demo.DemoService?anyhost=true&application=demo-consumer&bean.name=org.apache.dubbo.demo.DemoService&check=false&deprecated=false&dubbo=2.0.2&dynamic=true&generic=false&interface=org.apache.dubbo.demo.DemoService&lazy=false&methods=sayHello&pid=9095&register=true&register.ip=192.168.1.101&remote.application=demo-provider&side=consumer&sticky=false&timestamp=1559010937536
      * @param connectNum connectNum must be greater than or equal to 1
-     */
-    private List<ReferenceCountExchangeClient> getSharedClient(URL url, int connectNum) {
+     */ // 此方法主要是优先尝试根据 url 从 referenceClientMap 中获取对应的 ReferenceCountExchangeClient 列表项，如果没有的话，那么就需要构建 ReferenceCountExchangeClient 列表项
+    private List<ReferenceCountExchangeClient> getSharedClient(URL url, int connectNum) {   // ReferenceCountExchangeClient -> HeaderExchangeClient -> NettyClient
         String key = url.getAddress();  // 192.168.1.101:20880
         List<ReferenceCountExchangeClient> clients = referenceClientMap.get(key);
 
         if (checkClientCanUse(clients)) {   // 检查是否为空，或者项不可用
-            batchClientRefIncr(clients);    // 增加列表项的引用数
+            batchClientRefIncr(clients);    // 增加 url 所对应的列表项的引用数
             return clients;
         }
 
@@ -525,7 +527,7 @@ public class DubboProtocol extends AbstractProtocol {
 
             // If the clients is empty, then the first initialization is
             if (CollectionUtils.isEmpty(clients)) {
-                clients = buildReferenceCountExchangeClientList(url, connectNum);   // 批量构建引用链
+                clients = buildReferenceCountExchangeClientList(url, connectNum);   // 通过 url 构建 ReferenceCountExchangeClient，引用了 HeaderExchangeClient
                 referenceClientMap.put(key, clients);   // 缓存 key 和引用链接 clients 的信息
 
             } else {
@@ -546,7 +548,7 @@ public class DubboProtocol extends AbstractProtocol {
              * always occupying this memory space.
              */
             locks.remove(key);
-
+            // 返回 url 对应的 client 列表项
             return clients;
         }
     }
@@ -599,7 +601,7 @@ public class DubboProtocol extends AbstractProtocol {
     private List<ReferenceCountExchangeClient> buildReferenceCountExchangeClientList(URL url, int connectNum) {
         List<ReferenceCountExchangeClient> clients = new CopyOnWriteArrayList<>();
 
-        for (int i = 0; i < connectNum; i++) {
+        for (int i = 0; i < connectNum; i++) {  // buildReferenceCountExchangeClient 方法主要就是通过 initClient 获取到 HeaderExchangeClient，然后将其封装成为 ReferenceCountExchangeClient 返回
             clients.add(buildReferenceCountExchangeClient(url));
         }
 
@@ -607,19 +609,19 @@ public class DubboProtocol extends AbstractProtocol {
     }
 
     /**
-     * Build a single client
+     * Build a single client,此方法主要就是通过 initClient 获取到 HeaderExchangeClient，然后将其封装成为 ReferenceCountExchangeClient 返回
      *
      * @param url
      * @return
      */
     private ReferenceCountExchangeClient buildReferenceCountExchangeClient(URL url) {
-        ExchangeClient exchangeClient = initClient(url);
+        ExchangeClient exchangeClient = initClient(url);    //此方法主要就是通过 NettyTransporter 获取到 NettyClient，然后在 Exchangers 中将其封装成为 HeaderExchangeClient 返回
         // 通过 ReferenceCountExchangeClient 对 exchangeClient 进行封装，使得能够对其的引用进行计数
-        return new ReferenceCountExchangeClient(exchangeClient);
+        return new ReferenceCountExchangeClient(exchangeClient); // ReferenceCountExchangeClient -> HeaderExchangeClient -> NettyClient
     }
 
     /**
-     * Create new connection
+     * Create new connection，此方法主要就是通过 NettyTransporter 获取到 NettyClient，然后在 Exchangers 中将其封装成为 HeaderExchangeClient 返回
      *
      * @param url
      */
@@ -645,6 +647,8 @@ public class DubboProtocol extends AbstractProtocol {
                 client = new LazyConnectExchangeClient(url, requestHandler);
 
             } else {
+                // 也就是通过 Exchangers 的 getExchanger 拿到 Exchanger（实际是 HeaderExchanger），调用它的 connect 方法，它会通过 Transporters.connect 方法得到 NettyClient（实际是
+                // 通过 NettyTransporter 得到），然后将其封装成为 HeaderExchangeClient 返回
                 client = Exchangers.connect(url, requestHandler);
             }
 

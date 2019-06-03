@@ -32,9 +32,9 @@ public class NettyTransporter implements Transporter {
         return new NettyServer(url, listener);
     }
 
-    @Override
+    @Override   // 构建 NettyClient，实际在这个构造函数中，完成了 Netty 通信相关的全部设置
     public Client connect(URL url, ChannelHandler listener) throws RemotingException {
-        return new NettyClient(url, listener);
+        return new NettyClient(url, listener);  // 构建 NettyClient，实际在这个构造函数中，完成了 Netty 通信相关的全部设置
     }
 
 }

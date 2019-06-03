@@ -50,14 +50,14 @@ public abstract class AbstractClient extends AbstractEndpoint implements Client 
     private final Lock connectLock = new ReentrantLock();
     private final boolean needReconnect;
     protected volatile ExecutorService executor;
-
+    // 向上传递 url 和 handler 参数，根据 url 获取 needReconnect 参数，进行 open 和 connect 操作（真正的 netty 连接操作）
     public AbstractClient(URL url, ChannelHandler handler) throws RemotingException {
-        super(url, handler);
+        super(url, handler);    // 向上传递 url 和 handler 参数，根据 url 获取 codec、timeout、connectTimeout 等参数
 
         needReconnect = url.getParameter(RemotingConstants.SEND_RECONNECT_KEY, false);  // send.reconnect
 
         try {
-            doOpen();
+            doOpen();   // 对 bootstrap 及其参数进行对应的设置
         } catch (Throwable t) {
             close();
             throw new RemotingException(url.toInetSocketAddress(), null,
@@ -66,7 +66,7 @@ public abstract class AbstractClient extends AbstractEndpoint implements Client 
         }
         try {
             // connect.
-            connect();
+            connect();  // 将上边 doOpen 方法构建出来的 bootstrap 连接到对应的 provider 地址上
             if (logger.isInfoEnabled()) {
                 logger.info("Start " + getClass().getSimpleName() + " " + NetUtils.getLocalAddress() + " connect to the server " + getRemoteAddress());
             }
@@ -90,11 +90,11 @@ public abstract class AbstractClient extends AbstractEndpoint implements Client 
         ExtensionLoader.getExtensionLoader(DataStore.class)
                 .getDefaultExtension().remove(CONSUMER_SIDE, Integer.toString(url.getPort()));
     }
-
+    // 为 url 添加 thread-name，thread-pool 参数，然后根据 url 和 handler 构建 AllChannelHandler 并包装成为 MultiMessageHandler 返回
     protected static ChannelHandler wrapChannelHandler(URL url, ChannelHandler handler) {
         url = ExecutorUtil.setThreadName(url, CLIENT_THREAD_POOL_NAME); // DubboClientHandler，为 url 添加 thread-name 参数
         url = url.addParameterIfAbsent(THREADPOOL_KEY, DEFAULT_CLIENT_THREADPOOL);  // thread-pool -> cached
-        return ChannelHandlers.wrap(handler, url);  // MultiMessageHandler -> HeartbeatHandler -> AllChannelHandler
+        return ChannelHandlers.wrap(handler, url);  // MultiMessageHandler -> HeartbeatHandler -> AllChannelHandler，此方法就是将 handler 层层包装成为 MultiMessageHandler
     }
 
     public InetSocketAddress getConnectAddress() {

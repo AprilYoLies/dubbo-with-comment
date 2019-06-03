@@ -47,7 +47,7 @@ final class HeaderExchangeChannel implements ExchangeChannel {
     private final Channel channel;
 
     private volatile boolean closed = false;
-
+    // channel 是通过 Transporters.connect 方法拿到的 NettyClient
     HeaderExchangeChannel(Channel channel) {
         if (channel == null) {
             throw new IllegalArgumentException("channel == null");

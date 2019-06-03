@@ -29,7 +29,7 @@ import org.apache.dubbo.rpc.RpcException;
 import java.util.List;
 
 /**
- * ListenerInvoker
+ * ListenerInvoker，之所以被称为 ListenerInvokerWrapper，就是对普通的 invoker 进行了包装，同时持有了 listeners
  */
 public class ListenerInvokerWrapper<T> implements Invoker<T> {
 
@@ -93,7 +93,7 @@ public class ListenerInvokerWrapper<T> implements Invoker<T> {
                 for (InvokerListener listener : listeners) {
                     if (listener != null) {
                         try {
-                            listener.destroyed(invoker);
+                            listener.destroyed(invoker);    // 可以看到对于 listener 而言，只是在摧毁 invoker 有效
                         } catch (Throwable t) {
                             logger.error(t.getMessage(), t);
                         }

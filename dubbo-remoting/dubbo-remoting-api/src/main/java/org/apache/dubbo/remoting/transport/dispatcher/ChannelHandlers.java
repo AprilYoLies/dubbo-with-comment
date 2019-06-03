@@ -31,7 +31,7 @@ public class ChannelHandlers {
     protected ChannelHandlers() {
     }
 
-    // handler 实际是一个 DecodeHandler
+    // handler 实际是一个 DecodeHandler，此方法就是将 handler 层层包装成为 MultiMessageHandler
     public static ChannelHandler wrap(ChannelHandler handler, URL url) {
         // 通过 AllDispatcher 根据本函数的 handler 参数构建 AllChannelHandler，并最终包装成 MultiMessageHandler
         return ChannelHandlers.getInstance().wrapInternal(handler, url);
