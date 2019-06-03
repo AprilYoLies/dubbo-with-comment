@@ -32,12 +32,12 @@ import static org.apache.dubbo.common.constants.RpcConstants.INTERFACES;
  */
 public abstract class AbstractProxyFactory implements ProxyFactory {
 
-    @Override
+    @Override   // 此方法主要是为构造 proxy0 做准备，默认会为服务接口和 EchoService 创建方法的代理，但是如果 url 指定了 interfaces 参数，那么还需要额外对这些接口的方法进行代理
     public <T> T getProxy(Invoker<T> invoker) throws RpcException {
         return getProxy(invoker, false);
     }
 
-    @Override
+    @Override   // 此方法主要是为构造 proxy0 做准备，默认会为服务接口和 EchoService 创建方法的代理，但是如果 url 指定了 interfaces 参数，那么还需要额外对这些接口的方法进行代理
     public <T> T getProxy(Invoker<T> invoker, boolean generic) throws RpcException {
         Class<?>[] interfaces = null;
         String config = invoker.getUrl().getParameter(INTERFACES);  // interfaces
@@ -51,13 +51,13 @@ public abstract class AbstractProxyFactory implements ProxyFactory {
                     // TODO can we load successfully for a different classloader?.
                     interfaces[i + 2] = ReflectUtils.forName(types[i]);
                 }
-            }
+            }   // 最终结果就是 invoker.getInterface、EchoService、invoker 中 url 对应的 interface 的切割
         }
         if (interfaces == null) {
             interfaces = new Class<?>[]{invoker.getInterface(), EchoService.class}; // 没有其他的，那就只填充这两个
         }
 
-        if (!GenericService.class.isAssignableFrom(invoker.getInterface()) && generic) {
+        if (!GenericService.class.isAssignableFrom(invoker.getInterface()) && generic) {    // 泛型的处理方式，这里不做深究
             int len = interfaces.length;    // 这种情况下，还补填一个 GenericService.class
             Class<?>[] temp = interfaces;
             interfaces = new Class<?>[len + 1];

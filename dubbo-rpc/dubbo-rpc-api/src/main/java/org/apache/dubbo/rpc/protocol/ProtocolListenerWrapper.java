@@ -71,7 +71,8 @@ public class ProtocolListenerWrapper implements Protocol {  // 之所以被称�
     @Override
     public <T> Invoker<T> refer(Class<T> type, URL url) throws RpcException {
         if (REGISTRY_PROTOCOL.equals(url.getProtocol())) {  // 如果 url 是 registry 协议，直接向下传递
-            // 得到的是 MockClusterInvoker
+            // 构建 RegistryDirectory，为其填充 registry 和 protocol 属性，通过此 registry 在 zookeeper 中构建 consumer 路径，然后由 registry 通过 consumer url 得到
+            // 对应的 invoker，填充到 RegistryDirectory 中，最后通过 cluster 参数对 RegistryDirectory 进行一定的封装，缓存封装结果并返回
             return protocol.refer(type, url);
         }
         return new ListenerInvokerWrapper<T>(protocol.refer(type, url), // 否则会将 refer 结果包装成为 ListenerInvokerWrapper

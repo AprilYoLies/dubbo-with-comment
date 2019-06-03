@@ -57,7 +57,7 @@ public abstract class Proxy {
     }
 
     /**
-     * Get proxy.
+     * Get proxy.这里获取的 proxy 是 Proxy0，只有一个 newInstance 方法，用来构建 proxy0
      *
      * @param ics interface class array.
      * @return Proxy instance.
@@ -97,7 +97,7 @@ public abstract class Proxy {
             // 这里拼接的就是 ics 每一项的全限定名
             sb.append(itf).append(';');
         }
-
+        // org.apache.dubbo.demo.DemoService;com.alibaba.dubbo.rpc.service.EchoService;
         // use interface class name list as key.
         String key = sb.toString();
 
@@ -193,9 +193,7 @@ public abstract class Proxy {
             // public class org.apache.dubbo.common.bytecode.proxy0 implements com.alibaba.dubbo.rpc.service.EchoService, org.apache.dubbo.demo.DemoService {
             //     public static java.lang.reflect.Method[] methods;
             //     private java.lang.reflect.InvocationHandler handler;
-            //     public <init>(
-            //     java.lang.reflect.InvocationHandler arg0)
-            //
+            //     public <init>(java.lang.reflect.InvocationHandler arg0)
             //     {
             //         handler = $1;
             //     }

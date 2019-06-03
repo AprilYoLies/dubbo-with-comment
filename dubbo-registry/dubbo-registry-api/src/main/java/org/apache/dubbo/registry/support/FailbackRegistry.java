@@ -66,6 +66,7 @@ public abstract class FailbackRegistry extends AbstractRegistry {
 
     // Timer for failure retry, regular check if there is a request for failure, and if there is, an unlimited retry
     private final HashedWheelTimer retryTimer;
+
     // 记录了 retryPeriod 和 retryTimer 信息，所以被称为 FailBAckRegistry 吧
     public FailbackRegistry(URL url) {
         super(url); // 在指定目录构建了 /Users/eva/.dubbo/dubbo-registry-demo-consumer-127.0.0.1:2181.cache，将文件中的内容填充到了 properties 中， 遍历 url 对 Set<NotifyListener> 集合，对于每一个 listener，逐个通知分类的 url 链信息
@@ -225,8 +226,10 @@ public abstract class FailbackRegistry extends AbstractRegistry {
     public ConcurrentMap<Holder, FailedNotifiedTask> getFailedNotified() {
         return failedNotified;
     }
+
     // 缓存了 url 到 registered 结合中，同时根据 url 在 zookeeper 中创建了 /root/url的interface参数/url的category参数/url的全字符串编码路径
-    @Override   // consumer://192.168.1.101/org.apache.dubbo.demo.DemoService?application=demo-consumer&category=consumers&check=false&dubbo=2.0.2&interface=org.apache.dubbo.demo.DemoService&lazy=false&methods=sayHello&pid=83276&side=consumer&sticky=false&timestamp=1559352722835
+    @Override
+    // consumer://192.168.1.101/org.apache.dubbo.demo.DemoService?application=demo-consumer&category=consumers&check=false&dubbo=2.0.2&interface=org.apache.dubbo.demo.DemoService&lazy=false&methods=sayHello&pid=83276&side=consumer&sticky=false&timestamp=1559352722835
     public void register(URL url) {
         super.register(url);    // 缓存了 registered 的 url 信息
         removeFailedRegistered(url);    // 移除并取消 url 对应的 FailedRegisteredTask
@@ -286,12 +289,12 @@ public abstract class FailbackRegistry extends AbstractRegistry {
         }
     }
 
-    @Override
+    @Override   // 根据 url 获取到对应的 category 路径，然后将 listener 添加到对应的路径下，得到不同路径的 provider url，再根据此 urls 构建相应的 invoker，保存到字段中
     public void subscribe(URL url, NotifyListener listener) {
         super.subscribe(url, listener); // 在 subscribed 中是 url -> NotifyListener 集合，也就是进行缓存
         removeFailedSubscribed(url, listener);  // 执行清理相关的工作
         try {
-            // Sending a subscription request to the server side
+            // 即根据 url 获取到对应的 category 路径，然后将 listener 添加到对应的路径下，得到不同路径的 provider url，再根据此 urls 构建相应的 invoker，保存到字段中
             doSubscribe(url, listener);
         } catch (Exception e) {
             Throwable t = e;
@@ -364,6 +367,7 @@ public abstract class FailbackRegistry extends AbstractRegistry {
             logger.error("Failed to notify for subscribe " + url + ", waiting for retry, cause: " + t.getMessage(), t);
         }
     }
+
     // 将 urls 进行分类，获取 url 对应的分类 url 链，将这个链通知给 listener（就是将 url 转换为配置类，然后保存到字段中），同时保存一些 serviceKey 和 url 信息到文件中
     protected void doNotify(URL url, NotifyListener listener, List<URL> urls) {
         super.notify(url, listener, urls);  // 将 urls 按照 consumer 进行分组分类保存到 notified 中，并根据 providerUrl 构建对应的 invoker 保存到字段中

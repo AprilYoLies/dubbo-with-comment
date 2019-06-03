@@ -28,12 +28,14 @@ import org.apache.dubbo.rpc.proxy.InvokerInvocationHandler;
  * JavaassistRpcProxyFactory
  */
 public class JavassistProxyFactory extends AbstractProxyFactory {
-
     @Override
+    // 此方法通过 Proxy.getProxy 获取到 Proxy0 实例，调用它的 newInstance 方法将会得到 proxy0，注意这里的参数是 InvokerInvocationHandler，它引用了 invoker，即前边的代码
+    // 费了很大气力才得到的 MockClusterInvoker，而 InvokerInvocationHandler 是 InvocationHandler 实现类，它覆盖了 invoke 方法，在 proxy0 中就是调用了此方法
     @SuppressWarnings("unchecked")
     public <T> T getProxy(Invoker<T> invoker, Class<?>[] interfaces) {  // invoker 是 MockClusterInvoker
         return (T) Proxy.getProxy(interfaces).newInstance(new InvokerInvocationHandler(invoker));   // 参数InvokerInvocationHandler 主要目的还是调用 invoker 的 invoke 方法
-    }
+    }   // Proxy.getProxy 这里获取的 proxy 是 Proxy0，只有一个 newInstance 方法，用来构建 proxy0
+
     // 这个类是上述 getProxy 方法得到的实例的源码
     // public class org.apache.dubbo.common.bytecode.Proxy0 extends org.apache.dubbo.common.bytecode.Proxy {
     //     public Object newInstance(java.lang.reflect.InvocationHandler h) {

@@ -584,7 +584,8 @@ public class RegistryProtocol implements Protocol {
                 return doRefer(getMergeableCluster(), registry, type, url); // 这里是多个 group 的处理方式
             }
         }
-        // 得到的是 MockClusterInvoker
+        // 构建 RegistryDirectory，为其填充 registry 和 protocol 属性，通过此 registry 在 zookeeper 中构建 consumer 路径，然后由 registry 通过 consumer url 得到
+        // 对应的 invoker，填充到 RegistryDirectory 中，最后通过 cluster 参数对 RegistryDirectory 进行一定的封装，缓存封装结果并返回
         return doRefer(cluster, registry, type, url);
     }
 
@@ -592,6 +593,8 @@ public class RegistryProtocol implements Protocol {
         return ExtensionLoader.getExtensionLoader(Cluster.class).getExtension("mergeable");
     }
 
+    // 构建 RegistryDirectory，为其填充 registry 和 protocol 属性，通过此 registry 在 zookeeper 中构建 consumer 路径，然后由 registry 通过 consumer url 得到
+    // 对应的 invoker，填充到 RegistryDirectory 中，最后通过 cluster 参数对 RegistryDirectory 进行一定的封装，缓存封装结果并返回
     private <T> Invoker<T> doRefer(Cluster cluster, Registry registry, Class<T> type, URL url) {
         RegistryDirectory<T> directory = new RegistryDirectory<T>(type, url);   // refer 操作需要依赖于 RegistryDirectory，新建 RegistryDirectory，并完成了相关属性的赋值
         directory.setRegistry(registry);    // ZookeeperRegistry 也保存到 directory 中
@@ -646,10 +649,12 @@ public class RegistryProtocol implements Protocol {
             registry.register(directory.getRegisteredConsumerUrl());    // 缓存了 url 到 registered 结合中，同时根据 url 在 zookeeper 中创建了 /root/url的interface参数/url的category参数/url的全字符串编码路径
         }   // 构建 RouterChain 的过程中还会获取全部的 RouterFactory，然后得到对应的 Router，最后将这些 Router 保存到实例字段中
         directory.buildRouterChain(subscribeUrl);   // 构建了 routerChain 并填充了属性
+        // 保存 url，将自身添加到 CONSUMER_CONFIGURATION_LISTENER 中，核心是 registry.subscribe 方法，它会即根据 url 获取到对应的 category 路径，然后将 listener 添加到对
+        // 应的路径下，得到不同路径的 provider url，再根据此 urls 构建相应的 invoker，保存到字段中
         directory.subscribe(subscribeUrl.addParameter(CATEGORY_KEY, // category -> providers,configurators,routers
                 PROVIDERS_CATEGORY + "," + CONFIGURATORS_CATEGORY + "," + ROUTERS_CATEGORY));
         // 此 cluster.adaptive 获得的 extension 为 MockClusterWrapper 包含了 FailoverCluster，然后调用它的 join 方法得到 MockClusterInvoker
-        Invoker invoker = cluster.join(directory);  // 得到 MockClusterInvoker
+        Invoker invoker = cluster.join(directory);  // 得到 MockClusterInvoker -> FailoverClusterInvoker -> RegistryDirectory
         // 根本就是将参数包装成为 ConsumerInvokerWrapper，然后保存到 consumerInvokers 的 serviceUniqueName key 对应的 set 集合中
         ProviderConsumerRegTable.registerConsumer(invoker, url, subscribeUrl, directory);
         return invoker;

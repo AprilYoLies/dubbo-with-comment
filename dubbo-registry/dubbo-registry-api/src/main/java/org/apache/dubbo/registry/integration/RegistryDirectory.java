@@ -211,7 +211,8 @@ public class RegistryDirectory<T> extends AbstractDirectory<T> implements Notify
     public void setRegistry(Registry registry) {
         this.registry = registry;
     }
-
+    // 保存 url，将自身添加到 CONSUMER_CONFIGURATION_LISTENER 中，核心是 registry.subscribe 方法，它会即根据 url 获取到对应的 category 路径，然后将 listener 添加到对
+    // 应的路径下，得到不同路径的 provider url，再根据此 urls 构建相应的 invoker，保存到字段中
     public void subscribe(URL url) {
         setConsumerUrl(url);    // 此 url 添加了 category -> providers,configurators,routers 属性
         CONSUMER_CONFIGURATION_LISTENER.addNotifyListener(this);    // 以 listener 身份添加 RegistryDirectory 到 CONSUMER_CONFIGURATION_LISTENER

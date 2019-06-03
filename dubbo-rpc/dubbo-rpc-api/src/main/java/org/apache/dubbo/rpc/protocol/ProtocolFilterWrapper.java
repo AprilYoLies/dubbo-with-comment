@@ -148,7 +148,8 @@ public class ProtocolFilterWrapper implements Protocol {    // ProtocolFilterWra
     @Override
     public <T> Invoker<T> refer(Class<T> type, URL url) throws RpcException {
         if (REGISTRY_PROTOCOL.equals(url.getProtocol())) {
-            // 得到的是 MockClusterInvoker
+            // 构建 RegistryDirectory，为其填充 registry 和 protocol 属性，通过此 registry 在 zookeeper 中构建 consumer 路径，然后由 registry 通过 consumer url 得到
+            // 对应的 invoker，填充到 RegistryDirectory 中，最后通过 cluster 参数对 RegistryDirectory 进行一定的封装，缓存封装结果并返回
             return protocol.refer(type, url);
         }   // protocol.refer 主要是通过 getClients 获取到 List<ReferenceCountExchangeClient>，将其封装成为 DubboInvoker 再缓存到 invokers，最后将构建的 DubboInvoker 返回
         return buildInvokerChain(protocol.refer(type, url), REFERENCE_FILTER_KEY, CommonConstants.CONSUMER);

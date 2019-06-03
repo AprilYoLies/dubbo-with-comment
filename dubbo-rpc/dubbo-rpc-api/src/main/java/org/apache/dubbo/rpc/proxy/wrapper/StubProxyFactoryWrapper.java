@@ -100,7 +100,7 @@ public class StubProxyFactoryWrapper implements ProxyFactory {
         //         return (java.lang.Object) ret;
         //     }
         // }
-        T proxy = proxyFactory.getProxy(invoker);   // 实际是 JavassistProxyFactory，invoker 的是 MockClusterInvoker
+        T proxy = proxyFactory.getProxy(invoker);   // 实际是 JavassistProxyFactory，invoker 的是 MockClusterInvoker，返回的是 proxy0
         if (GenericService.class != invoker.getInterface()) {
             URL url = invoker.getUrl(); // 这是原始的 url
             String stub = url.getParameter(STUB_KEY, url.getParameter(LOCAL_KEY));  // stub 默认为 url 的 local 属性
