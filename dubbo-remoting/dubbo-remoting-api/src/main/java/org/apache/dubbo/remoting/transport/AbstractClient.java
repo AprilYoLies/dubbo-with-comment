@@ -50,6 +50,7 @@ public abstract class AbstractClient extends AbstractEndpoint implements Client 
     private final Lock connectLock = new ReentrantLock();
     private final boolean needReconnect;
     protected volatile ExecutorService executor;
+
     // 向上传递 url 和 handler 参数，根据 url 获取 needReconnect 参数，进行 open 和 connect 操作（真正的 netty 连接操作）
     public AbstractClient(URL url, ChannelHandler handler) throws RemotingException {
         super(url, handler);    // 向上传递 url 和 handler 参数，根据 url 获取 codec、timeout、connectTimeout 等参数
@@ -90,6 +91,7 @@ public abstract class AbstractClient extends AbstractEndpoint implements Client 
         ExtensionLoader.getExtensionLoader(DataStore.class)
                 .getDefaultExtension().remove(CONSUMER_SIDE, Integer.toString(url.getPort()));
     }
+
     // 为 url 添加 thread-name，thread-pool 参数，然后根据 url 和 handler 构建 AllChannelHandler 并包装成为 MultiMessageHandler 返回
     protected static ChannelHandler wrapChannelHandler(URL url, ChannelHandler handler) {
         url = ExecutorUtil.setThreadName(url, CLIENT_THREAD_POOL_NAME); // DubboClientHandler，为 url 添加 thread-name 参数

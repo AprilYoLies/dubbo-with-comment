@@ -683,6 +683,76 @@ public class ServiceConfig<T> extends AbstractServiceConfig {
             }
 
             // 通过 interfaceClass 构建 Wrapper 实例，然后获取其中的方法名
+            // 获得的 Wrapper 实例的源代码
+            // public class Wrapper0 extends org.apache.dubbo.common.bytecode.Wrapper {
+            // pns 集合专门用来保存字段的名字
+            //     public static String[] pns;
+            // 字段的 name 和 type
+            //     public static java.util.Map pts;
+            // mns 集合专门用来保存方法名，全部的方法
+            //     public static String[] mns;
+            // 保存方法名，仅限服务接口声明的方法
+            //     public static String[] dmns;
+            // mts 字段用来保存方法的参数类型，这里的 mts0 表示的是服务接口的第一个方法，以此类推
+            //     public static Class[] mts0;
+            //
+            //     public String[] getPropertyNames() { // 获取字段的名字
+            //         return pns;
+            //     }
+            //
+            //     public boolean hasProperty(String n) {   // 有 n 对应的字段
+            //         return pts.containsKey($1);
+            //     }
+            //
+            //     public Class getPropertyType(String n) { // 获取 n 对应字段的类型
+            //         return (Class) pts.get($1);
+            //     }
+            //
+            //     public String[] getMethodNames() {   // 获取全部的方法名，应该是包括 Object 类中的方法
+            //         return mns;
+            //     }
+            //
+            //     public String[] getDeclaredMethodNames() {   // 获取服务接口声明的方法，不包括 Object 类中的方法
+            //         return dmns;
+            //     }
+            //
+            //     public void setPropertyValue(Object o, String n, Object v) { // 因为是接口，没有具体的字段，所以这里没有额外有意义的操作
+            //         org.apache.dubbo.demo.DemoService w;
+            //         try {
+            //             w = ((org.apache.dubbo.demo.DemoService) $1);
+            //         } catch (Throwable e) {
+            //             throw new IllegalArgumentException(e);
+            //         }
+            //         throw new org.apache.dubbo.common.bytecode.NoSuchPropertyException("Not found property \"" + $2 + "\" field or setter method in class org.apache.dubbo.demo.DemoService.");
+            //     }
+            //
+            //     public Object getPropertyValue(Object o, String n) { // 因为是接口，没有具体的字段，所以这里没有额外有意义的操作
+            //         org.apache.dubbo.demo.DemoService w;
+            //         try {
+            //             w = ((org.apache.dubbo.demo.DemoService) $1);
+            //         } catch (Throwable e) {
+            //             throw new IllegalArgumentException(e);
+            //         }
+            //         throw new org.apache.dubbo.common.bytecode.NoSuchPropertyException("Not found property \"" + $2 + "\" field or setter method in class org.apache.dubbo.demo.DemoService.");
+            //     }
+            //
+            //     public Object invokeMethod(Object o, String n, Class[] p, Object[] v) throws java.lang.reflect.InvocationTargetException {
+            //         org.apache.dubbo.demo.DemoService w;
+            //         try {
+            //             w = ((org.apache.dubbo.demo.DemoService) $1);    // 强转为服务接口类型
+            //         } catch (Throwable e) {
+            //             throw new IllegalArgumentException(e);
+            //         }
+            //         try {
+            //             if ("sayHello".equals($2) && $3.length == 1) {   // 这里进行方法的判别，可能存在多个方法
+            //                 return ($w) w.sayHello((java.lang.String) $4[0]);
+            //             }
+            //         } catch (Throwable e) {
+            //             throw new java.lang.reflect.InvocationTargetException(e);
+            //         }
+            //         throw new org.apache.dubbo.common.bytecode.NoSuchMethodException("Not found method \"" + $2 + "\" in class org.apache.dubbo.demo.DemoService.");
+            //     }
+            // }
             String[] methods = Wrapper.getWrapper(interfaceClass).getMethodNames();
             if (methods.length == 0) {
                 logger.warn("No method found in service interface " + interfaceClass.getName());
@@ -727,7 +797,7 @@ public class ServiceConfig<T> extends AbstractServiceConfig {
             // export to local if the config is not remote (export to remote only when config is remote)
             // 如果 url 的 scope 参数为 remote，那么就只会进行进行远程的 url 暴露，而不会进行本地模式的 url 暴露
             if (!SCOPE_REMOTE.equalsIgnoreCase(scope)) {
-                // 所做的就是将 url 封装成 Exporter，然后保存到 ServiceBean 的 exporters 属性中
+                // 所做的就是根据 url 拿到 invoker 再封装成 Exporter，然后保存到 ServiceBean 的 exporters 属性中
                 // exportLocal 看 url 的 scope 参数
                 exportLocal(url);
             }
@@ -967,7 +1037,7 @@ public class ServiceConfig<T> extends AbstractServiceConfig {
                 // getInvoker 得到的实际是一个 JavassistProxyFactory 类中的一个匿名类 AbstractProxyInvoker
                 proxyFactory.getInvoker(ref, (Class) interfaceClass, local));
         // 保存 exporter 信息
-        exporters.add(exporter);
+        exporters.add(exporter);    // ListenerExporterWrapper -> InjvmExporter -> ProtocolFilterWrapper（Invoker 链）-> JavassistProxyFactory$1（实际是 AbstractProxyInvoker） -> Wrapper1
         logger.info("Export dubbo service " + interfaceClass.getName() + " to local registry url : " + local);
     }
 

@@ -345,7 +345,7 @@ public class DubboProtocol extends AbstractProtocol {
                 stubServiceMethodsMap.put(url.getServiceKey(), stubServiceMethods);
             }
         }
-
+        // 总体就是根据 url 创建了 HeaderExchangeServer（封装了 NettyServer），然后将此 HeaderExchangeServer 进行缓存
         openServer(url);
         optimizeSerialization(url);
 

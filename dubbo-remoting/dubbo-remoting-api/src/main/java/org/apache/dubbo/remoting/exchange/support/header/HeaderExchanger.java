@@ -43,6 +43,6 @@ public class HeaderExchanger implements Exchanger {
     public ExchangeServer bind(URL url, ExchangeHandler handler) throws RemotingException {
         // 这里通过 HeaderExchangeHandler 对 ExchangeHandlerAdapter 进行了封装，然后又通过 DecodeHandler 对 HeaderExchangeHandler 进行了封装
         return new HeaderExchangeServer(Transporters.bind(url, new DecodeHandler(new HeaderExchangeHandler(handler))));
-    }
+    }   // Transporters.bind 方法返回的是 NettyServer，在最后返回时，又通过 HeaderExchangeServer 对 NettyServer 进行了封装
 
 }

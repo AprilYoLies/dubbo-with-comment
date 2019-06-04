@@ -101,7 +101,7 @@ public class ZookeeperDynamicConfiguration implements DynamicConfiguration {    
      * @return
      * @throws IllegalStateException
      */
-    @Override   // key -> dubbo.properties
+    @Override   //  // key -> dubbo.properties group -> dubbo
     public String getConfig(String key, String group, long timeout) throws IllegalStateException {
         /**
          * when group is not null, we are getting startup configs from Config Center, for example:

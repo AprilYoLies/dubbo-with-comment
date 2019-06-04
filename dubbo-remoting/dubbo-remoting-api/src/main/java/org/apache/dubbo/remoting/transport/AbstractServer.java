@@ -69,7 +69,7 @@ public abstract class AbstractServer extends AbstractEndpoint implements Server 
         // 获取 idle.timeout 参数
         this.idleTimeout = url.getParameter(RemotingConstants.IDLE_TIMEOUT_KEY, RemotingConstants.DEFAULT_IDLE_TIMEOUT);
         try {
-            doOpen();
+            doOpen();   // 构建真正的 netty
             if (logger.isInfoEnabled()) {
                 logger.info("Start " + getClass().getSimpleName() + " bind " + getBindAddress() + ", export " + getLocalAddress());
             }

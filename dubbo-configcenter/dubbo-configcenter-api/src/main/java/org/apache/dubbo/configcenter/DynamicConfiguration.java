@@ -89,7 +89,7 @@ public interface DynamicConfiguration extends Configuration {
      * @param group the group where the key belongs to
      * @return target configuration mapped to the given key and the given group
      */
-    default String getConfig(String key, String group) {
+    default String getConfig(String key, String group) {    // key -> dubbo.properties group -> dubbo
         return getConfig(key, group, 0L);
     }
 
