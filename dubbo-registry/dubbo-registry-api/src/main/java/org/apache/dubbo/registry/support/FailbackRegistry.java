@@ -291,7 +291,7 @@ public abstract class FailbackRegistry extends AbstractRegistry {
 
     @Override   // 根据 url 获取到对应的 category 路径，然后将 listener 添加到对应的路径下，得到不同路径的 provider url，再根据此 urls 构建相应的 invoker，保存到字段中
     public void subscribe(URL url, NotifyListener listener) {
-        super.subscribe(url, listener); // 在 subscribed 中是 url -> NotifyListener 集合，也就是进行缓存
+        super.subscribe(url, listener); // 将 listener 添加到 url 对应的集合中
         removeFailedSubscribed(url, listener);  // 执行清理相关的工作
         try {
             // 即根据 url 获取到对应的 category 路径，然后将 listener 添加到对应的路径下，得到不同路径的 provider url，再根据此 urls 构建相应的 invoker，保存到字段中

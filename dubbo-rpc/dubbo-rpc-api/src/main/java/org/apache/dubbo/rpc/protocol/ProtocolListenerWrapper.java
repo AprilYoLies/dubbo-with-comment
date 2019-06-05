@@ -58,8 +58,8 @@ public class ProtocolListenerWrapper implements Protocol {  // 之所以被称�
     public <T> Exporter<T> export(Invoker<T> invoker) throws RpcException {
         if (REGISTRY_PROTOCOL.equals(invoker.getUrl().getProtocol())) {
             // 如果 url 使用的协议是 registry，就会执行此 export 方法
-            return protocol.export(invoker);
-        }
+            return protocol.export(invoker);    // 本方法主要是根据 originInvoker 构建了 exporter，在 zookeeper 中创建了对应的路径，并添加了监听器以检测参数的变化，同步更新配置信息并重新 export
+        }   // protocol.export 方法将 invoker 封装为 DubboExporter 后缓存到 exporterMap，根据 url 创建了 HeaderExchangeServer（封装了 NettyServer），然后将此 HeaderExchangeServer 进行缓存，返回构建的 DubboExporter
         // ListenerExporterWrapper 对直接返回的 Exporter 进行了封装，主要是增加了一些监听器属性
         return new ListenerExporterWrapper<T>(protocol.export(invoker),
                 Collections.unmodifiableList(ExtensionLoader.getExtensionLoader(ExporterListener.class)

@@ -225,6 +225,7 @@ public class RegistryProtocol implements Protocol {
         return overrideListeners;
     }
 
+    // 通过 registryUrl 获取到 registry，再根据 registeredProviderUrl 在 zookeeper 中创建相应的路径
     public void register(URL registryUrl, URL registeredProviderUrl) {
         Registry registry = registryFactory.getRegistry(registryUrl);
         registry.register(registeredProviderUrl);
@@ -235,7 +236,7 @@ public class RegistryProtocol implements Protocol {
         registry.unregister(registeredProviderUrl);
     }
 
-    @Override
+    @Override   // 本方法主要是根据 originInvoker 构建了 exporter，在 zookeeper 中创建了对应的路径，并添加了监听器以检测参数的变化，同步更新配置信息并重新 export
     // 这里的 originInvoker 是通过 DelegateProviderMetaDataInvoker wrapperInvoker = new DelegateProviderMetaDataInvoker(invoker, this); 进行构建
     public <T> Exporter<T> export(final Invoker<T> originInvoker) throws RpcException {
         // zookeeper://127.0.0.1:2181/org.apache.dubbo.registry.RegistryService?
@@ -319,28 +320,28 @@ public class RegistryProtocol implements Protocol {
         // side=provider&
         // timestamp=1558439778014
         providerUrl = overrideUrlWithConfig(providerUrl, overrideSubscribeListener);
-        //export invoker
+        //export invoker，将原始的 invoker 经过层层封装，最后返回 ExporterChangeableWrapper（不要被 doLocalExport 这个名字所迷惑）
         final ExporterChangeableWrapper<T> exporter = doLocalExport(originInvoker, providerUrl);
-
+        // ExporterChangeableWrapper -> ListenerExporterWrapper -> DubboExporter -> ProtocolFilterWrapper$1（invoker 链）-> RegistryProtocol$InvokerDelegate -> DelegateProviderMetaDataInvoker -> JavassistProxyFactory$1 -> Wrapper1
         // url to registry
         final Registry registry = getRegistry(originInvoker);
         final URL registeredProviderUrl = getRegisteredProviderUrl(providerUrl, registryUrl);
         ProviderInvokerWrapper<T> providerInvokerWrapper = ProviderConsumerRegTable.registerProvider(originInvoker,
-                registryUrl, registeredProviderUrl);
+                registryUrl, registeredProviderUrl);    // 将 invoker 包装成为 ProviderInvokerWrapper，根据它对应的 providerUrl 生成 key，将它们缓存到 providerInvokers 中
         //to judge if we need to delay publish
         boolean register = registeredProviderUrl.getParameter("register", true);
         if (register) {
-            register(registryUrl, registeredProviderUrl);
-            providerInvokerWrapper.setReg(true);
+            register(registryUrl, registeredProviderUrl);   // 获取 registry 实例进行 providerUrl 的注册，即在 zookeeper 中创建对应的路径
+            providerInvokerWrapper.setReg(true);    // 修改状态信息
         }
 
         // Deprecated! Subscribe to override rules in 2.6.x or before.
-        registry.subscribe(overrideSubscribeUrl, overrideSubscribeListener);
+        registry.subscribe(overrideSubscribeUrl, overrideSubscribeListener);    // 向对应的 category 路径下添加了监听器，一次来同步更新部分配置及 url 信息，并进行重新 export 的操作
 
         exporter.setRegisterUrl(registeredProviderUrl);
         exporter.setSubscribeUrl(overrideSubscribeUrl);
         //Ensure that a new exporter instance is returned every time export
-        return new DestroyableExporter<>(exporter);
+        return new DestroyableExporter<>(exporter); // 将 exporter 封装成为 DestroyableExporter 后返回
     }
 
     // 通过 configurators 对 providerUrl 的部分属性进行重写，同时缓存了封装重写过的 providerUrl 和 listener 的 ServiceConfigurationListener
@@ -381,9 +382,10 @@ public class RegistryProtocol implements Protocol {
         });
     }
 
+    // 重构 InvokerDelegate 后再进行 export 操作，重新修改一些参数信息
     public <T> void reExport(final Invoker<T> originInvoker, URL newInvokerUrl) {
         // update local exporter
-        ExporterChangeableWrapper exporter = doChangeLocalExport(originInvoker, newInvokerUrl);
+        ExporterChangeableWrapper exporter = doChangeLocalExport(originInvoker, newInvokerUrl); // 重构 InvokerDelegate 后再进行 export 操作
         // update registry
         URL registryUrl = getRegistryUrl(originInvoker);
         final URL registeredProviderUrl = getRegisteredProviderUrl(newInvokerUrl, registryUrl);
@@ -409,7 +411,7 @@ public class RegistryProtocol implements Protocol {
      * @param originInvoker
      * @param newInvokerUrl
      */
-    @SuppressWarnings("unchecked")
+    @SuppressWarnings("unchecked")  // 重构 InvokerDelegate 后再进行 export 操作
     private <T> ExporterChangeableWrapper doChangeLocalExport(final Invoker<T> originInvoker, URL newInvokerUrl) {
         String key = getCacheKey(originInvoker);
         final ExporterChangeableWrapper<T> exporter = (ExporterChangeableWrapper<T>) bounds.get(key);
@@ -769,14 +771,14 @@ public class RegistryProtocol implements Protocol {
             logger.debug("original override urls: " + urls);
 
             List<URL> matchedUrls = getMatchedUrls(urls, subscribeUrl.addParameter(CATEGORY_KEY,
-                    CONFIGURATORS_CATEGORY));
+                    CONFIGURATORS_CATEGORY));   // 获取 urls 中和订阅 url 匹配的 url 集合
             logger.debug("subscribe url: " + subscribeUrl + ", override urls: " + matchedUrls);
 
             // No matching results
             if (matchedUrls.isEmpty()) {
                 return;
             }
-
+            // 根据匹配的 url 获取对应的 configurators，即通过 configurator 工厂类，将匹配的 url 转换为 configurators
             this.configurators = Configurator.toConfigurators(classifyUrls(matchedUrls, UrlUtils::isConfigurator))
                     .orElse(configurators);
 
@@ -785,15 +787,15 @@ public class RegistryProtocol implements Protocol {
 
         public synchronized void doOverrideIfNecessary() {
             final Invoker<?> invoker;
-            if (originInvoker instanceof InvokerDelegate) {
+            if (originInvoker instanceof InvokerDelegate) { // 获取原始 invoker
                 invoker = ((InvokerDelegate<?>) originInvoker).getInvoker();
             } else {
                 invoker = originInvoker;
             }
             //The origin invoker
-            URL originUrl = RegistryProtocol.this.getProviderUrl(invoker);
+            URL originUrl = RegistryProtocol.this.getProviderUrl(invoker);  // 获取 origin url
             String key = getCacheKey(originInvoker);
-            ExporterChangeableWrapper<?> exporter = bounds.get(key);
+            ExporterChangeableWrapper<?> exporter = bounds.get(key);    // 根据 cache key 从 bounds 中获取对应的 ExporterChangeableWrapper
             if (exporter == null) {
                 logger.warn(new IllegalStateException("error state, exporter should not be null"));
                 return;
@@ -801,12 +803,12 @@ public class RegistryProtocol implements Protocol {
             //The current, may have been merged many times
             URL currentUrl = exporter.getInvoker().getUrl();
             //Merged with this configuration
-            URL newUrl = getConfigedInvokerUrl(configurators, originUrl);
+            URL newUrl = getConfigedInvokerUrl(configurators, originUrl);   // 应该就是通过 configurators 对 originUrl 进行配置
             newUrl = getConfigedInvokerUrl(serviceConfigurationListeners.get(originUrl.getServiceKey())
                     .getConfigurators(), newUrl);
             newUrl = getConfigedInvokerUrl(providerConfigurationListener.getConfigurators(), newUrl);
             if (!currentUrl.equals(newUrl)) {
-                RegistryProtocol.this.reExport(originInvoker, newUrl);
+                RegistryProtocol.this.reExport(originInvoker, newUrl);  // 重新进行 export 操作
                 logger.info("exported provider url changed, origin url: " + originUrl +
                         ", old export url: " + currentUrl + ", new export url: " + newUrl);
             }

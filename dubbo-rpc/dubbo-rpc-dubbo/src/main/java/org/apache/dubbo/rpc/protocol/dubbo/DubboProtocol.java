@@ -299,7 +299,7 @@ public class DubboProtocol extends AbstractProtocol {
         return DEFAULT_PORT;
     }
 
-    @Override
+    @Override   // 将 invoker 封装为 DubboExporter 后缓存到 exporterMap，根据 url 创建了 HeaderExchangeServer（封装了 NettyServer），然后将此 HeaderExchangeServer 进行缓存，返回构建的 DubboExporter
     public <T> Exporter<T> export(Invoker<T> invoker) throws RpcException {
         // dubbo://192.168.1.104:20880/org.apache.dubbo.demo.DemoService?
         // anyhost=true&

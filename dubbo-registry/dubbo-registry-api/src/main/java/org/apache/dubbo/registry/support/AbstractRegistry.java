@@ -294,7 +294,7 @@ public abstract class AbstractRegistry implements Registry {
         registered.remove(url);
     }
 
-    @Override
+    @Override   // 将 listener 添加到 url 对应的集合中
     public void subscribe(URL url, NotifyListener listener) {
         if (url == null) {
             throw new IllegalArgumentException("subscribe url == null");

@@ -573,7 +573,8 @@ public class ServiceConfig<T> extends AbstractServiceConfig {
         }
     }
 
-    // 根据不同的 protocol 发布 URL
+    // 该方法主要是做了两件事，本地发布和 remote 发布，在这之前它先搜集了一些与发布相关的参数信息存储到 map 中，然后通过这些信息重构了 url，不管本地发布还是 remote 发布，它们
+    // 都构建了 invoker（这个 invoker 是经过层层封装的结果），然后通过 exporter 方法发布对应的 invoker，返回的是一个 exporter 类，里边封装了 invoker 等其他信息，最后返回的两个 exporter 都进行了缓存
     private void doExportUrlsFor1Protocol(ProtocolConfig protocolConfig, List<URL> registryURLs) {
         String name = protocolConfig.getName();
         // 缺省 protocol 为 dubbo

@@ -35,7 +35,7 @@ import java.util.concurrent.ConcurrentMap;
 public class ProviderConsumerRegTable {
     public static ConcurrentHashMap<String, ConcurrentMap<Invoker, ProviderInvokerWrapper>> providerInvokers = new ConcurrentHashMap<>();
     public static ConcurrentHashMap<String, Set<ConsumerInvokerWrapper>> consumerInvokers = new ConcurrentHashMap<>();
-
+    // 将 invoker 包装成为 ProviderInvokerWrapper，根据它对应的 providerUrl 生成 key，将它们缓存到 providerInvokers 中
     public static <T> ProviderInvokerWrapper<T> registerProvider(Invoker<T> invoker, URL registryUrl, URL providerUrl) {
         ProviderInvokerWrapper<T> wrapperInvoker = new ProviderInvokerWrapper<>(invoker, registryUrl, providerUrl);
         String serviceUniqueName = providerUrl.getServiceKey();
