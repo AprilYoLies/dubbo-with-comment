@@ -78,7 +78,7 @@ public class NettyServerHandler extends ChannelDuplexHandler {
             }
             // 此 handler 实际为 org.apache.dubbo.remoting.transport.MultiMessageHandler
             handler.connected(channel);
-        } finally {
+        } finally { // NettyServer -> MultiMessageHandler -> HeartBeatHandler -> AllChannelHandler -> DecodeHandler -> HeaderExchangeHandler -> DubboProtocol$1
             NettyChannel.removeChannelIfDisconnected(ctx.channel());
         }
     }

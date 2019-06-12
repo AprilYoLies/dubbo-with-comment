@@ -84,7 +84,7 @@ public class NettyClientHandler extends ChannelDuplexHandler {
 
     @Override
     public void write(ChannelHandlerContext ctx, Object msg, ChannelPromise promise) throws Exception {
-        super.write(ctx, msg, promise);
+        super.write(ctx, msg, promise); // 这里是真正的写逻辑，通过 netty 原生 channel 将 msg 发送出去
         final NettyChannel channel = NettyChannel.getOrAddChannel(ctx.channel(), url, handler);
         final boolean isRequest = msg instanceof Request;
 

@@ -62,6 +62,7 @@ public class NettyClient extends AbstractClient {
     private Bootstrap bootstrap;
 
     private volatile Channel channel; // volatile, please copy reference to use
+
     // 向上传递 url 和 handler 参数，根据 url 获取 needReconnect 参数，进行 open 和 connect 操作（真正的 netty 连接操作）
     public NettyClient(final URL url, final ChannelHandler handler) throws RemotingException {
         super(url, wrapChannelHandler(url, handler));   // wrapChannelHandler 方法为 url 添加 thread-name，thread-pool 参数，然后根据 url 和 handler 构建 AllChannelHandler 并包装成为 MultiMessageHandler 返回

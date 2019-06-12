@@ -400,7 +400,7 @@ public class AdaptiveClassCodeGenerator {
      * @return
      */
     private String generateExtensionAssignment() {
-        // extension = (%<s)%s.getExtensionLoader(%s.class).getExtension(extName);
+        // "%s extension = (%<s)%s.getExtensionLoader(%s.class).getExtension(extName);\n";
         return String.format(CODE_EXTENSION_ASSIGNMENT, type.getName(), ExtensionLoader.class.getSimpleName(), type.getName());
     }
 
