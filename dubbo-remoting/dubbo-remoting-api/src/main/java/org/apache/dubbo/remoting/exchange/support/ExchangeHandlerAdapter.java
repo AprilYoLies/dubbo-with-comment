@@ -25,7 +25,7 @@ import java.util.concurrent.CompletableFuture;
 
 /**
  * ExchangeHandlerAdapter
- */
+ */ // 之所以被称为 ExchangeHandlerAdapter 大概是因为它负责了从 channel handler 到
 public abstract class ExchangeHandlerAdapter extends TelnetHandlerAdapter implements ExchangeHandler {
 
     @Override
