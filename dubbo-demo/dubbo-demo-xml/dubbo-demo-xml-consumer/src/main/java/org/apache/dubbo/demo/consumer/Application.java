@@ -39,7 +39,6 @@ public class Application {
         DemoService demoService = context.getBean("demoService", DemoService.class);
         String hello = demoService.sayHello("world");
         System.out.println("result: " + hello);
-        new Scanner(System.in).nextLine();
         // public class org.apache.dubbo.common.bytecode.Proxy0 extends org.apache.dubbo.common.bytecode.Proxy {
         //     public Object newInstance(java.lang.reflect.InvocationHandler h) {
         //         return new org.apache.dubbo.common.bytecode.proxy0($1);
