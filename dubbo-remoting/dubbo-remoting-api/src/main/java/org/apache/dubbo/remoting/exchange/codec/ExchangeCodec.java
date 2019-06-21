@@ -113,6 +113,9 @@ public class ExchangeCodec extends TelnetCodec {
                     // 这里就说明又检测到了一个数据包，那么就将第一个数据包的内容放到 header 中
                     buffer.readerIndex(buffer.readerIndex() - header.length + i);   // 将 readerIndex 重新定位到新的魔幻头位置
                     // FIXME 这里应该是属于 dubbo 的 bug ？？？
+                    // readable = in.readableBytes();
+                    // header = new byte[Math.min(readable, HEADER_LENGTH)];
+                    // in.readBytes(header);
                     header = Bytes.copyOf(header, i);
                     break;
                 }
