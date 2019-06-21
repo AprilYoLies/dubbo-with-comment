@@ -112,6 +112,7 @@ public class ExchangeCodec extends TelnetCodec {
                 if (header[i] == MAGIC_HIGH && header[i + 1] == MAGIC_LOW) {    // 这里是重新确定魔幻头的位置
                     // 这里就说明又检测到了一个数据包，那么就将第一个数据包的内容放到 header 中
                     buffer.readerIndex(buffer.readerIndex() - header.length + i);   // 将 readerIndex 重新定位到新的魔幻头位置
+                    // 这里应该是属于 dubbo 的 bug ？？？
                     header = Bytes.copyOf(header, i);
                     break;
                 }
