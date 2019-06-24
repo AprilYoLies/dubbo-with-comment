@@ -21,6 +21,7 @@ import org.apache.dubbo.demo.DemoService;
 import org.apache.dubbo.remoting.transport.dispatcher.ChannelEventRunnable;
 import org.springframework.context.support.ClassPathXmlApplicationContext;
 
+import java.io.IOException;
 import java.util.Scanner;
 
 public class Application {
@@ -28,7 +29,7 @@ public class Application {
      * In order to make sure multicast registry works, need to specify '-Djava.net.preferIPv4Stack=true' before
      * launch the application
      */
-    public static void main(String[] args) {
+    public static void main(String[] args) throws IOException {
         ClassPathXmlApplicationContext context = new ClassPathXmlApplicationContext("spring/dubbo-consumer.xml");
         context.start();
         // 留意 RegistryDirectory 的 invokers 是怎么获得的？DubboInvoker 的 clients 属性是怎么得到的？
@@ -37,8 +38,13 @@ public class Application {
         // HeaderExchangeHandler -> HeaderExchangeChannel -> NettyClient.send -> （NettyClient 持有 NettyChannel）NettyChannel.send -> （NettyChannel 持有 NioSocketChannel）NioSocketChannel
 
         DemoService demoService = context.getBean("demoService", DemoService.class);
-        String hello = demoService.sayHello("world");
-        System.out.println("result: " + hello);
+        long start = System.currentTimeMillis();
+        for (int i = 0; i < 1; i++) {
+            String hello = demoService.sayHello("world - " + i);
+            System.out.println("result: " + hello);
+        }
+        System.out.println(System.currentTimeMillis() - start);
+        System.in.read();
         // public class org.apache.dubbo.common.bytecode.Proxy0 extends org.apache.dubbo.common.bytecode.Proxy {
         //     public Object newInstance(java.lang.reflect.InvocationHandler h) {
         //         return new org.apache.dubbo.common.bytecode.proxy0($1);
