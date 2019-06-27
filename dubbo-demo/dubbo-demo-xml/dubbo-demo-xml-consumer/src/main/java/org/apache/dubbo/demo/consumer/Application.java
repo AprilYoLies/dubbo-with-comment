@@ -44,7 +44,6 @@ public class Application {
             System.out.println("result: " + hello);
         }
         System.out.println(System.currentTimeMillis() - start);
-        System.in.read();
         // public class org.apache.dubbo.common.bytecode.Proxy0 extends org.apache.dubbo.common.bytecode.Proxy {
         //     public Object newInstance(java.lang.reflect.InvocationHandler h) {
         //         return new org.apache.dubbo.common.bytecode.proxy0($1);
